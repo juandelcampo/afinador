@@ -165,15 +165,23 @@ export function SlabHead({
 export function PageTitle({
   eyebrow,
   title,
+  mark,
   children,
 }: {
   eyebrow?: string;
   title: string;
+  /** Una marca chica que va en la línea de arriba del título, junto al eyebrow. */
+  mark?: ReactNode;
   children?: ReactNode;
 }) {
   return (
     <header className={styles.pageTitle}>
-      {eyebrow && <p className={styles.eyebrow}>{eyebrow}</p>}
+      {(eyebrow || mark) && (
+        <p className={styles.eyebrow}>
+          {eyebrow}
+          {mark}
+        </p>
+      )}
       <h1>{title}</h1>
       {children}
     </header>

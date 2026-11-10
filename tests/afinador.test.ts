@@ -329,4 +329,11 @@ describe('preferencias guardadas', () => {
     } as never).listen;
     expect(listen).toEqual({ style: 'arp', patterns: { arp: 'travis', strum: 'single' }, tempo: 84 });
   });
+
+  it('las favoritas olvidan las afinaciones que no existen y no se repiten', () => {
+    expect(
+      sanitize({ favorites: ['dadgad', 'inventada', 'dadgad', 7, 'estandar'] } as never).favorites,
+    ).toEqual(['dadgad', 'estandar']);
+    expect(sanitize({ favorites: 'dadgad' } as never).favorites).toBeUndefined();
+  });
 });

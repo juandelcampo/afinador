@@ -1,7 +1,9 @@
 // Preferencias del afinador. Se guardan en este navegador.
+import { useSyncExternalStore } from 'react';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { Notation } from '~/core/notes';
+import { TUNINGS } from '~/data/tunings';
 
 export type TunerMode = 'guided' | 'auto';
 export type PlayStyle = 'arp' | 'strum';
@@ -22,7 +24,10 @@ interface Settings {
   volume: number;
   tunerMode: TunerMode;
   listen: ListenPrefs;
-  set: (patch: Partial<Omit<Settings, 'set'>>) => void;
+  /** Ids de las afinaciones favoritas, en el orden en que se marcaron. */
+  favorites: string[];
+  toggleFavorite: (id: string) => void;
+  set: (patch: Partial<Omit<Settings, 'set' | 'toggleFavorite'>>) => void;
 }
 
 const DEFAULT_VOLUME = 0.68;
@@ -63,6 +68,13 @@ export function sanitize(
           : DEFAULT_LISTEN.tempo,
     };
   }
+  if (Array.isArray(saved.favorites)) {
+    // Una afinación que ya no está en el catálogo se olvida, y ninguna aparece dos veces.
+    const known = new Set(TUNINGS.map((tuning) => tuning.id));
+    clean.favorites = [...new Set(saved.favorites)].filter(
+      (id): id is string => typeof id === 'string' && known.has(id),
+    );
+  }
   return clean;
 }
 
@@ -74,14 +86,37 @@ export const useSettings = create<Settings>()(
       volume: DEFAULT_VOLUME,
       tunerMode: 'auto',
       listen: { ...DEFAULT_LISTEN, patterns: { ...DEFAULT_LISTEN.patterns } },
+      favorites: [],
+      toggleFavorite: (id) =>
+        set(({ favorites }) => ({
+          favorites: favorites.includes(id) ? favorites.filter((item) => item !== id) : [...favorites, id],
+        })),
       set: (patch) => set(patch),
     }),
     {
       name: 'afinador',
       version: 1,
       storage: createJSONStorage(() => (typeof window === 'undefined' ? memoryStorage : window.localStorage)),
-      partialize: ({ set: _set, ...rest }) => rest,
+      partialize: ({ set: _set, toggleFavorite: _toggle, ...rest }) => rest,
       merge: (saved, current) => ({ ...current, ...sanitize((saved ?? {}) as Partial<Settings>) }),
     },
   ),
 );
+
+/**
+ * Las favoritas solo existen en este navegador: el HTML prerenderizado sale sin ellas y aparecen al
+ * montar, para que la hidratación no encuentre diferencias.
+ */
+export function useFavorites(): string[] {
+  const favorites = useSettings((s) => s.favorites);
+  // Al hidratar vale la versión del servidor (false); después, la del navegador.
+  const mounted = useSyncExternalStore(
+    noSubscribe,
+    () => true,
+    () => false,
+  );
+  return mounted ? favorites : NO_FAVORITES;
+}
+
+const NO_FAVORITES: string[] = [];
+const noSubscribe = () => () => undefined;

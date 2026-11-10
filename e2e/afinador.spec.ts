@@ -181,6 +181,33 @@ test.describe('afinación', () => {
     await expect(page.locator('[data-id="dadgad"]')).toBeHidden();
   });
 
+  test('las favoritas se marcan en la lista, se ven en el encabezado y quedan al recargar', async ({
+    page,
+  }) => {
+    const errors = watchErrors(page);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await goto(page, '/afinador/dadgad');
+    await expect(page.getByTestId('favorite-mark')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /^Favoritas/ })).toHaveCount(0);
+    await page.getByRole('button', { name: /^Modales y suspendidas/ }).click();
+    const star = page.locator('#grupo-modales').getByRole('button', { name: 'Favorita: DADGAD' });
+    await star.click();
+    await expect(star).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByTestId('favorite-mark')).toHaveText('★ Favorita');
+    // Favoritas aparece arriba y abierta.
+    await expect(page.locator('[data-favorite-id="dadgad"]')).toBeVisible();
+
+    await page.reload();
+    await waitForApp(page);
+    await expect(page.getByTestId('favorite-mark')).toBeVisible();
+    await expect(page.locator('[data-favorite-id="dadgad"]')).toBeVisible();
+    // Se saca desde Favoritas: la sección desaparece.
+    await page.locator('#grupo-favoritas').getByRole('button', { name: 'Favorita: DADGAD' }).click();
+    await expect(page.getByTestId('favorite-mark')).toHaveCount(0);
+    await expect(page.locator('[data-favorite-id]')).toHaveCount(0);
+    expect(errors).toEqual([]);
+  });
+
   test('el solfeo cambia los nombres en toda la app', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await goto(page, '/afinador/dadgad');

@@ -4,7 +4,7 @@ import { midiToNote, noteLabel, noteToMidi } from '~/core/notes';
 import { changeSummary, openChordName, chordShapes, stringIntervals, tensionWarning } from '~/core/tuning';
 import { GROUPS, TUNINGS, type HeardItem, type Tuning } from '~/data/tunings';
 import { Fader } from '~/shared/Fader';
-import { TEMPO_RANGE, useSettings } from '~/shared/settings';
+import { TEMPO_RANGE, useFavorites, useSettings } from '~/shared/settings';
 import { Button, PageTitle, Segmented, Slab, SlabHead, Stepper } from '~/shared/ui/ui';
 import styles from './afinador.module.css';
 import { Neck, type NeckHandle } from './Neck';
@@ -51,6 +51,8 @@ function matches(tuning: Tuning, query: string): { match: boolean; item?: HeardI
   return { match: normalize(GROUPS.find((group) => group.id === tuning.group)?.name ?? '').includes(query) };
 }
 
+const FAVORITES_ID = 'favoritas';
+
 function TuningList({ currentId, onSelect }: { currentId: string; onSelect: (id: string) => void }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -59,15 +61,22 @@ function TuningList({ currentId, onSelect }: { currentId: string; onSelect: (id:
 
   const describe = (notes: string[]) =>
     notes.map((note) => noteLabel(note, notation)).join(notation === 'solfege' ? ' ' : '');
-  const sections = GROUPS.map((group) => ({
-    ...group,
-    items: TUNINGS.filter((tuning) => tuning.group === group.id)
-      .map((tuning) => ({ tuning, info: matches(tuning, query) }))
-      .filter(({ info }) => info.match),
-  })).filter((section) => section.items.length > 0);
+  const favorites = useFavorites();
+  const toggleFavorite = useSettings((s) => s.toggleFavorite);
+  const withInfo = (tunings: Tuning[]) =>
+    tunings.map((tuning) => ({ tuning, info: matches(tuning, query) })).filter(({ info }) => info.match);
+  const favoriteTunings = favorites.flatMap((id) => TUNINGS.filter((tuning) => tuning.id === id));
+  const sections = [
+    { id: FAVORITES_ID, name: 'Favoritas', items: withInfo(favoriteTunings) },
+    ...GROUPS.map((group) => ({
+      ...group,
+      items: withInfo(TUNINGS.filter((tuning) => tuning.group === group.id)),
+    })),
+  ].filter((section) => section.items.length > 0);
   const empty = sections.length === 0;
-  // Las secciones arrancan cerradas. Mientras se busca se abren todas las que tienen resultados.
-  const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
+  // Las secciones arrancan cerradas, menos Favoritas. Mientras se busca se abren todas las que tienen
+  // resultados.
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set([FAVORITES_ID]));
   const toggleSection = (id: string) =>
     setExpanded((current) => {
       const next = new Set(current);
@@ -127,23 +136,38 @@ function TuningList({ currentId, onSelect }: { currentId: string; onSelect: (id:
                 <div id={`grupo-${section.id}`} hidden={!isOpen}>
                   {section.items.map(({ tuning, info }) => {
                     const noteText = describe(tuning.notes);
+                    const favorite = favorites.includes(tuning.id);
+                    // En Favoritas la afinación se repite: data-id queda solo en su sección de siempre.
+                    const inFavorites = section.id === FAVORITES_ID;
                     return (
-                      <NavLink
-                        key={tuning.id}
-                        to={`/afinador/${tuning.id}`}
-                        onClick={(event) => select(event, tuning.id)}
-                        className={styles.tuningItem}
-                        data-id={tuning.id}
-                        aria-current={tuning.id === currentId ? 'page' : undefined}
-                      >
-                        <strong>{tuning.name}</strong>
-                        {noteText !== tuning.name && <small>{noteText}</small>}
-                        {info.item && (
-                          <small>
-                            {info.item.song ? `${info.item.song} · ${info.item.artist}` : info.item.artist}
-                          </small>
-                        )}
-                      </NavLink>
+                      <div key={tuning.id} className={styles.tuningRow}>
+                        <NavLink
+                          to={`/afinador/${tuning.id}`}
+                          onClick={(event) => select(event, tuning.id)}
+                          className={styles.tuningItem}
+                          data-id={inFavorites ? undefined : tuning.id}
+                          data-favorite-id={inFavorites ? tuning.id : undefined}
+                          aria-current={tuning.id === currentId ? 'page' : undefined}
+                        >
+                          <strong>{tuning.name}</strong>
+                          {noteText !== tuning.name && <small>{noteText}</small>}
+                          {info.item && (
+                            <small>
+                              {info.item.song ? `${info.item.song} · ${info.item.artist}` : info.item.artist}
+                            </small>
+                          )}
+                        </NavLink>
+                        <button
+                          type="button"
+                          className={styles.star}
+                          aria-pressed={favorite}
+                          aria-label={`Favorita: ${tuning.name}`}
+                          title={favorite ? 'Sacar de favoritas' : 'Guardar en favoritas'}
+                          onClick={() => toggleFavorite(tuning.id)}
+                        >
+                          <span aria-hidden="true">{favorite ? '★' : '☆'}</span>
+                        </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -162,9 +186,20 @@ function Hero({ tuning }: { tuning: Tuning }) {
   const { changed, semitones } = changeSummary(tuning.notes);
   const warning = tensionWarning(tuning);
   const group = GROUPS.find((item) => item.id === tuning.group);
+  const favorite = useFavorites().includes(tuning.id);
   return (
     <Slab>
-      <PageTitle eyebrow={group?.name} title={tuning.name}>
+      <PageTitle
+        eyebrow={group?.name}
+        title={tuning.name}
+        mark={
+          favorite && (
+            <span className={styles.favoriteMark} data-testid="favorite-mark">
+              ★ Favorita
+            </span>
+          )
+        }
+      >
         <p>{tuning.desc}</p>
       </PageTitle>
       <dl className={styles.facts}>

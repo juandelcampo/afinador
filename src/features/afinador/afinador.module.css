@@ -162,12 +162,18 @@
   font: 900 18px/1 var(--heavy);
   text-align: center;
 }
+/* Cada afinación de la lista: el enlace y, al costado, la estrella para guardarla en favoritas. */
+.tuningRow {
+  display: flex;
+  border-bottom: 1px solid var(--ink);
+}
 .tuningItem {
   position: relative;
   display: block;
+  flex: 1;
+  min-width: 0;
   min-height: var(--touch);
   padding: 6px var(--gutter);
-  border-bottom: 1px solid var(--ink);
   text-decoration: none;
   transition:
     background-color 120ms var(--ease),
@@ -182,6 +188,37 @@
   background: var(--accent);
   color: var(--on-accent);
   box-shadow: inset 6px 0 0 var(--ink);
+}
+.star {
+  flex: none;
+  width: var(--touch);
+  border: 0;
+  background: none;
+  color: inherit;
+  font: 400 20px/1 var(--ui);
+  cursor: pointer;
+}
+.star:hover {
+  background: var(--soft);
+}
+.star[aria-pressed='true'] {
+  color: var(--accent);
+}
+/* En la fila elegida el fondo ya es de acento: la estrella sigue el color del texto. */
+.tuningRow:has([aria-current='page']) .star {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.star:focus-visible {
+  outline-offset: -5px;
+}
+.favoriteMark {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 0 6px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 800;
 }
 .tuningItem strong {
   display: block;
