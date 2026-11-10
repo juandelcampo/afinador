@@ -42,6 +42,10 @@ export function TunerPanel({ notes }: TunerPanelProps) {
   if (!reading && !tuner.active) {
     status.text = 'Tocá una cuerda de arriba para escuchar su nota, o activá el micrófono para afinar.';
   }
+  // Con las seis afinadas, el afinador lo dice en vez de seguir mostrando la última lectura.
+  const tunedCount = tuner.tuned.filter(Boolean).length;
+  const done = tuner.active && tunedCount === notes.length;
+  if (done) status.text = `¡Las ${notes.length === 6 ? 'seis' : notes.length} afinadas!`;
   const needle = needlePosition(reading);
   // Qué luz se enciende: ♭ si está grave, ♯ si está aguda, la nota entera si está afinada.
   const direction = !reading ? 'none' : status.state === 'ok' ? 'ok' : reading.cents < 0 ? 'flat' : 'sharp';
@@ -98,6 +102,7 @@ export function TunerPanel({ notes }: TunerPanelProps) {
       <div
         className={styles.meter}
         data-state={status.state}
+        data-done={done}
         data-dir={direction}
         data-testid="meter"
         data-cents={reading?.cents.toFixed(1)}
@@ -115,6 +120,12 @@ export function TunerPanel({ notes }: TunerPanelProps) {
             </span>
           </div>
           <div className={styles.meterActions}>
+            {(tuner.active || tunedCount > 0) && (
+              <span className={styles.progress} data-done={tunedCount === notes.length}>
+                {tunedCount}/{notes.length}
+                <small>afinadas</small>
+              </span>
+            )}
             {/* Siempre ocupa su lugar: nada se corre cuando aparece la lectura. */}
             <span className={styles.meterCents} data-empty={!reading}>
               <span>{reading ? `${reading.freq.toFixed(1)} Hz` : '— Hz'}</span>

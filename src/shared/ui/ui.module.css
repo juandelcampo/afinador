@@ -168,9 +168,6 @@
   gap: 8px 12px;
   margin-bottom: 12px;
 }
-.slabHead:last-child {
-  margin-bottom: 0;
-}
 /* Lo que va en la cabecera se alinea con el título, sin el margen que traiga de su pantalla. */
 .slabHead > div {
   margin-top: 0;

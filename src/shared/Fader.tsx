@@ -7,14 +7,15 @@ const NAMES: Record<ChannelId, string> = {
   instrumento: 'Instrumento',
 };
 
-export function Fader({ channel, compact }: { channel: ChannelId; compact?: boolean }) {
+/** `text` cambia lo que se lee al lado; el nombre accesible sigue siendo "Volumen <canal>". */
+export function Fader({ channel, compact, text }: { channel: ChannelId; compact?: boolean; text?: string }) {
   const value = useSettings((s) => s.volumes[channel]);
   const volumes = useSettings((s) => s.volumes);
   const set = useSettings((s) => s.set);
   const label = `Volumen ${NAMES[channel]}`;
   return (
     <label className={styles.fader} data-compact={compact}>
-      {!compact && <span>{channel === 'master' ? 'Volumen general' : NAMES[channel]}</span>}
+      {!compact && <span>{text ?? (channel === 'master' ? 'Volumen general' : NAMES[channel])}</span>}
       <input
         type="range"
         min={0}

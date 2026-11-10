@@ -336,7 +336,7 @@ function TuningPage({
           <div ref={listenerTitle}>
             <SlabHead number="02" title="Escuchar">
               <div className={styles.headTools}>
-                <Fader channel="instrumento" />
+                <Fader channel="instrumento" text="Volumen" />
                 <Segmented
                   label="Forma de tocar"
                   value={listener.style}
