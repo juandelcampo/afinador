@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent, type RefObject } from 'react';
 import { NavLink, useParams, type MetaFunction } from 'react-router';
-import { noteLabel } from '~/core/notes';
+import { midiToNote, noteLabel, noteToMidi } from '~/core/notes';
 import { changeSummary, openChordName, chordShapes, stringIntervals, tensionWarning } from '~/core/tuning';
 import { GROUPS, TUNINGS, type HeardItem, type Tuning } from '~/data/tunings';
 import { Fader } from '~/shared/Fader';
@@ -335,7 +335,11 @@ function TuningPage({
   const listenerTitle = useRef<HTMLDivElement>(null);
   const patterns = listener.style === 'arp' ? ARP_PATTERNS : STRUM_PATTERNS;
   const { playAscending } = listener;
-  const shapes = useMemo(() => chordShapes(tuning.notes), [tuning.notes]);
+  // Con capo, las figuras se cuentan desde el capo y los nombres son los de lo que suena.
+  const shapes = useMemo(
+    () => chordShapes(tuning.notes.map((note) => midiToNote(noteToMidi(note) + listener.capo))),
+    [tuning.notes, listener.capo],
+  );
 
   // Al elegir una afinación de la lista suena su arpegio ascendente, una sola vez.
   useEffect(() => {
@@ -473,6 +477,12 @@ function TuningPage({
             Figuras para la mano, cuerda por cuerda de la 6.ª a la 1.ª; × es cuerda apagada. Tocá una para
             escucharla en el mástil, con el patrón elegido en Escuchar.
           </p>
+          {listener.capo > 0 && (
+            <p className={styles.hint} data-testid="capo-note">
+              Con capo en el traste {listener.capo}: los trastes se cuentan desde el capo y el nombre es el
+              del acorde que suena.
+            </p>
+          )}
           <div className={styles.shapes} data-testid="chord-shapes">
             {shapes.map((shape) => (
               <button

@@ -115,6 +115,17 @@ test.describe('escuchador', () => {
     await expect(page.locator('[data-step][data-active]')).toHaveCount(0, { timeout: 6000 });
   });
 
+  test('con capo los acordes se nombran por lo que suena', async ({ page }) => {
+    await goto(page, '/afinador/dadgad');
+    const first = page.getByTestId('chord-shapes').getByRole('button').first();
+    await expect(first).toContainText('Dsus4');
+    await expect(page.getByTestId('capo-note')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Subir capo' }).click();
+    await page.getByRole('button', { name: 'Subir capo' }).click();
+    await expect(first).toContainText('Esus4');
+    await expect(page.getByTestId('capo-note')).toContainText('traste 2');
+  });
+
   test('el capo de un tema se aplica y empieza a tocar', async ({ page }) => {
     await goto(page, '/afinador/dgddad');
     await page.getByRole('button', { name: /capo en el traste 3/ }).click();

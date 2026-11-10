@@ -269,6 +269,16 @@ describe('acordes', () => {
     expect(shapes.find((shape) => shape.chord === 'C')?.label).toBe('× 3 2 0 1 0');
   });
 
+  it('con capo las figuras son las mismas y los nombres suben', () => {
+    // Estándar con capo en el 2: lo que suena es F# B E A C# F#.
+    const capo2 = STANDARD.map((note) => midiToNote(noteToMidi(note) + 2));
+    const plain = chordShapes(STANDARD);
+    const shifted = chordShapes(capo2);
+    expect(shifted.map((shape) => shape.frets)).toEqual(plain.map((shape) => shape.frets));
+    expect(shifted.find((shape) => shape.label === '× 3 2 0 1 0')?.chord).toBe('D');
+    expect(shifted.find((shape) => shape.label === '0 2 2 0 0 0')?.chord).toBe('F#m');
+  });
+
   it('solo propone figuras que una mano puede hacer', () => {
     for (const tuning of TUNINGS)
       for (const { frets, label } of chordShapes(tuning.notes)) {
