@@ -1,9 +1,7 @@
 // Preferencias del afinador. Se guardan en este navegador.
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { isNote, type Notation } from '~/core/notes';
-import type { Risk } from '~/core/sorteo';
-import { STANDARD } from '~/data/tunings';
+import type { Notation } from '~/core/notes';
 
 export type TunerMode = 'guided' | 'auto';
 export type ChannelId = 'master' | 'instrumento';
@@ -12,9 +10,7 @@ interface Settings {
   notation: Notation;
   a4: number;
   volumes: Record<ChannelId, number>;
-  risk: Risk;
   tunerMode: TunerMode;
-  customNotes: string[];
   set: (patch: Partial<Omit<Settings, 'set'>>) => void;
 }
 
@@ -35,11 +31,7 @@ function sanitize(saved: Partial<Settings>): Partial<Settings> {
     }
     clean.volumes = volumes;
   }
-  if (saved.risk === 0 || saved.risk === 1 || saved.risk === 2) clean.risk = saved.risk;
   if (saved.tunerMode === 'guided' || saved.tunerMode === 'auto') clean.tunerMode = saved.tunerMode;
-  if (Array.isArray(saved.customNotes) && saved.customNotes.length === 6 && saved.customNotes.every(isNote)) {
-    clean.customNotes = saved.customNotes;
-  }
   return clean;
 }
 
@@ -49,9 +41,7 @@ export const useSettings = create<Settings>()(
       notation: 'letters',
       a4: 440,
       volumes: { ...DEFAULT_VOLUMES },
-      risk: 1,
       tunerMode: 'guided',
-      customNotes: [...STANDARD],
       set: (patch) => set(patch),
     }),
     {

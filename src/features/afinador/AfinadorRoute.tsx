@@ -1,14 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent, type RefObject } from 'react';
-import { NavLink, useNavigate, useParams, useSearchParams, type MetaFunction } from 'react-router';
-import { isNote, noteLabel } from '~/core/notes';
-import { createRng, randomSeed } from '~/core/rng';
-import { rollTuning } from '~/core/sorteo';
+import { NavLink, useParams, type MetaFunction } from 'react-router';
+import { noteLabel } from '~/core/notes';
 import { changeSummary, openChordName, soloShapes, stringIntervals, tensionWarning } from '~/core/tuning';
-import { GROUPS, SOURCES, TUNINGS, type HeardItem, type Tuning } from '~/data/tunings';
+import { GROUPS, TUNINGS, type HeardItem, type Tuning } from '~/data/tunings';
 import { Fader } from '~/shared/Fader';
-import { RiskPicker } from '~/shared/RiskPicker';
 import { useSettings } from '~/shared/settings';
-import { useHydrated } from '~/shared/useHydrated';
 import { Button, PageTitle, Segmented, Slab, SlabHead, Stepper } from '~/shared/ui/ui';
 import styles from './afinador.module.css';
 import { Neck, type NeckHandle } from './Neck';
@@ -16,20 +12,18 @@ import { TunerPanel } from './TunerPanel';
 import { ARP_PATTERNS, STRUM_PATTERNS, useListener } from './useListener';
 
 const DEFAULT_ID = 'cgcfce';
-const CUSTOM_ID = 'tuya';
-const CUSTOM_DESC = 'Armala con los botones − y + de cada cuerda. Queda guardada en este navegador.';
 
 const findTuning = (id: string | undefined) => TUNINGS.find((tuning) => tuning.id === (id ?? DEFAULT_ID));
 
 export const meta: MetaFunction = ({ params }) => {
   const tuning = findTuning(params.tuningId);
-  if (!tuning || params.tuningId === CUSTOM_ID) {
+  if (!tuning) {
     return [
       { title: 'Afinador de guitarra con afinaciones alternativas · Afinador' },
       {
         name: 'description',
         content:
-          'Afiná y escuchá 68 afinaciones de guitarra: abiertas, drop, modales, DADGAD y las de Nick Drake o Sonic Youth.',
+          'Afiná y escuchá 74 afinaciones de guitarra: abiertas, drop, modales, DADGAD y las de Nick Drake o Sonic Youth.',
       },
     ];
   }
@@ -57,11 +51,9 @@ function matches(tuning: Tuning, query: string): { match: boolean; item?: HeardI
 
 function TuningList({
   currentId,
-  customNotes,
   onSelect,
 }: {
   currentId: string;
-  customNotes: string[];
   onSelect: (id: string) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -106,16 +98,6 @@ function TuningList({
           />
         </label>
         <nav className={styles.catalogList} aria-label="Afinaciones" onClick={() => setOpen(false)}>
-          <div className={styles.groupTitle}>Tuya</div>
-          <NavLink
-            to={`/afinador/${CUSTOM_ID}`}
-            onClick={(event) => select(event, CUSTOM_ID)}
-            className={styles.tuningItem}
-            aria-current={currentId === CUSTOM_ID ? 'page' : undefined}
-          >
-            <strong>Tu afinación</strong>
-            <small>{describe(customNotes)}</small>
-          </NavLink>
           {sections.map((section) => (
             <div key={section.id}>
               <div className={styles.groupTitle}>{section.name}</div>
@@ -149,22 +131,14 @@ function TuningList({
   );
 }
 
-function Hero({
-  tuning,
-  onRoll,
-  onUndo,
-}: {
-  tuning: Tuning;
-  onRoll: () => void;
-  onUndo: (() => void) | null;
-}) {
+function Hero({ tuning }: { tuning: Tuning }) {
   const notation = useSettings((s) => s.notation);
   const { changed, semitones } = changeSummary(tuning.notes);
   const warning = tensionWarning(tuning);
   const group = GROUPS.find((item) => item.id === tuning.group);
   return (
     <Slab>
-      <PageTitle eyebrow={group?.name ?? 'Personalizada'} title={tuning.name}>
+      <PageTitle eyebrow={group?.name} title={tuning.name}>
         <p>{tuning.desc}</p>
       </PageTitle>
       <dl className={styles.facts}>
@@ -186,15 +160,6 @@ function Hero({
         </div>
       </dl>
       {warning && <p className={styles.warning}>{warning}</p>}
-      <div className={styles.heroActions}>
-        <RiskPicker />
-        <Button onClick={onRoll} id="roll-tuning">
-          Sortear afinación
-        </Button>
-        <Button onClick={() => onUndo?.()} id="undo-tuning" disabled={!onUndo}>
-          ↩ Volver
-        </Button>
-      </div>
     </Slab>
   );
 }
@@ -283,18 +248,10 @@ function Heard({
 
 function TuningPage({
   tuning,
-  editable,
-  onEdit,
-  onRoll,
-  onUndo,
   pendingPlayRef,
   playTick,
 }: {
-  onUndo: (() => void) | null;
   tuning: Tuning;
-  editable: boolean;
-  onEdit: (notes: string[]) => void;
-  onRoll: () => void;
   pendingPlayRef: RefObject<string | null>;
   playTick: number;
 }) {
@@ -323,8 +280,8 @@ function TuningPage({
 
   return (
     <>
-      <Hero tuning={tuning} onRoll={onRoll} onUndo={onUndo} />
-      <TunerPanel notes={tuning.notes} editable={editable} onEdit={onEdit} />
+      <Hero tuning={tuning} />
+      <TunerPanel notes={tuning.notes} />
 
       <Slab>
         <div ref={listenerTitle}>
@@ -441,80 +398,17 @@ function TuningPage({
         }}
       />
 
-      <footer className={styles.sources}>
-        <details>
-          <summary>De dónde salen los datos</summary>
-          <p>
-            Muchas afinaciones de canciones se transcribieron de oído y no hay un registro oficial. Por eso
-            los temas marcan si salen de listas de fans o si las fuentes se contradicen. Si tu oído dice otra
-            cosa, probablemente tengas razón.
-          </p>
-          <p>Los videos son de YouTube y solo se cargan cuando los abrís.</p>
-          <ul>
-            {SOURCES.map((source) => (
-              <li key={source.url}>
-                <a href={source.url} target="_blank" rel="noopener noreferrer">
-                  {source.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </details>
-      </footer>
     </>
   );
 }
 
 export default function AfinadorRoute() {
   const { tuningId } = useParams();
-  const [params] = useSearchParams();
-  const hydrated = useHydrated();
-  const navigate = useNavigate();
-  const risk = useSettings((s) => s.risk);
-  const customNotes = useSettings((s) => s.customNotes);
-  const set = useSettings((s) => s.set);
   // Elegir de la lista pide un arpegio; la página de esa afinación lo toca al aparecer.
   const pendingPlayRef = useRef<string | null>(null);
   const [playTick, setPlayTick] = useState(0);
 
-  const isCustom = tuningId === CUSTOM_ID;
-  const sharedNotes = useMemo(() => {
-    const notes = (hydrated ? params.get('n') : null)
-      ?.split(',')
-      .map((note) => note.replace(/^([A-G])s/, '$1#'));
-    return notes?.length === 6 && notes.every(isNote) ? notes : null;
-  }, [params, hydrated]);
-
-  const tuning: Tuning | undefined = isCustom
-    ? {
-        id: CUSTOM_ID,
-        name: 'Tu afinación',
-        group: 'custom',
-        notes: sharedNotes ?? customNotes,
-        desc: CUSTOM_DESC,
-      }
-    : findTuning(tuningId);
-
-  // De dónde se vino al sortear, para poder volver si salió algo que no querías.
-  const [rolledFrom, setRolledFrom] = useState<string[]>([]);
-
-  const roll = () => {
-    const rolled = rollTuning({ risk, rng: createRng(randomSeed()) });
-    if (tuning) {
-      const href = isCustom
-        ? `/afinador/${CUSTOM_ID}?n=${tuning.notes.join(',').replaceAll('#', 's')}`
-        : `/afinador/${tuning.id}`;
-      setRolledFrom((stack) => [...stack, href].slice(-30));
-    }
-    if (rolled.href) navigate(rolled.href);
-  };
-
-  const goBack = () => {
-    const previous = rolledFrom[rolledFrom.length - 1];
-    if (!previous) return;
-    setRolledFrom(rolledFrom.slice(0, -1));
-    navigate(previous);
-  };
+  const tuning = findTuning(tuningId);
 
   if (!tuning) {
     return (
@@ -529,29 +423,14 @@ export default function AfinadorRoute() {
     <div className={styles.page}>
       <TuningList
         currentId={tuning.id}
-        customNotes={customNotes}
         onSelect={(id) => {
           pendingPlayRef.current = id;
           setPlayTick((tick) => tick + 1);
         }}
       />
       {/* La clave reinicia trastes, capo y lectura al cambiar de afinación. */}
-      <div
-        className={styles.content}
-        key={sharedNotes && isCustom ? `compartida:${sharedNotes.join()}` : tuning.id}
-      >
-        <TuningPage
-          tuning={tuning}
-          editable={isCustom}
-          onRoll={roll}
-          onUndo={rolledFrom.length > 0 ? goBack : null}
-          pendingPlayRef={pendingPlayRef}
-          playTick={playTick}
-          onEdit={(notes) => {
-            set({ customNotes: notes });
-            if (sharedNotes) navigate(`/afinador/${CUSTOM_ID}`, { replace: true });
-          }}
-        />
+      <div className={styles.content} key={tuning.id}>
+        <TuningPage tuning={tuning} pendingPlayRef={pendingPlayRef} playTick={playTick} />
       </div>
     </div>
   );

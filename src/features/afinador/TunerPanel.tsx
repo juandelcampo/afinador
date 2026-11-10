@@ -1,6 +1,6 @@
 import { pluckString } from '~/audio/instrument';
 import { noteToMidi, splitNote, noteLabel, type Notation } from '~/core/notes';
-import { isFarFromStandard, shiftString, stringOffsets } from '~/core/tuning';
+import { isFarFromStandard, stringOffsets } from '~/core/tuning';
 import { useSettings } from '~/shared/settings';
 import { Button, Segmented, Slab, SlabHead } from '~/shared/ui/ui';
 import styles from './afinador.module.css';
@@ -17,11 +17,9 @@ function NoteName({ note, notation }: { note: string; notation: Notation }) {
 
 interface TunerPanelProps {
   notes: string[];
-  editable: boolean;
-  onEdit: (notes: string[]) => void;
 }
 
-export function TunerPanel({ notes, editable, onEdit }: TunerPanelProps) {
+export function TunerPanel({ notes }: TunerPanelProps) {
   const notation = useSettings((s) => s.notation);
   const a4 = useSettings((s) => s.a4);
   const mode = useSettings((s) => s.tunerMode);
@@ -79,25 +77,6 @@ export function TunerPanel({ notes, editable, onEdit }: TunerPanelProps) {
                   {offset === 0 ? '=' : `${offset > 0 ? '+' : '−'}${Math.abs(offset)}`}
                 </span>
               </button>
-              {editable && (
-                <div className={styles.pillSteppers}>
-                  {([-1, 1] as const).map((delta) => (
-                    <button
-                      key={delta}
-                      type="button"
-                      aria-label={`${delta < 0 ? 'Bajar' : 'Subir'} cuerda ${number} un semitono`}
-                      onClick={() => {
-                        const next = shiftString(notes, index, delta);
-                        onEdit(next);
-                        tuner.selectString(index);
-                        pluckString(index, noteToMidi(next[index]!), { a4 });
-                      }}
-                    >
-                      {delta < 0 ? '−' : '+'}
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
           );
         })}

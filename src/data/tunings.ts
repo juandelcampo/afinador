@@ -32,11 +32,6 @@ export interface TuningGroup {
   name: string;
 }
 
-export interface Source {
-  label: string;
-  url: string;
-}
-
 export const GROUPS: TuningGroup[] = [
   { id: 'estandar', name: 'Estándar y transpuestas' },
   { id: 'drop', name: 'Drop' },
@@ -52,6 +47,7 @@ export const GROUPS: TuningGroup[] = [
 export const STANDARD: string[] = ['E2', 'A2', 'D3', 'G3', 'B3', 'E4'];
 const DRAKE = 'Nick Drake';
 const SY = 'Sonic Youth';
+const JONI = 'Joni Mitchell';
 
 export const TUNINGS: Tuning[] = [
   // Estándar y transpuestas
@@ -91,6 +87,14 @@ export const TUNINGS: Tuning[] = [
     group: 'estandar',
     notes: ['C#2', 'F#2', 'B2', 'E3', 'G#3', 'C#4'],
     desc: 'Un tono y medio abajo. Con cuerdas comunes ya se siente floja: conviene subir el calibre.',
+  },
+  {
+    id: 'cstd',
+    name: 'Do estándar',
+    group: 'estandar',
+    notes: ['C2', 'F2', 'A#2', 'D#3', 'G3', 'C4'],
+    restring: true,
+    desc: 'Dos tonos abajo, con las formas de siempre. Con cuerdas comunes queda muy floja: pide calibres gruesos.',
   },
   {
     id: 'baritono',
@@ -254,6 +258,19 @@ export const TUNINGS: Tuning[] = [
     desc: 'El Sol mayor repetido en dos octavas, sin bajos en Re. Es la afinación tradicional del dobro.',
   },
 
+  {
+    id: 'cgcegc',
+    name: 'CGCEGC',
+    group: 'mayores',
+    notes: ['C2', 'G2', 'C3', 'E3', 'G3', 'C4'],
+    desc: 'Do mayor abierto con la tercera en la 3.ª cuerda y Do arriba de todo. Todas las cuerdas bajan, ninguna sube.',
+    heard: [
+      { artist: JONI, song: 'Amelia', conf: 'fan' },
+      { artist: JONI, song: 'Big Yellow Taxi', conf: 'fan' },
+      { artist: JONI, song: 'The Jungle Line', conf: 'fan' },
+    ],
+  },
+
   // Abiertas menores
   {
     id: 'dminor',
@@ -342,6 +359,46 @@ export const TUNINGS: Tuning[] = [
     group: 'extendidas',
     notes: ['E2', 'B2', 'D3', 'G3', 'B3', 'E4'],
     desc: 'Un solo cambio respecto de la estándar: la 5.ª sube a Si. Solo eso ya alcanza para que todo suene a Em7.',
+  },
+
+  {
+    id: 'cgdgbd',
+    name: 'CGDGBD',
+    group: 'extendidas',
+    notes: ['C2', 'G2', 'D3', 'G3', 'B3', 'D4'],
+    desc: 'Sol abierta con la 6.ª bajada a Do: arriba suena Sol mayor y el bajo lo convierte en un Do maj9 sin tercera.',
+    heard: [
+      { artist: JONI, song: 'Sweet Bird', conf: 'fan' },
+      { artist: JONI, song: 'Cold Blue Steel and Sweet Fire', conf: 'fan' },
+      { artist: JONI, song: 'Trouble Child', conf: 'fan' },
+    ],
+  },
+  {
+    id: 'eacsgsbe',
+    name: 'EAC#G#BE',
+    group: 'extendidas',
+    notes: ['E2', 'A2', 'C#3', 'G#3', 'B3', 'E4'],
+    desc: 'La estándar con dos cuerdas movidas medio tono: la 4.ª baja y la 3.ª sube. Al aire queda un La maj9 con Mi en el bajo.',
+    heard: [
+      {
+        artist: JONI,
+        song: 'California',
+        who: 'en el disco toca dulcémele; esta es una versión para guitarra',
+        conf: 'fan',
+      },
+    ],
+  },
+  {
+    id: 'ffcgac',
+    name: 'FFCGAC',
+    group: 'extendidas',
+    notes: ['F2', 'F2', 'C3', 'G3', 'A3', 'C4'],
+    desc: 'Las dos graves al unísono en Fa y arriba un Fa add9 abierto. El Fa doble engorda el bajo sin agregar notas.',
+    heard: [
+      { artist: JONI, song: 'Michael from Mountains', conf: 'fan' },
+      { artist: JONI, song: 'Go Tell the Drummer Man', conf: 'fan' },
+      { artist: JONI, song: "I Don't Know Where I Stand", conf: 'fan' },
+    ],
   },
 
   // Modales y suspendidas
@@ -495,6 +552,22 @@ export const TUNINGS: Tuning[] = [
     notes: ['B1', 'E2', 'B2', 'E3', 'B3', 'E4'],
     desc: 'Solo dos notas alternadas en tres octavas, muy grave y desnuda. Cualquier dedo que se agregue cambia todo el color.',
     heard: [{ artist: DRAKE, who: 'citada para su etapa final, sin un tema confirmado' }],
+  },
+
+  {
+    id: 'eadaae',
+    name: 'EADAAE',
+    group: 'modales',
+    notes: ['E2', 'A2', 'D3', 'A3', 'A3', 'E4'],
+    desc: 'La 3.ª sube a La y la 2.ª baja a La: dos cuerdas al unísono que zumban sobre un acorde suspendido, sin tercera.',
+    heard: [
+      {
+        artist: JONI,
+        song: 'A Case of You',
+        who: 'en el disco toca dulcémele; esta es una versión para guitarra',
+        conf: 'fan',
+      },
+    ],
   },
 
   // Rango estrecho y unísonos
@@ -730,29 +803,4 @@ export const TUNINGS: Tuning[] = [
     notes: ['D2', 'A2', 'D3', 'A3', 'A3', 'D4'],
     desc: 'Solo Re y La, sin tercera: una base abierta para tocar melodía sobre un bordón constante.',
   },
-];
-
-export const SOURCES: Source[] = [
-  {
-    label: 'Harlan L. Thompson: “Best guesses on Nick Drake tunings”',
-    url: 'https://guitartabs.cc/tabs/d/drake_nick/tunings_tab.html',
-  },
-  {
-    label: 'Art Lee: “Unofficial Sonic Youth Guitar Tunings List” (1993)',
-    url: 'https://www.guitartabs.cc/tabs/s/sonic_youth/guitar_tunings_tab.html',
-  },
-  {
-    label: 'Stringjoy: The Alternate Tunings of Sonic Youth',
-    url: 'https://stringjoy.com/sonic-youth-alternate-tunings',
-  },
-  {
-    label: 'Premier Guitar: The Narrow-Range Tuning Trick',
-    url: 'https://www.premierguitar.com/diy/joe-gores-recording-guitarist/sonic-youth-tunings',
-  },
-  {
-    label: 'Far Out: What guitar tuning did Nick Drake use?',
-    url: 'https://faroutmagazine.co.uk/what-guitar-tuning-did-nick-drake-use/',
-  },
-  { label: 'Wikipedia: Ostrich guitar', url: 'https://en.wikipedia.org/wiki/Ostrich_guitar' },
-  { label: 'Wikipedia: Open C tuning', url: 'https://en.wikipedia.org/wiki/Open_C_tuning' },
 ];

@@ -176,10 +176,6 @@
   content: 'OJO → ';
   color: var(--accent);
 }
-.heroActions {
-  margin-top: 12px;
-}
-
 /* Cuerdas */
 .pills {
   display: grid;
@@ -235,39 +231,6 @@
   letter-spacing: 0;
   vertical-align: baseline;
 }
-/* Apilados en pantallas angostas: uno al lado del otro no entran con el ancho de un dedo. */
-.pillSteppers {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  border-top: var(--rule);
-}
-@container main (min-width: 560px) {
-  .pillSteppers {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-.pillSteppers button {
-  min-height: var(--touch-small);
-  min-width: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  font-weight: 700;
-}
-.pillSteppers button + button {
-  border-top: 1px solid var(--ink);
-}
-@container main (min-width: 560px) {
-  .pillSteppers button + button {
-    border-top: 0;
-    border-left: 1px solid var(--ink);
-  }
-}
-.pillSteppers button:hover {
-  background: var(--ink);
-  color: var(--paper);
-}
-
 /* Medidor */
 .meter {
   margin-top: 14px;
@@ -578,25 +541,6 @@
   width: 100%;
   height: 100%;
   border: 0;
-}
-
-.sources {
-  padding: var(--gutter);
-  font-size: 13px;
-}
-.sources summary {
-  min-height: var(--touch-small);
-  font-weight: 700;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-.sources p {
-  max-width: 70ch;
-  margin-top: 8px;
-}
-.sources ul {
-  margin: 8px 0 0;
-  padding-left: 18px;
 }
 
 .shapes {

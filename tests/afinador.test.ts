@@ -1,4 +1,4 @@
-// Lo que el afinador necesita que ande: notas, detección de altura, síntesis, el catálogo y el sorteo.
+// Lo que el afinador necesita que ande: notas, detección de altura, síntesis, y el catálogo.
 // Sale de los tests de Scordatura (core, data y tools), sin lo de las otras herramientas.
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
@@ -13,17 +13,14 @@ import {
 } from '~/core/notes';
 import { detectPitch, PitchTracker } from '~/core/pitch';
 import { pluck } from '~/core/pluck';
-import { createRng } from '~/core/rng';
-import { randomSafeTuning, rollTuning, SAFE_TUNING_RANGE, TUNING_POOL, type Risk } from '~/core/sorteo';
 import {
   openChordName,
-  shiftString,
   soloShapes,
   stringIntervals,
   stringOffsets,
   tensionWarning,
 } from '~/core/tuning';
-import { GROUPS, SOURCES, STANDARD, TUNINGS } from '~/data/tunings';
+import { GROUPS, STANDARD, TUNINGS } from '~/data/tunings';
 
 const SR = 48000;
 const WINDOW = 4096;
@@ -205,22 +202,6 @@ describe('afinaciones', () => {
     expect(byId('dadgdfs').map(noteToMidi)).toEqual(byId('cgcfce').map((note) => noteToMidi(note) + 2));
     expect(byId('dadgdg').map(noteToMidi)).toEqual(byId('cgcfcf').map((note) => noteToMidi(note) + 2));
   });
-
-  it('no deja mover una cuerda más allá del rango', () => {
-    const atLimit = [...STANDARD];
-    atLimit[0] = midiToNote(noteToMidi('E2') + 12);
-    expect(shiftString(atLimit, 0, 1)).toEqual(atLimit);
-    expect(shiftString(STANDARD, 0, 1)[0]).toBe('F2');
-  });
-
-  it('las afinaciones generadas respetan el límite y cambian algo', () => {
-    for (let seed = 0; seed < 200; seed++) {
-      const notes = randomSafeTuning(createRng(seed));
-      const offsets = stringOffsets(notes);
-      expect(offsets.every((offset) => Math.abs(offset) <= SAFE_TUNING_RANGE)).toBe(true);
-      expect(offsets.filter((offset) => offset !== 0).length).toBeGreaterThanOrEqual(3);
-    }
-  });
 });
 
 const noteSchema = z.string().refine(isNote, 'nota inválida');
@@ -266,33 +247,6 @@ describe('catálogo de afinaciones', () => {
     for (const tuning of TUNINGS) {
       if (!/^[A-G#b]+$/.test(tuning.name)) continue;
       expect(tuning.notes.map((note) => note.replace(/\d/, '')).join(''), tuning.id).toBe(tuning.name);
-    }
-  });
-
-  it('las fuentes son enlaces https', () => {
-    for (const source of SOURCES) expect(source.url).toMatch(/^https:\/\//);
-  });
-});
-
-describe('qué se sortea', () => {
-  it('solo nombra afinaciones que existen', () => {
-    const ids = new Set(TUNINGS.map((tuning) => tuning.id));
-    for (const list of Object.values(TUNING_POOL)) {
-      for (const id of list) expect(ids.has(id), id).toBe(true);
-    }
-  });
-});
-
-describe('sorteo', () => {
-  it('siempre da una afinación válida con su regla y su link', () => {
-    for (const risk of [0, 1, 2] as Risk[]) {
-      for (let seed = 1; seed <= 60; seed++) {
-        const rolled = rollTuning({ risk, rng: createRng(seed) });
-        expect(rolled.value.notes).toHaveLength(6);
-        expect(rolled.value.notes.every(isNote)).toBe(true);
-        expect(rolled.rule.length).toBeGreaterThan(0);
-        expect(rolled.href).toMatch(/^\/afinador\//);
-      }
     }
   });
 });

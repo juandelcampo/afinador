@@ -8,7 +8,8 @@ Este proyecto se extrajo el 2026-11-09 de Scordatura (`../Afinador Drake`, commi
 - El link "Drone con estas cuerdas" (el Drone quedó en Scordatura).
 - La barra lateral con Sorteo, Diario y Herramientas: ahora hay una sola barra arriba con notación, La de referencia y volumen.
 - Los canales de ritmo y drone de la mezcla: quedan General e Instrumento.
-- De `core/rollers.ts` solo quedó el sorteo de afinación, ahora en `core/sorteo.ts` junto con su lista (`TUNING_POOL`, antes en `data/pools.ts`) y el contrato del resultado. El selector de riesgo pasó al lado de "Sortear afinación".
+- Todo `core/rollers.ts`, incluido el sorteo de afinación con su selector de riesgo: primero quedó en `core/sorteo.ts` y después se sacó también.
+- La sección "De dónde salen los datos" del pie de la página: la lista de fuentes quedó en el README.
 - Las preferencias se guardan bajo la clave `afinador` en `localStorage`, no `scordatura`: no se heredan las de allá.
 
 Si una mejora del afinador también le sirve a Scordatura, hay que llevarla a mano: los dos proyectos ya no comparten código.

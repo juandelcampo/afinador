@@ -106,30 +106,6 @@ test.describe('afinación', () => {
     await expect(page.getByTestId('fact-chord')).toHaveText('Resus4');
     await expect(page.locator('[data-label]').first()).toHaveText('Re');
   });
-
-  test('tu afinación se edita, se guarda y sobrevive a recargar', async ({ page }) => {
-    await goto(page, '/afinador/tuya');
-    await page.getByRole('button', { name: 'Bajar cuerda 6 un semitono' }).click();
-    await page.getByRole('button', { name: 'Bajar cuerda 6 un semitono' }).click();
-    await expect(page.getByTestId('fact-changes')).toHaveText(/^1 de 6 · 2 semitonos/);
-    await page.reload();
-    await expect(page.getByTestId('fact-changes')).toHaveText(/^1 de 6 · 2 semitonos/);
-  });
-
-  test('una afinación generada se abre desde su link', async ({ page }) => {
-    await goto(page, '/afinador/tuya?n=Ds2,A2,D3,G3,B3,F4');
-    await expect(page.getByTestId('fact-changes')).toHaveText(/^2 de 6/);
-  });
-
-  test('tirar afinación lleva a otra pantalla válida', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 800 });
-    const errors = watchErrors(page);
-    await goto(page, '/afinador/estandar');
-    await page.locator('#roll-tuning').click();
-    await expect(page).toHaveURL(/\/afinador\/(?!estandar$)/);
-    await expect(page.getByRole('heading', { level: 1 })).not.toHaveText('');
-    expect(errors).toEqual([]);
-  });
 });
 
 test.describe('videos', () => {

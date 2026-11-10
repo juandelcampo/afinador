@@ -140,10 +140,3 @@ export function soloShapes(notes: string[], maxFret = 5, limit = 18): SoloShape[
   }
   return shapes.slice(0, limit);
 }
-
-/** Sube o baja una cuerda dentro del rango permitido, conservando la nota si no se puede. */
-export function shiftString(notes: string[], index: number, delta: number, range = 12): string[] {
-  const midi = noteToMidi(notes[index]!) + delta;
-  if (Math.abs(midi - noteToMidi(STANDARD[index]!)) > range) return notes;
-  return notes.map((note, i) => (i === index ? midiToNote(midi) : note));
-}
