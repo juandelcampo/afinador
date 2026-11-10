@@ -4,8 +4,10 @@ import { micWith } from './fixtures/mic';
 
 test.use(micWith('c2-exact.wav'));
 
-test('con un C2 exacto, marca la cuerda afinada y pasa a la siguiente', async ({ page }) => {
+test('una a una, con un C2 exacto, marca la cuerda afinada y pasa a la siguiente', async ({ page }) => {
   await goto(page, '/afinador/cgcfce');
+  // El modo por defecto es el automático: el paso a la siguiente cuerda es del modo una a una.
+  await page.getByRole('button', { name: 'Una a una' }).click();
   await page.locator('#mic-toggle').click();
   const pills = page.locator('[class*="pill_"][aria-pressed]');
   await expect(pills.nth(0)).toHaveAttribute('data-tuned', 'true', { timeout: 5000 });

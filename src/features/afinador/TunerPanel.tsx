@@ -104,6 +104,7 @@ export function TunerPanel({ notes }: TunerPanelProps) {
         data-state={status.state}
         data-done={done}
         data-dir={direction}
+        data-held={reading?.held ?? false}
         data-testid="meter"
         data-cents={reading?.cents.toFixed(1)}
       >

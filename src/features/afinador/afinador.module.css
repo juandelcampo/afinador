@@ -480,6 +480,18 @@
 }
 .meter[data-state='idle'] .meterNeedle {
   opacity: 0.2;
+  transition:
+    left 260ms var(--ease),
+    opacity 260ms var(--ease);
+}
+/* La cuerda se apagó: la última lectura queda quieta y se va desvaneciendo, no desaparece de golpe. */
+.meter[data-held='true'] .meterNeedle,
+.meter[data-held='true'] .meterLight {
+  opacity: 0.45;
+  transition:
+    opacity 1800ms var(--ease),
+    background-color 120ms var(--ease),
+    color 120ms var(--ease);
 }
 .meterLabels {
   position: absolute;

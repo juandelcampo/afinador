@@ -41,7 +41,7 @@ export const useSettings = create<Settings>()(
       notation: 'letters',
       a4: 440,
       volumes: { ...DEFAULT_VOLUMES },
-      tunerMode: 'guided',
+      tunerMode: 'auto',
       set: (patch) => set(patch),
     }),
     {

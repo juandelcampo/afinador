@@ -13,6 +13,9 @@ const NEAR_CENTS = 15;
 const TUNED_WINDOW_MS = 400;
 const TUNED_SPREAD_CENTS = 10;
 const SILENCE_RESET_MS = 500;
+/** Cuando la cuerda se apaga, la última lectura queda a la vista, cada vez más tenue, hasta acá. */
+const HOLD_START_MS = 150;
+const HOLD_MS = 2200;
 const AFTER_TUNED_PAUSE_MS = 900;
 const POLL_MS = 50;
 /** La aguja sigue a la lectura con un poco de inercia, para que se pueda leer. */
@@ -21,6 +24,8 @@ const NEEDLE_EASE = 0.45;
 export interface Reading {
   cents: number;
   freq: number;
+  /** La cuerda dejó de sonar: es la última lectura, que se va apagando. */
+  held?: boolean;
 }
 
 export type TuningState = 'idle' | 'ok' | 'near' | 'off';
@@ -111,10 +116,11 @@ export function useTuner(notes: string[], a4: number, mode: TunerMode) {
         minRms: 0.002,
       });
       if (!result) {
-        if (now - lastHeard > SILENCE_RESET_MS) {
-          forget();
-          setReading(null);
-        }
+        const silence = now - lastHeard;
+        if (silence > HOLD_MS) setReading(null);
+        else if (silence > HOLD_START_MS)
+          setReading((last) => (last && !last.held ? { ...last, held: true } : last));
+        if (silence > SILENCE_RESET_MS) forget();
         return;
       }
       lastHeard = now;
