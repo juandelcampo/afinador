@@ -18,6 +18,17 @@
   --touch: 44px;
   --touch-small: 40px;
   --gutter: 16px;
+  /* Alto de la barra de arriba cuando entra en una fila. */
+  --bar: 60px;
+}
+
+/* Con mouse no hace falta el tamaño del dedo: los controles se achican y entra más en pantalla. */
+@media (pointer: fine) {
+  :root {
+    --touch: 36px;
+    --touch-small: 32px;
+    --bar: 52px;
+  }
 }
 
 @media (prefers-color-scheme: dark) {

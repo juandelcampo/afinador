@@ -5,7 +5,47 @@
   align-items: start;
 }
 .content {
+  container: content / inline-size;
   min-width: 0;
+}
+
+/* En pantallas angostas las columnas no existen: los bloques van uno abajo del otro y los temas al
+   final. En las anchas, afinar a la izquierda y escuchar a la derecha, para que entre sin scrollear.
+   Cada columna se llama `main` para que el mástil y los títulos se midan con su ancho, no con el de
+   la pantalla. */
+.board {
+  display: flex;
+  flex-direction: column;
+}
+.column {
+  display: contents;
+}
+.board .heard {
+  order: 1;
+}
+@container content (min-width: 760px) {
+  /* Ocupa la pantalla entera, de la barra hasta abajo: el último bloque de cada columna se estira y
+     las dos terminan juntas en el borde. Las filas del mástil crecen con el alto de la ventana. */
+  .board {
+    /* 36 px con 800 de alto, 48 con 900, y no más de 56. */
+    --row: clamp(var(--touch), calc((100dvh - var(--bar)) * 0.13 - 62px), 56px);
+    display: grid;
+    grid-template-columns: minmax(340px, 5fr) minmax(0, 7fr);
+    min-height: calc(100dvh - var(--bar));
+  }
+  .column {
+    container: main / inline-size;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .column + .column {
+    border-left: var(--rule);
+  }
+  .column > section:last-child {
+    flex: 1;
+    border-bottom: 0;
+  }
 }
 
 /* Lista de afinaciones: desplegable en pantallas chicas, panel fijo en las grandes. */
@@ -18,8 +58,8 @@
   justify-content: space-between;
   gap: 10px;
   width: 100%;
-  min-height: 48px;
-  padding: 10px var(--gutter);
+  min-height: var(--touch);
+  padding: 8px var(--gutter);
   border: 0;
   background: var(--ink);
   color: var(--paper);
@@ -66,7 +106,7 @@
 .tuningItem {
   display: block;
   min-height: var(--touch);
-  padding: 7px var(--gutter);
+  padding: 5px var(--gutter);
   border-bottom: 1px solid var(--ink);
   text-decoration: none;
 }
@@ -95,17 +135,17 @@
 
 @container main (min-width: 820px) {
   .page {
-    grid-template-columns: 240px minmax(0, 1fr);
+    grid-template-columns: 220px minmax(0, 1fr);
   }
   .content {
     border-left: var(--rule);
   }
   .catalog {
     position: sticky;
-    top: 0;
+    top: var(--bar);
     display: flex;
     flex-direction: column;
-    height: 100dvh;
+    height: calc(100dvh - var(--bar));
     border-bottom: 0;
   }
   .catalogToggle {
@@ -126,47 +166,49 @@
   }
 }
 
-/* Datos de la afinación */
+/* Datos de la afinación: una fila de tres, también en el celular. */
 .facts {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  margin-top: 16px;
+  /* Los intervalos ceden lugar antes que "11 semitonos", que no se corta. */
+  grid-template-columns: auto minmax(0, auto) minmax(min-content, 1fr);
+  margin-top: 10px;
   border: var(--rule);
 }
 .facts > div {
   min-width: 0;
-  padding: 8px 12px;
-  border-top: var(--rule);
+  padding: 4px 8px 5px;
+  border-left: var(--rule);
 }
 .facts > div:first-child {
-  border-top: 0;
+  border-left: 0;
 }
 .facts dt {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
+  line-height: 1.4;
   text-transform: uppercase;
 }
 .facts dd {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 700;
-  line-height: 1.3;
+  line-height: 1.25;
   overflow-wrap: anywhere;
 }
+/* Si no entra, se corta entre las partes y no en el medio de una. */
+.facts dd span {
+  white-space: nowrap;
+}
 @container main (min-width: 560px) {
-  .facts {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
   .facts > div {
-    border-top: 0;
-    border-left: var(--rule);
+    padding: 5px 12px 6px;
   }
-  .facts > div:first-child {
-    border-left: 0;
+  .facts dd {
+    font-size: 17px;
   }
 }
 .warning {
-  margin-top: 12px;
-  padding: 10px 12px;
+  margin-top: 8px;
+  padding: 6px 10px;
   background: var(--ink);
   color: var(--paper);
   font-size: 14px;
@@ -196,7 +238,7 @@
   justify-items: center;
   width: 100%;
   min-width: 0;
-  padding: 8px 0;
+  padding: 4px 0;
   border: 0;
   background: var(--paper);
   line-height: 1.2;
@@ -222,7 +264,7 @@
   text-decoration-thickness: 2px;
 }
 .pillNote {
-  font: 900 clamp(15px, 7cqi, 46px)/1.1 var(--heavy);
+  font: 900 clamp(15px, 6.5cqi, 40px)/1.1 var(--heavy);
   letter-spacing: -0.04em;
   white-space: nowrap;
 }
@@ -233,7 +275,7 @@
 }
 /* Medidor */
 .meter {
-  margin-top: 14px;
+  margin-top: 10px;
 }
 .meterReadout {
   display: flex;
@@ -250,7 +292,7 @@
   gap: 8px 16px;
 }
 .meterNote {
-  font: 900 clamp(48px, 9cqi, 80px)/0.95 var(--heavy);
+  font: 900 clamp(40px, 9cqi, 64px)/0.95 var(--heavy);
   letter-spacing: -0.03em;
 }
 .meterNote sub {
@@ -265,8 +307,8 @@
 }
 .meterScale {
   position: relative;
-  height: 62px;
-  margin-top: 12px;
+  height: 52px;
+  margin-top: 8px;
 }
 .meterScale::before {
   content: '';
@@ -306,15 +348,15 @@
   line-height: 1;
 }
 .meterStatus {
-  min-height: 30px;
-  margin-top: 8px;
-  font: 900 22px/1.2 var(--heavy);
+  min-height: 27px;
+  margin-top: 6px;
+  font: 900 20px/1.3 var(--heavy);
   letter-spacing: -0.01em;
   text-transform: uppercase;
 }
 .meter[data-state='idle'] .meterStatus {
   color: var(--muted);
-  font: 400 14px/1.5 var(--mono);
+  font: 400 13px/1.45 var(--mono);
   letter-spacing: 0;
   text-transform: none;
 }
@@ -340,7 +382,7 @@
   pointer-events: none;
 }
 .neckGrid {
-  --visible: 7;
+  --visible: 12;
   position: relative;
   display: grid;
   grid-template-columns: 40px repeat(var(--visible), minmax(0, 1fr)) clamp(56px, 20cqi, 200px);
@@ -350,7 +392,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: var(--touch);
+  height: var(--row, var(--touch));
   padding: 0;
   border: 0;
   border-right: 5px solid var(--neck-ink);
@@ -364,7 +406,7 @@
 }
 .fret {
   position: relative;
-  height: var(--touch);
+  height: var(--row, var(--touch));
   min-width: 0;
   padding: 0;
   border: 0;
@@ -415,15 +457,33 @@
   font: 12px/22px var(--mono);
   text-align: center;
 }
-/* En pantallas angostas se muestran menos trastes, pero más anchos para el dedo. */
+/* Los trastes no se estiran más de la cuenta: con menos ancho se muestran menos, pero más anchos
+   para el dedo. 12 en una columna ancha, 9, 7 y 5 en el celular. */
+@container main (max-width: 900px) {
+  .neckGrid {
+    --visible: 9;
+  }
+  .neckGrid [data-position='10'],
+  .neckGrid [data-position='11'],
+  .neckGrid [data-position='12'] {
+    display: none;
+  }
+}
+@container main (max-width: 700px) {
+  .neckGrid {
+    --visible: 7;
+  }
+  .neckGrid [data-position='8'],
+  .neckGrid [data-position='9'] {
+    display: none;
+  }
+}
 @container main (max-width: 480px) {
   .neckGrid {
     --visible: 5;
   }
-  .fret[data-position='6'],
-  .fret[data-position='7'],
-  .fretNumber[data-position='6'],
-  .fretNumber[data-position='7'] {
+  .neckGrid [data-position='6'],
+  .neckGrid [data-position='7'] {
     display: none;
   }
 }
@@ -433,20 +493,45 @@
   }
 }
 
+/* Flex y no grilla: cada fila se llena entera, sin huecos al final. */
 .controls {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: 12px 16px;
-  margin-top: 14px;
+  gap: 8px 12px;
+  margin-top: 10px;
+}
+.controls > * {
+  flex: 1 1 140px;
+  min-width: 0;
+}
+.controls > .pair {
+  flex: 0 1 auto;
 }
 .controls > button:first-child {
-  flex: 1 0 100%;
+  min-height: var(--touch);
+  padding-block: 6px;
 }
-@container main (min-width: 520px) {
-  .controls > button:first-child {
-    flex: none;
-  }
+.controls .field select,
+.controls .field input[type='range'] {
+  width: 100%;
+  min-width: 0;
+}
+.controls [role='group'] {
+  display: flex;
+}
+.controls [role='group'] output {
+  flex: 1;
+  min-width: 0;
+}
+/* Repetir y soltar trastes comparten celda: así los controles entran en dos filas. */
+.pair {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.pair > button {
+  padding-inline: 8px;
 }
 .field {
   display: grid;
@@ -489,14 +574,32 @@
   height: 22px;
 }
 .hint {
-  margin-top: 8px;
+  margin-top: 6px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* Volumen del instrumento y forma de tocar, en la cabecera de Escuchar. */
+.headTools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px 14px;
+}
+.headTools > label {
+  grid-auto-flow: column;
+  align-items: center;
+  gap: 8px;
+}
+.headTools > label input {
+  width: 110px;
 }
 
 /* Temas: dato secundario */
 .heardTitle {
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
@@ -516,7 +619,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 4px 12px;
-  padding: 6px 0;
+  padding: 3px 0;
 }
 .heardText {
   flex: 1 1 200px;
@@ -529,32 +632,88 @@
   display: flex;
   gap: 6px;
 }
+/* Reproductor: debajo de la lista, en 16:9. En pantallas anchas los temas son el último bloque de la
+   columna y el video se estira hasta abajo (YouTube agrega franjas si no da la proporción). */
 .video {
-  width: min(100%, 560px);
-  aspect-ratio: 16 / 9;
-  margin: 2px 0 10px;
+  margin-top: 10px;
   border: var(--rule);
   background: #000000;
+}
+.videoBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-left: 10px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 12px;
+}
+.videoBar span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.videoBar button {
+  flex: none;
+  width: var(--touch-small);
+  height: var(--touch-small);
+  border: 0;
+  border-left: 2px solid var(--paper);
+  background: none;
+  color: inherit;
+  font-size: 15px;
+  font-weight: 700;
+}
+.videoBar button:hover {
+  background: var(--accent);
+  color: var(--on-accent);
 }
 .video iframe {
   display: block;
   width: 100%;
-  height: 100%;
+  aspect-ratio: 16 / 9;
   border: 0;
+}
+@container content (min-width: 760px) {
+  .heard {
+    display: flex;
+    flex-direction: column;
+  }
+  /* Crece hasta el alto libre, pero no más que 16:9 del ancho de la columna (más la barra). */
+  .video {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    min-height: 220px;
+    max-height: calc((100cqi - 2 * var(--gutter)) * 9 / 16 + var(--touch-small) + 6px);
+  }
+  .video iframe {
+    flex: 1;
+    aspect-ratio: auto;
+    min-height: 0;
+  }
+}
+@media print {
+  .video {
+    display: none;
+  }
 }
 
 .shapes {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 130px), 1fr));
-  gap: 6px;
-  margin-top: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 104px), 1fr));
+  gap: 4px;
+  margin-top: 8px;
 }
 .shapes button {
   display: grid;
-  gap: 2px;
+  align-content: start;
+  gap: 1px;
   min-height: var(--touch);
   min-width: 0;
-  padding: 6px 8px;
+  padding: 4px 6px;
   border: 2px solid var(--ink);
   background: none;
   text-align: left;
@@ -564,9 +723,10 @@
   color: var(--paper);
 }
 .shapes strong {
-  font: 900 18px/1.1 var(--heavy);
+  font: 900 16px/1.1 var(--heavy);
   overflow-wrap: anywhere;
 }
 .shapes small {
-  font-size: 12px;
+  font-size: 11px;
+  line-height: 1.3;
 }

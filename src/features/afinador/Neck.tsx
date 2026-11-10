@@ -4,7 +4,8 @@ import { midiToNote, noteLabel, noteToMidi, type Notation } from '~/core/notes';
 import styles from './afinador.module.css';
 
 const STRINGS = 6;
-const FRETS = [1, 2, 3, 4, 5, 6, 7];
+// Se muestran tantos como entren: de 5 en el celular a 12 en una pantalla ancha (ver el CSS).
+const FRETS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
 export interface NeckHandle {
   excite(stringIndex: number, velocity: number): void;

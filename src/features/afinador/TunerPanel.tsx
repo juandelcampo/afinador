@@ -30,7 +30,7 @@ export function TunerPanel({ notes }: TunerPanelProps) {
   const { reading, selected } = tuner;
   const status = tuningStatus(reading, tuner.active, notes.length - selected);
   if (!reading && !tuner.active) {
-    status.text = 'Tocá una cuerda de arriba para oír su nota, o activá el micrófono para afinar.';
+    status.text = 'Tocá una cuerda de arriba para escuchar su nota, o activá el micrófono para afinar.';
   }
   const needle = needlePosition(reading);
 

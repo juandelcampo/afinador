@@ -1,4 +1,4 @@
-/* Una barra arriba y la página debajo. En pantallas chicas la barra se acomoda en dos filas. */
+/* Una barra arriba y la página debajo. En pantallas chicas los ajustes se esconden detrás de un botón. */
 .shell {
   min-height: 100dvh;
 }
@@ -9,7 +9,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px 16px;
-  min-height: 52px;
+  min-height: var(--bar);
   padding: max(6px, env(safe-area-inset-top)) var(--gutter) 6px;
   border-bottom: var(--rule);
   background: var(--paper);
@@ -20,11 +20,60 @@
   text-decoration: none;
   text-transform: uppercase;
 }
+.settingsToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--touch);
+  padding: 6px 12px;
+  border: var(--rule);
+  background: none;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.settingsToggle[aria-expanded='true'] {
+  background: var(--ink);
+  color: var(--paper);
+}
 .settings {
-  display: flex;
+  display: none;
+  flex: 1 0 100%;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 16px;
+  padding-bottom: 4px;
+}
+.topBar[data-open='true'] .settings {
+  display: flex;
+}
+/* El volumen va al lado de su nombre, no debajo: la barra queda en una sola fila. */
+.settings > label {
+  grid-auto-flow: column;
+  align-items: center;
+  gap: 8px;
+}
+
+/* En pantallas anchas los ajustes entran en la misma fila y la barra queda fija arriba. */
+@media (min-width: 720px) {
+  .topBar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    flex-wrap: nowrap;
+    height: var(--bar);
+    padding-block: 0;
+  }
+  .settingsToggle {
+    display: none;
+  }
+  .settings,
+  .topBar[data-open='true'] .settings {
+    display: flex;
+    flex: none;
+    flex-wrap: nowrap;
+    padding-bottom: 0;
+  }
 }
 
 .main {

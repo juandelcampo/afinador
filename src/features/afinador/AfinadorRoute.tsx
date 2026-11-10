@@ -49,13 +49,7 @@ function matches(tuning: Tuning, query: string): { match: boolean; item?: HeardI
   return { match: normalize(GROUPS.find((group) => group.id === tuning.group)?.name ?? '').includes(query) };
 }
 
-function TuningList({
-  currentId,
-  onSelect,
-}: {
-  currentId: string;
-  onSelect: (id: string) => void;
-}) {
+function TuningList({ currentId, onSelect }: { currentId: string; onSelect: (id: string) => void }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const notation = useSettings((s) => s.notation);
@@ -147,15 +141,22 @@ function Hero({ tuning }: { tuning: Tuning }) {
           <dd data-testid="fact-chord">{openChordName(tuning.notes, notation)}</dd>
         </div>
         <div>
-          <dt>Entre cuerdas</dt>
+          <dt>Intervalos</dt>
           <dd data-testid="fact-intervals">{stringIntervals(tuning.notes).join(' ')}</dd>
         </div>
         <div>
-          <dt>Cuerdas que cambian</dt>
+          <dt>Cambian</dt>
           <dd data-testid="fact-changes">
-            {changed === 0
-              ? 'Ninguna'
-              : `${changed} de 6 · ${semitones} ${semitones === 1 ? 'semitono' : 'semitonos'}`}
+            {changed === 0 ? (
+              'Ninguna'
+            ) : (
+              <>
+                <span>{changed} de 6</span> ·{' '}
+                <span>
+                  {semitones} {semitones === 1 ? 'semitono' : 'semitonos'}
+                </span>
+              </>
+            )}
           </dd>
         </div>
       </dl>
@@ -175,6 +176,7 @@ function Heard({
 }) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const items = tuning.heard ?? [];
+  const playing = openIndex === null ? undefined : items[openIndex];
   if (items.length === 0 && tuning.octaves !== 'est') return null;
   return (
     <Slab className={styles.heard} label="Dónde se escuchó">
@@ -185,7 +187,7 @@ function Heard({
           const details = [
             item.artist,
             item.who,
-            item.conf === 'fan' ? 'lista de fans' : item.conf === 'duda' ? 'discutida' : null,
+            item.conf === 'duda' ? 'discutida' : null,
           ].filter(Boolean);
           return (
             <li key={`${item.artist}-${item.song ?? ''}-${index}`}>
@@ -209,30 +211,18 @@ function Heard({
                       <Button
                         variant="mini"
                         ariaExpanded={open}
-                        ariaLabel={`Oír ${item.song}, de ${item.artist}`}
+                        ariaLabel={`Escuchar ${item.song}, de ${item.artist}`}
                         onClick={() => {
                           if (!open) onVideoOpen();
                           setOpenIndex(open ? null : index);
                         }}
                       >
-                        {open ? '■ Cerrar' : '▶ Oír'}
+                        {open ? '■ Cerrar' : '▶ Escuchar'}
                       </Button>
                     )}
                   </div>
                 )}
               </div>
-              {/* El reproductor se crea recién al abrirlo: hasta entonces no se contacta a YouTube. */}
-              {open && item.video && (
-                <div className={styles.video}>
-                  <iframe
-                    src={`https://www.youtube-nocookie.com/embed/${item.video}?autoplay=1&rel=0`}
-                    title={`${item.song}, de ${item.artist}`}
-                    allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-                    allowFullScreen
-                    referrerPolicy="strict-origin-when-cross-origin"
-                  />
-                </div>
-              )}
             </li>
           );
         })}
@@ -241,6 +231,30 @@ function Heard({
         <p className={styles.hint}>
           Las fuentes dan estas notas sin octava: las octavas de esta afinación son una estimación.
         </p>
+      )}
+      {/* El reproductor se crea recién al abrirlo: hasta entonces no se contacta a YouTube. Va debajo de
+          la lista y en pantallas anchas ocupa todo el alto que le queda a la columna. */}
+      {playing?.video && (
+        <div
+          className={styles.video}
+          ref={(node) => node?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })}
+        >
+          <div className={styles.videoBar}>
+            <span>
+              <strong>{playing.song}</strong> · {playing.artist}
+            </span>
+            <button type="button" aria-label="Cerrar video" onClick={() => setOpenIndex(null)}>
+              ✕
+            </button>
+          </div>
+          <iframe
+            src={`https://www.youtube-nocookie.com/embed/${playing.video}?autoplay=1&rel=0`}
+            title={`${playing.song}, de ${playing.artist}`}
+            allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+            allowFullScreen
+            referrerPolicy="strict-origin-when-cross-origin"
+          />
+        </div>
       )}
     </Slab>
   );
@@ -278,127 +292,140 @@ function TuningPage({
     return () => clearTimeout(timer);
   }, [playTick, tuning.id, pendingPlayRef, playAscending]);
 
+  // Dos columnas en pantallas anchas: afinar a la izquierda, escuchar a la derecha. En las angostas las
+  // columnas se disuelven y los temas pasan al final (ver .board en el CSS).
   return (
-    <>
-      <Hero tuning={tuning} />
-      <TunerPanel notes={tuning.notes} />
-
-      <Slab>
-        <div ref={listenerTitle}>
-          <SlabHead title="Escuchar">
-            <Segmented
-              label="Forma de tocar"
-              value={listener.style}
-              options={[
-                { value: 'arp', label: 'Arpegiado' },
-                { value: 'strum', label: 'Rasgueado' },
-              ]}
-              onChange={listener.chooseStyle}
-            />
-          </SlabHead>
-        </div>
-        <Neck
-          ref={neck}
-          notes={tuning.notes}
-          capo={listener.capo}
-          frets={listener.frets}
-          notation={notation}
-          onPluck={(stringIndex, velocity) => listener.playString(stringIndex, undefined, velocity)}
-          onToggleFret={listener.toggleFret}
+    <div className={styles.board}>
+      <div className={styles.column}>
+        <Hero tuning={tuning} />
+        <TunerPanel notes={tuning.notes} />
+        <Heard
+          tuning={tuning}
+          onVideoOpen={listener.stop}
+          onCapo={(capo) => {
+            listener.setCapo(capo);
+            listenerTitle.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(listener.start, 0);
+          }}
         />
-        <p className={styles.hint}>
-          Tocá un traste para pisarlo y pasá el dedo por la zona de la derecha para rasguear a mano.
-        </p>
-
-        <div className={styles.controls}>
-          <Button
-            variant="primary"
-            onClick={() => (listener.running ? listener.stop() : listener.start())}
-            id="play-toggle"
-          >
-            {listener.running ? '■ Parar' : '▶ Tocar'}
-          </Button>
-          <label className={styles.field}>
-            <span>Patrón</span>
-            <select
-              id="pattern"
-              value={listener.patternId[listener.style]}
-              onChange={(event) => listener.choosePattern(event.target.value)}
-            >
-              {patterns.map((pattern) => (
-                <option key={pattern.id} value={pattern.id}>
-                  {pattern.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className={styles.field}>
-            <span>Velocidad: {listener.tempo} ppm</span>
-            <input
-              type="range"
-              min={40}
-              max={160}
-              step={5}
-              value={listener.tempo}
-              onChange={(event) => listener.setTempo(Number(event.target.value))}
-            />
-          </label>
-          <div className={styles.field}>
-            <span>Capo</span>
-            <Stepper
-              label="capo"
-              value={
-                <span data-testid="capo-value">{listener.capo ? `Traste ${listener.capo}` : 'Sin capo'}</span>
-              }
-              onDown={() => listener.setCapo(listener.capo - 1)}
-              onUp={() => listener.setCapo(listener.capo + 1)}
-            />
+      </div>
+      <div className={styles.column}>
+        <Slab>
+          <div ref={listenerTitle}>
+            <SlabHead title="Escuchar">
+              <div className={styles.headTools}>
+                <Fader channel="instrumento" />
+                <Segmented
+                  label="Forma de tocar"
+                  value={listener.style}
+                  options={[
+                    { value: 'arp', label: 'Arpegiado' },
+                    { value: 'strum', label: 'Rasgueado' },
+                  ]}
+                  onChange={listener.chooseStyle}
+                />
+              </div>
+            </SlabHead>
           </div>
-          <label className={styles.check}>
-            <input
-              id="loop"
-              type="checkbox"
-              checked={listener.loop}
-              onChange={(event) => listener.setLoop(event.target.checked)}
-            />{' '}
-            Repetir
-          </label>
-          <Button onClick={listener.clearFrets}>Soltar trastes</Button>
-          <Fader channel="instrumento" />
-        </div>
-      </Slab>
+          <Neck
+            ref={neck}
+            notes={tuning.notes}
+            capo={listener.capo}
+            frets={listener.frets}
+            notation={notation}
+            onPluck={(stringIndex, velocity) => listener.playString(stringIndex, undefined, velocity)}
+            onToggleFret={listener.toggleFret}
+          />
+          <p className={styles.hint}>
+            Tocá un traste para pisarlo; pasá el dedo por la zona gris para rasguear.
+          </p>
 
-      <Slab>
-        <SlabHead title="Qué suena solo" />
-        <p className={styles.hint}>
-          Acordes y bordones con las cuerdas al aire o un solo dedo. Tocá uno para oírlo.
-        </p>
-        <div className={styles.shapes} data-testid="solo-shapes">
-          {shapes.map((shape) => (
-            <button
-              key={shape.frets.join()}
-              type="button"
-              aria-label={`${shape.label}: ${shape.chord}`}
-              onClick={() => listener.applyShape(shape.frets)}
+          <div className={styles.controls}>
+            <Button
+              variant="primary"
+              onClick={() => (listener.running ? listener.stop() : listener.start())}
+              id="play-toggle"
             >
-              <strong>{shape.chord}</strong>
-              <small>{shape.label}</small>
-            </button>
-          ))}
-        </div>
-      </Slab>
+              {listener.running ? '■ Parar' : '▶ Tocar'}
+            </Button>
+            <label className={styles.field}>
+              <span>Patrón</span>
+              <select
+                id="pattern"
+                value={listener.patternId[listener.style]}
+                onChange={(event) => listener.choosePattern(event.target.value)}
+              >
+                {patterns.map((pattern) => (
+                  <option key={pattern.id} value={pattern.id}>
+                    {pattern.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className={styles.field}>
+              <span>Velocidad: {listener.tempo} ppm</span>
+              <input
+                type="range"
+                min={40}
+                max={160}
+                step={5}
+                value={listener.tempo}
+                onChange={(event) => listener.setTempo(Number(event.target.value))}
+              />
+            </label>
+            <div className={styles.field}>
+              <span>Capo</span>
+              <Stepper
+                label="capo"
+                value={
+                  <span data-testid="capo-value">
+                    {listener.capo ? `Traste ${listener.capo}` : 'Sin capo'}
+                  </span>
+                }
+                onDown={() => listener.setCapo(listener.capo - 1)}
+                onUp={() => listener.setCapo(listener.capo + 1)}
+              />
+            </div>
+            <div className={styles.pair}>
+              <label className={styles.check}>
+                <input
+                  id="loop"
+                  type="checkbox"
+                  checked={listener.loop}
+                  onChange={(event) => listener.setLoop(event.target.checked)}
+                />{' '}
+                Repetir
+              </label>
+              <Button
+                onClick={listener.clearFrets}
+                ariaLabel="Soltar trastes"
+                title="Soltar los trastes pisados"
+              >
+                Soltar
+              </Button>
+            </div>
+          </div>
+        </Slab>
 
-      <Heard
-        tuning={tuning}
-        onVideoOpen={listener.stop}
-        onCapo={(capo) => {
-          listener.setCapo(capo);
-          listenerTitle.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          setTimeout(listener.start, 0);
-        }}
-      />
-
-    </>
+        <Slab>
+          <SlabHead title="Qué suena solo" />
+          <p className={styles.hint}>Al aire o con un solo dedo. Tocá uno para escucharlo en el mástil.</p>
+          <div className={styles.shapes} data-testid="solo-shapes">
+            {shapes.map((shape) => (
+              <button
+                key={shape.frets.join()}
+                type="button"
+                aria-label={`${shape.label}: ${shape.chord}`}
+                onClick={() => listener.applyShape(shape.frets)}
+              >
+                <strong>{shape.chord}</strong>
+                <small>{shape.label}</small>
+              </button>
+            ))}
+          </div>
+        </Slab>
+      </div>
+    </div>
   );
 }
 

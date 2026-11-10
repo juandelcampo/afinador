@@ -170,7 +170,7 @@ export const TUNINGS: Tuning[] = [
     group: 'drop',
     notes: ['A1', 'E2', 'A2', 'D3', 'F#3', 'B3'],
     restring: true,
-    desc: 'Barítono con la 6.ª bajada un tono: un La grave que casi se siente más de lo que se oye.',
+    desc: 'Barítono con la 6.ª bajada un tono: un La grave que casi se siente más de lo que se escucha.',
   },
 
   // Abiertas mayores

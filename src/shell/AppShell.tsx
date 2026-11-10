@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, Outlet } from 'react-router';
 import { setVolume, type Channel } from '~/audio/engine';
 import { Fader } from '~/shared/Fader';
@@ -12,6 +12,7 @@ export default function AppShell() {
   const a4 = useSettings((s) => s.a4);
   const volumes = useSettings((s) => s.volumes);
   const set = useSettings((s) => s.set);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     document.documentElement.dataset.ready = 'true';
@@ -24,11 +25,21 @@ export default function AppShell() {
 
   return (
     <div className={styles.shell}>
-      <header className={styles.topBar}>
+      <header className={styles.topBar} data-open={settingsOpen}>
         <Link to="/" className={styles.brand}>
           Afinador
         </Link>
-        <div className={styles.settings}>
+        {/* Solo se ve en pantallas chicas: los ajustes se tocan una vez y no tienen por qué ocupar lugar. */}
+        <button
+          type="button"
+          className={styles.settingsToggle}
+          aria-expanded={settingsOpen}
+          aria-controls="ajustes"
+          onClick={() => setSettingsOpen((open) => !open)}
+        >
+          Ajustes · La {a4} <span aria-hidden="true">{settingsOpen ? '↑' : '↓'}</span>
+        </button>
+        <div className={styles.settings} id="ajustes">
           <Segmented
             label="Nombres de las notas"
             value={notation}

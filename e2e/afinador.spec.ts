@@ -120,12 +120,12 @@ test.describe('videos', () => {
     expect(requests).toEqual([]);
     await expect(page.locator('iframe')).toHaveCount(0);
 
-    await page.getByRole('button', { name: /Oír Which Will/ }).click();
+    await page.getByRole('button', { name: /Escuchar Which Will/ }).click();
     await expect(page.locator('iframe')).toHaveAttribute('src', /youtube-nocookie\.com\/embed\/AZsxbWHlXyY/);
-    await page.getByRole('button', { name: /Oír Hazey Jane II/ }).click();
+    await page.getByRole('button', { name: /Escuchar Hazey Jane II/ }).click();
     await expect(page.locator('iframe')).toHaveCount(1);
     await expect(page.locator('iframe')).toHaveAttribute('src', /lCaDp1gb6D4/);
-    await page.getByRole('button', { name: /Oír Hazey Jane II/ }).click();
+    await page.getByRole('button', { name: /Escuchar Hazey Jane II/ }).click();
     await expect(page.locator('iframe')).toHaveCount(0);
   });
 });
