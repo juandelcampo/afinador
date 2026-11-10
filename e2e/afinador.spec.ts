@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { countSounds, goto, plucks, watchErrors } from './fixtures/helpers';
+import { countSounds, goto, plucks, waitForApp, watchErrors } from './fixtures/helpers';
 
 test.describe('escuchador', () => {
   test.beforeEach(async ({ page }) => {
@@ -84,6 +84,35 @@ test.describe('escuchador', () => {
     await page.locator('[data-id="dropd"]').click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Drop D');
     await expect(page.getByTestId('capo-value')).toHaveText('Sin capo');
+  });
+
+  test('el patrón y el tempo elegidos quedan al cambiar de afinación y al recargar', async ({ page }) => {
+    const tempo = page.getByRole('slider', { name: /Velocidad/ });
+    await goto(page, '/afinador/dadgad');
+    await page.getByRole('button', { name: 'Rasgueado' }).click();
+    await page.locator('#pattern').selectOption('folk');
+    await tempo.fill('120');
+    await page.getByRole('button', { name: /^Drop/ }).click();
+    await page.locator('[data-id="dropd"]').click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Drop D');
+    await expect(page.getByRole('button', { name: 'Rasgueado' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#pattern')).toHaveValue('folk');
+    await expect(tempo).toHaveValue('120');
+    await page.reload();
+    await waitForApp(page);
+    await expect(page.locator('#pattern')).toHaveValue('folk');
+    await expect(tempo).toHaveValue('120');
+  });
+
+  test('los acordes suenan con el patrón elegido', async ({ page }) => {
+    await goto(page, '/afinador/dadgad');
+    await page.getByRole('button', { name: 'Rasgueado' }).click();
+    await page.locator('#pattern').selectOption('folk');
+    await page.getByTestId('chord-shapes').getByRole('button').first().click();
+    // Folk tiene seis rasguidos: con una sola bajada no se encendería la tira.
+    await expect(page.locator('[data-step][data-active]')).toHaveCount(1);
+    await expect.poll(() => plucks(page), { timeout: 6000 }).toBeGreaterThan(6 * 3);
+    await expect(page.locator('[data-step][data-active]')).toHaveCount(0, { timeout: 6000 });
   });
 
   test('el capo de un tema se aplica y empieza a tocar', async ({ page }) => {

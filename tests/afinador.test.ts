@@ -11,11 +11,13 @@ import {
   midiToNote,
   noteToMidi,
 } from '~/core/notes';
+import { sanitize } from '~/shared/settings';
 import { detectPitch, PitchTracker } from '~/core/pitch';
 import { pluck } from '~/core/pluck';
 import {
+  chordShapes,
+  MUTED,
   openChordName,
-  soloShapes,
   stringIntervals,
   stringOffsets,
   tensionWarning,
@@ -251,11 +253,48 @@ describe('catálogo de afinaciones', () => {
   });
 });
 
-describe('qué suena solo', () => {
-  it('nombra lo que suena con un solo dedo', () => {
-    const shapes = soloShapes(TUNINGS.find((tuning) => tuning.id === 'opend')!.notes);
+describe('acordes', () => {
+  const notesOf = (id: string) => TUNINGS.find((tuning) => tuning.id === id)!.notes;
+
+  it('en estándar encuentra las figuras de siempre', () => {
+    const shapes = chordShapes(STANDARD);
+    const fretsOf = (chord: string) => shapes.find((shape) => shape.chord === chord)?.frets;
+    const x = MUTED;
+    expect(fretsOf('Em')).toEqual([0, 2, 2, 0, 0, 0]);
+    expect(fretsOf('E')).toEqual([0, 2, 2, 1, 0, 0]);
+    expect(fretsOf('G')).toEqual([3, 2, 0, 0, 0, 3]);
+    expect(fretsOf('C')).toEqual([x, 3, 2, 0, 1, 0]);
+    expect(fretsOf('Am')).toEqual([x, 0, 2, 2, 1, 0]);
+    expect(fretsOf('D')).toEqual([x, x, 0, 2, 3, 2]);
+    expect(shapes.find((shape) => shape.chord === 'C')?.label).toBe('× 3 2 0 1 0');
+  });
+
+  it('solo propone figuras que una mano puede hacer', () => {
+    for (const tuning of TUNINGS)
+      for (const { frets, label } of chordShapes(tuning.notes)) {
+        const pressed = frets.filter((fret) => fret > 0);
+        if (!pressed.length) continue;
+        const low = Math.min(...pressed);
+        expect(Math.max(...pressed) - low, tuning.id).toBeLessThanOrEqual(3);
+        // Sin cejilla, un dedo por cuerda pisada; con cejilla, el índice cubre el traste más bajo.
+        const fingers = label.includes('cejilla')
+          ? 1 + pressed.filter((fret) => fret > low).length
+          : pressed.length;
+        expect(fingers, `${tuning.id} ${label}`).toBeLessThanOrEqual(4);
+        // Solo se apagan las graves, y quedan al menos cuatro cuerdas sonando.
+        const muted = frets.filter((fret) => fret === MUTED).length;
+        expect(muted, tuning.id).toBeLessThanOrEqual(2);
+        expect(
+          frets.slice(0, muted).every((fret) => fret === MUTED),
+          tuning.id,
+        ).toBe(true);
+      }
+  });
+
+  it('arranca al aire y no repite acordes', () => {
+    const shapes = chordShapes(notesOf('opend'));
     expect(shapes[0]).toMatchObject({ chord: 'D', label: 'Al aire' });
-    expect(shapes.some((shape) => shape.chord === 'E' && shape.label.includes('Cejilla'))).toBe(true);
+    expect(shapes.some((shape) => shape.chord === 'G')).toBe(true);
     expect(new Set(shapes.map((shape) => shape.chord)).size).toBe(shapes.length);
   });
 });
@@ -264,5 +303,20 @@ describe('afinaciones generales', () => {
   it('toda nota del catálogo se puede leer', () => {
     for (const tuning of TUNINGS)
       for (const note of tuning.notes) expect(noteToMidi(note)).toBeGreaterThan(0);
+  });
+});
+
+describe('preferencias guardadas', () => {
+  it('junta el volumen general y el del instrumento de antes sin cambiar cuánto suena', () => {
+    expect(sanitize({ volumes: { master: 0.5, instrumento: 0.8 } }).volume).toBeCloseTo(0.4);
+    expect(sanitize({ volume: 0.3, volumes: { master: 1, instrumento: 1 } }).volume).toBe(0.3);
+    expect(sanitize({ volumes: { master: 'mucho', instrumento: 0.8 } }).volume).toBeUndefined();
+  });
+
+  it('descarta un tempo fuera del rango y un estilo que no existe', () => {
+    const listen = sanitize({
+      listen: { style: 'tambor', patterns: { arp: 'travis', strum: 3 }, tempo: 400 },
+    } as never).listen;
+    expect(listen).toEqual({ style: 'arp', patterns: { arp: 'travis', strum: 'single' }, tempo: 84 });
   });
 });

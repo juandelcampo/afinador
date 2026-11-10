@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent, type RefObject } from 'react';
 import { NavLink, useParams, type MetaFunction } from 'react-router';
 import { noteLabel } from '~/core/notes';
-import { changeSummary, openChordName, soloShapes, stringIntervals, tensionWarning } from '~/core/tuning';
+import { changeSummary, openChordName, chordShapes, stringIntervals, tensionWarning } from '~/core/tuning';
 import { GROUPS, TUNINGS, type HeardItem, type Tuning } from '~/data/tunings';
 import { Fader } from '~/shared/Fader';
-import { useSettings } from '~/shared/settings';
+import { TEMPO_RANGE, useSettings } from '~/shared/settings';
 import { Button, PageTitle, Segmented, Slab, SlabHead, Stepper } from '~/shared/ui/ui';
 import styles from './afinador.module.css';
 import { Neck, type NeckHandle } from './Neck';
@@ -334,7 +334,7 @@ function TuningPage({
   const listenerTitle = useRef<HTMLDivElement>(null);
   const patterns = listener.style === 'arp' ? ARP_PATTERNS : STRUM_PATTERNS;
   const { playAscending } = listener;
-  const shapes = useMemo(() => soloShapes(tuning.notes), [tuning.notes]);
+  const shapes = useMemo(() => chordShapes(tuning.notes), [tuning.notes]);
 
   // Al elegir una afinación de la lista suena su arpegio ascendente, una sola vez.
   useEffect(() => {
@@ -370,7 +370,7 @@ function TuningPage({
           <div ref={listenerTitle}>
             <SlabHead number="02" title="Escuchar">
               <div className={styles.headTools}>
-                <Fader channel="instrumento" text="Volumen" />
+                <Fader />
                 <Segmented
                   label="Forma de tocar"
                   value={listener.style}
@@ -425,9 +425,9 @@ function TuningPage({
               <span>Velocidad: {listener.tempo} ppm</span>
               <input
                 type="range"
-                min={40}
-                max={160}
-                step={5}
+                min={TEMPO_RANGE.min}
+                max={TEMPO_RANGE.max}
+                step={TEMPO_RANGE.step}
                 value={listener.tempo}
                 onChange={(event) => listener.setTempo(Number(event.target.value))}
               />
@@ -467,9 +467,12 @@ function TuningPage({
         </Slab>
 
         <Slab>
-          <SlabHead number="03" title="Qué suena solo" />
-          <p className={styles.hint}>Al aire o con un solo dedo. Tocá uno para escucharlo en el mástil.</p>
-          <div className={styles.shapes} data-testid="solo-shapes">
+          <SlabHead number="03" title="Acordes" />
+          <p className={styles.hint}>
+            Figuras para la mano, cuerda por cuerda de la 6.ª a la 1.ª; × es cuerda apagada. Tocá una para
+            escucharla en el mástil, con el patrón elegido en Escuchar.
+          </p>
+          <div className={styles.shapes} data-testid="chord-shapes">
             {shapes.map((shape) => (
               <button
                 key={shape.frets.join()}
@@ -515,7 +518,7 @@ export default function AfinadorRoute() {
           setPlayTick((tick) => tick + 1);
         }}
       />
-      {/* La clave reinicia trastes, capo y lectura al cambiar de afinación. */}
+      {/* La clave reinicia trastes, capo y lectura al cambiar de afinación; el patrón queda. */}
       <div className={styles.content} key={tuning.id}>
         <TuningPage tuning={tuning} pendingPlayRef={pendingPlayRef} playTick={playTick} />
       </div>

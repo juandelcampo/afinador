@@ -1,19 +1,19 @@
 # Afinador
 
-Afinador de guitarra con afinaciones alternativas: 147 afinaciones, afinador por micrófono, escuchador interactivo sobre un mástil y lo que suena con un solo dedo.
+Afinador de guitarra con afinaciones alternativas: 147 afinaciones, afinador por micrófono, escuchador interactivo sobre un mástil y acordes que se pueden hacer con la mano en cada afinación.
 
 Salió de [Scordatura](../Afinador%20Drake), donde era una de las herramientas. Acá vive solo.
 
-| Parte          | Qué hace                                                                                                        |
-| -------------- | --------------------------------------------------------------------------------------------------------------- |
-| Lista          | Las 147 afinaciones en secciones que arrancan cerradas, con búsqueda por nombre, notas, artista o canción. |
-| Ficha          | Acorde al aire, intervalos entre cuerdas, cuántas cuerdas cambian y aviso si alguna queda muy tensa o floja.    |
-| Afinar         | Micrófono, cuerda por cuerda o automático, con aguja en cents. Tocar una cuerda la hace sonar.                  |
-| Escuchar       | Mástil interactivo: trastes, capo, rasgueo a mano, arpegios y rasgueos con patrón y tempo.                      |
-| Qué suena solo | Acordes y bordones al aire o con un dedo.                                                                       |
-| Se escuchó en  | Temas con esa afinación, capo para tocarlos y video de YouTube que se carga recién al abrirlo.                  |
+| Parte         | Qué hace                                                                                                     |
+| ------------- | ------------------------------------------------------------------------------------------------------------ |
+| Lista         | Las 147 afinaciones en secciones que arrancan cerradas, con búsqueda por nombre, notas, artista o canción.   |
+| Ficha         | Acorde al aire, intervalos entre cuerdas, cuántas cuerdas cambian y aviso si alguna queda muy tensa o floja. |
+| Afinar        | Micrófono, cuerda por cuerda o automático, con aguja en cents. Tocar una cuerda la hace sonar.               |
+| Escuchar      | Mástil interactivo: trastes, capo, rasgueo a mano, arpegios y rasgueos con patrón y tempo.                   |
+| Acordes       | Figuras de acordes comunes que se pueden hacer con la mano, con hasta cuatro dedos o cejilla.                |
+| Se escuchó en | Temas con esa afinación, capo para tocarlos y video de YouTube que se carga recién al abrirlo.               |
 
-La barra de arriba tiene los nombres de las notas (E A D o Mi La Re), la referencia del La y el volumen general.
+La barra de arriba tiene los nombres de las notas (E A D o Mi La Re) y la referencia del La. El volumen está en Escuchar, que es lo único que suena.
 
 ## Comandos
 

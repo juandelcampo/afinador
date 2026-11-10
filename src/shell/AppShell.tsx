@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, Outlet } from 'react-router';
-import { setVolume, type Channel } from '~/audio/engine';
-import { Fader } from '~/shared/Fader';
+import { setVolume } from '~/audio/engine';
 import { useSettings } from '~/shared/settings';
 import { Segmented, Stepper } from '~/shared/ui/ui';
 import styles from './shell.module.css';
@@ -10,7 +9,7 @@ import styles from './shell.module.css';
 export default function AppShell() {
   const notation = useSettings((s) => s.notation);
   const a4 = useSettings((s) => s.a4);
-  const volumes = useSettings((s) => s.volumes);
+  const volume = useSettings((s) => s.volume);
   const set = useSettings((s) => s.set);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -19,9 +18,7 @@ export default function AppShell() {
   }, []);
 
   // El audio no conoce las preferencias: se las pasa el marco de la app.
-  useEffect(() => {
-    (Object.keys(volumes) as Channel[]).forEach((channel) => setVolume(channel, volumes[channel]));
-  }, [volumes]);
+  useEffect(() => setVolume(volume), [volume]);
 
   return (
     <div className={styles.shell}>
@@ -55,7 +52,6 @@ export default function AppShell() {
             onDown={() => set({ a4: Math.max(415, a4 - 1) })}
             onUp={() => set({ a4: Math.min(466, a4 + 1) })}
           />
-          <Fader channel="master" />
         </div>
       </header>
       <main className={styles.main}>

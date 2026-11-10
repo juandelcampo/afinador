@@ -108,35 +108,162 @@ export function tensionWarning(tuning: Pick<Tuning, 'notes' | 'restring'>): stri
   return parts.length ? parts.join(' ') : null;
 }
 
-export interface SoloShape {
+export interface ChordShape {
+  /** Traste de cada cuerda, de la 6.ª a la 1.ª: 0 al aire, MUTED si no suena. */
   frets: number[];
   chord: string;
   label: string;
 }
 
-/** Lo que suena con un solo dedo: al aire, un traste en una cuerda, o una cejilla recta. */
-export function soloShapes(notes: string[], maxFret = 5, limit = 18): SoloShape[] {
-  const open = notes.map(noteToMidi);
-  const shapes: SoloShape[] = [{ frets: open.map(() => 0), chord: openChordName(notes), label: 'Al aire' }];
-  const seen = new Set([shapes[0]!.chord]);
-  const add = (frets: number[], label: string) => {
-    const sounding = open.map((midi, index) => midiToNote(midi + frets[index]!));
-    if (!openChord(sounding.map(noteToMidi))) return;
-    const chord = openChordName(sounding);
-    if (seen.has(chord)) return;
-    seen.add(chord);
-    shapes.push({ frets, chord, label });
-  };
-  for (let fret = 1; fret <= maxFret; fret++)
-    add(
-      open.map(() => fret),
-      `Cejilla en el traste ${fret}`,
-    );
-  for (let fret = 1; fret <= maxFret; fret++) {
-    open.forEach((_, stringIndex) => {
-      const frets = open.map((__, index) => (index === stringIndex ? fret : 0));
-      add(frets, `${open.length - stringIndex}.ª cuerda, traste ${fret}`);
-    });
+/** Cuerda apagada: la mano la toca apenas para que no suene. */
+export const MUTED = -1;
+
+/** Acordes que se proponen como figura; cuanto más bajo el peso, más común. */
+const COMMON: ReadonlyArray<readonly [string, number]> = [
+  ['', 0],
+  ['m', 0],
+  ['7', 1],
+  ['m7', 1],
+  ['5', 1.5],
+  ['sus2', 2],
+  ['sus4', 2],
+  ['maj7', 2],
+  ['6', 3],
+  ['m6', 3],
+  ['add9', 3],
+  ['7sus4', 3],
+];
+
+/** Para cada conjunto de notas (máscara de 12 bits) y raíz en el bajo, el acorde común que forman. */
+let commonTable: Map<number, { suffix: string; weight: number }> | null = null;
+function commonChord(mask: number, bass: number) {
+  if (!commonTable) {
+    commonTable = new Map();
+    for (const [suffix, weight] of COMMON) {
+      const steps = CHORDS.find(([name]) => name === suffix)![1];
+      for (let root = 0; root < 12; root++) {
+        const chordMask = steps.reduce((acc, step) => acc | (1 << ((root + step) % 12)), 0);
+        commonTable.set(chordMask * 12 + root, { suffix, weight });
+      }
+    }
   }
-  return shapes.slice(0, limit);
+  return commonTable.get(mask * 12 + bass);
+}
+
+/**
+ * Cuántos dedos pide una figura. Hasta cuatro cuerdas pisadas, un dedo cada una; si son
+ * más, el índice hace cejilla en el traste más bajo, sin cuerdas al aire debajo.
+ */
+function fingersFor(frets: number[]): { fingers: number; barre: number | null } {
+  const pressed = frets.filter((fret) => fret > 0);
+  if (pressed.length <= 4) return { fingers: pressed.length, barre: null };
+  const low = Math.min(...pressed);
+  const first = frets.indexOf(low);
+  if (frets.slice(first).some((fret) => fret === 0)) return { fingers: Infinity, barre: null };
+  return { fingers: 1 + pressed.filter((fret) => fret > low).length, barre: low };
+}
+
+/**
+ * Figuras que una mano puede hacer: hasta cuatro dedos (la cejilla cuenta como uno), a lo
+ * sumo cuatro trastes de abertura, y como mucho las dos cuerdas graves apagadas. De cada
+ * acorde común con la raíz en el bajo se queda con la figura más fácil.
+ */
+export function chordShapes(notes: string[], maxFret = 7, limit = 18): ChordShape[] {
+  const open = notes.map(noteToMidi);
+  const best = new Map<string, { frets: number[]; score: number; suffix: string; root: number }>();
+  const frets: number[] = [];
+
+  // Los acordes de la tonalidad de la afinación van primero: mayor, o menor natural si al aire suena menor.
+  const home = openChord(open);
+  const tonic = home ? open[home.root]! % 12 : Math.min(...open) % 12;
+  const scale = home && /^m(?!aj)/.test(home.suffix) ? [0, 2, 3, 5, 7, 8, 10] : [0, 2, 4, 5, 7, 9, 11];
+  // Para cada grado, si su tríada es mayor (true) o menor (false).
+  const degrees = new Map(
+    scale.map((step, degree) => {
+      const third = (scale[(degree + 2) % 7]! - step + 12) % 12;
+      return [(tonic + step) % 12, third === 4] as const;
+    }),
+  );
+  const keyPenalty = (root: number, suffix: string) => {
+    const major = degrees.get(root);
+    if (major === undefined) return 3;
+    if (/^(5|sus2|sus4|7sus4)$/.test(suffix)) return 0;
+    return /^m(?!aj)/.test(suffix) === !major ? 0 : 1.5;
+  };
+
+  const consider = () => {
+    let mask = 0;
+    let bass = Infinity;
+    let low = Infinity;
+    let high = -Infinity;
+    let muted = 0;
+    let pressed = 0;
+    for (let index = 0; index < frets.length; index++) {
+      const fret = frets[index]!;
+      if (fret === MUTED) {
+        muted++;
+        continue;
+      }
+      const midi = open[index]! + fret;
+      mask |= 1 << (midi % 12);
+      if (midi < bass) bass = midi;
+      if (fret > 0) {
+        pressed++;
+        if (fret < low) low = fret;
+        if (fret > high) high = fret;
+      }
+    }
+    const chord = commonChord(mask, bass % 12);
+    if (!chord) return;
+    const { fingers, barre } = pressed > 4 ? fingersFor(frets) : { fingers: pressed, barre: null };
+    if (fingers > 4) return;
+    const position = low === Infinity ? 0 : low;
+    const score =
+      chord.weight * 2 +
+      keyPenalty(bass % 12, chord.suffix) +
+      fingers +
+      muted * 0.6 +
+      (barre === null ? 0 : 1.5) +
+      Math.max(0, position - 1) * 0.6 +
+      (high > low ? (high - low) * 0.5 : 0);
+    const key = chord.suffix + '|' + (bass % 12);
+    const current = best.get(key);
+    if (!current || score < current.score) best.set(key, { frets: [...frets], score, ...chord, root: bass });
+  };
+
+  // Cuerda por cuerda, de la 6.ª a la 1.ª, cortando apenas la abertura pasa de cuatro trastes.
+  const walk = (index: number, low: number, high: number) => {
+    if (index === open.length) return consider();
+    // Solo se apagan las graves, y de corrido: la 6.ª, o la 6.ª y la 5.ª.
+    const canMute = index < 2 && (index === 0 || frets[index - 1] === MUTED);
+    for (let fret = canMute ? MUTED : 0; fret <= maxFret; fret++) {
+      const nextLow = fret > 0 ? Math.min(low, fret) : low;
+      const nextHigh = fret > 0 ? Math.max(high, fret) : high;
+      if (nextHigh - nextLow > 3) continue;
+      frets[index] = fret;
+      walk(index + 1, nextLow, nextHigh);
+    }
+  };
+  walk(0, Infinity, -Infinity);
+
+  const openName = openChordName(notes);
+  const shapes: ChordShape[] = [{ frets: open.map(() => 0), chord: openName, label: 'Al aire' }];
+  [...best.values()]
+    .map((shape) => ({ ...shape, chord: noteLabel(midiToNote(shape.root)) + shape.suffix }))
+    .filter((shape) => shape.chord !== openName)
+    .sort((a, b) => a.score - b.score)
+    .slice(0, limit - 1)
+    .forEach((shape) =>
+      shapes.push({ frets: shape.frets, chord: shape.chord, label: shapeLabel(shape.frets) }),
+    );
+  return shapes;
+}
+
+/** La figura en cifrado de trastes, de la 6.ª a la 1.ª, con la cejilla si hace falta. */
+function shapeLabel(frets: number[]): string {
+  const { barre } = fingersFor(frets);
+  const tab = frets
+    .map((fret) => (fret === MUTED ? '×' : String(fret)))
+    .join(frets.some((fret) => fret > 9) ? '-' : ' ');
+  return barre === null ? tab : `${tab} · cejilla ${barre}`;
 }

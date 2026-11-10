@@ -3,8 +3,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { getAudio } from '~/audio/engine';
 import { pluckString } from '~/audio/instrument';
 import { noteToMidi } from '~/core/notes';
+import { TEMPO_RANGE, useSettings, type PlayStyle } from '~/shared/settings';
 
-export type PlayStyle = 'arp' | 'strum';
+export type { PlayStyle };
 
 interface ArpPattern {
   id: string;
@@ -40,6 +41,12 @@ export const STRUM_PATTERNS: StrumPattern[] = [
   { id: 'waltz', name: 'Vals', spread: 0.024, steps: ['down', null, 'down', 'up', 'down', 'up'] },
 ];
 
+/** Lo guardado puede nombrar un patrón que ya no existe: entonces vale el primero. */
+function knownPattern(style: PlayStyle, id: string) {
+  const list = style === 'arp' ? ARP_PATTERNS : STRUM_PATTERNS;
+  return list.some((item) => item.id === id) ? id : list[0]!.id;
+}
+
 const STRINGS = 6;
 const LOOKAHEAD = 0.12;
 const SCHEDULE_MS = 30;
@@ -48,15 +55,20 @@ export function useListener(
   notes: string[],
   a4: number,
   onSound: (stringIndex: number, velocity: number) => void,
-  /** El paso del patrón que está sonando, o null al parar. Solo para el patrón elegido, no para los
-   *  arpegios sueltos (al elegir afinación o una forma). */
+  /** El paso del patrón que está sonando, o null al parar. Solo para el patrón elegido, no para el
+   *  arpegio suelto al elegir afinación. */
   onStep?: (step: number | null) => void,
 ) {
   const [capo, setCapoState] = useState(0);
   const [frets, setFrets] = useState<number[]>(() => new Array(STRINGS).fill(0));
-  const [style, setStyle] = useState<PlayStyle>('arp');
-  const [patternId, setPatternId] = useState<Record<PlayStyle, string>>({ arp: 'up', strum: 'single' });
-  const [tempo, setTempo] = useState(84);
+  // Estilo y patrón quedan en las preferencias: sobreviven al cambio de afinación y a recargar.
+  const listen = useSettings((s) => s.listen);
+  const setSettings = useSettings((s) => s.set);
+  const { style, tempo } = listen;
+  const patternId: Record<PlayStyle, string> = {
+    arp: knownPattern('arp', listen.patterns.arp),
+    strum: knownPattern('strum', listen.patterns.strum),
+  };
   const [loop, setLoop] = useState(false);
   const [running, setRunning] = useState(false);
 
@@ -71,14 +83,19 @@ export function useListener(
     end: ReturnType<typeof setTimeout> | null;
     /** Los avisos de paso ya programados: al parar se cancelan, así no se enciende uno tarde. */
     steps: ReturnType<typeof setTimeout>[];
+    /** Corre lo que arrancó Tocar, no una vuelta suelta. */
+    playing: boolean;
   }>({
     interval: null,
     end: null,
     steps: [],
+    playing: false,
   });
 
   const playString = useCallback((stringIndex: number, when?: number, velocity = 1) => {
     const state = latest.current;
+    // Una cuerda apagada por la figura de un acorde no suena en rasgueos ni arpegios.
+    if (state.frets[stringIndex]! < 0) return;
     const midi = noteToMidi(state.notes[stringIndex]!) + state.capo + state.frets[stringIndex]!;
     const start = pluckString(stringIndex, midi, { a4: state.a4, when, velocity });
     const delay = Math.max(0, (start - getAudio().ctx.currentTime) * 1000);
@@ -89,17 +106,21 @@ export function useListener(
     if (timers.current.interval !== null) clearInterval(timers.current.interval);
     if (timers.current.end !== null) clearTimeout(timers.current.end);
     timers.current.steps.forEach(clearTimeout);
-    timers.current = { interval: null, end: null, steps: [] };
+    timers.current = { interval: null, end: null, steps: [], playing: false };
     latest.current.onStep?.(null);
     setRunning(false);
   }, []);
 
+  /** Sin `pattern`, toca el patrón elegido y enciende sus pasos en la tira. Con `once`, una vuelta
+   *  aunque esté marcado Repetir. */
   const start = useCallback(
-    (once?: { style: PlayStyle; id: string }) => {
+    (options: { pattern?: { style: PlayStyle; id: string }; once?: boolean } = {}) => {
       stop();
       const { ctx } = getAudio();
-      const playStyle = once?.style ?? latest.current.style;
-      const id = once?.id ?? latest.current.patternId[playStyle];
+      const { pattern } = options;
+      const once = options.once || pattern !== undefined;
+      const playStyle = pattern?.style ?? latest.current.style;
+      const id = pattern?.id ?? latest.current.patternId[playStyle];
       const arp = ARP_PATTERNS.find((item) => item.id === id);
       const strum = STRUM_PATTERNS.find((item) => item.id === id);
       const length = playStyle === 'arp' ? (arp?.steps.length ?? 0) : (strum?.steps.length ?? 0);
@@ -138,7 +159,7 @@ export function useListener(
             step = 0;
           }
           playStep(step, nextTime);
-          if (!once) {
+          if (!pattern) {
             const current = step;
             const delay = Math.max(0, (nextTime - ctx.currentTime) * 1000);
             timers.current.steps = [
@@ -152,6 +173,7 @@ export function useListener(
       };
 
       timers.current.interval = setInterval(schedule, SCHEDULE_MS);
+      timers.current.playing = !once;
       setRunning(true);
       schedule();
     },
@@ -162,7 +184,7 @@ export function useListener(
 
   // Cambiar el patrón con la música en marcha lo aplica enseguida.
   const restartIfRunning = useCallback(() => {
-    if (timers.current.interval !== null) setTimeout(start, 0);
+    if (timers.current.interval !== null) setTimeout(() => start(), 0);
   }, [start]);
 
   return {
@@ -175,16 +197,20 @@ export function useListener(
     running,
     playString,
     start: useCallback(() => start(), [start]),
-    playAscending: useCallback(() => start({ style: 'arp', id: 'up' }), [start]),
+    playAscending: useCallback(() => start({ pattern: { style: 'arp', id: 'up' } }), [start]),
     stop,
-    setTempo,
+    setTempo: (value: number) =>
+      setSettings({
+        listen: { ...listen, tempo: Math.max(TEMPO_RANGE.min, Math.min(TEMPO_RANGE.max, value)) },
+      }),
     setLoop,
     setCapo: (value: number) => setCapoState(Math.max(0, Math.min(12, value))),
     clearFrets: () => setFrets(new Array(STRINGS).fill(0)),
     applyShape: (next: number[]) => {
       latest.current.frets = next;
       setFrets(next);
-      start({ style: 'strum', id: 'single' });
+      // Si ya está sonando, sigue con la nueva figura; si no, una vuelta del patrón elegido.
+      if (!timers.current.playing || timers.current.interval === null) start({ once: true });
     },
     toggleFret: (stringIndex: number, fret: number) => {
       const next = frets.map((value, index) => (index === stringIndex ? (value === fret ? 0 : fret) : value));
@@ -194,13 +220,13 @@ export function useListener(
     },
     chooseStyle: (value: PlayStyle) => {
       latest.current.style = value;
-      setStyle(value);
+      setSettings({ listen: { ...listen, style: value } });
       restartIfRunning();
     },
     choosePattern: (value: string) => {
       const next = { ...patternId, [style]: value };
       latest.current.patternId = next;
-      setPatternId(next);
+      setSettings({ listen: { ...listen, patterns: next } });
       restartIfRunning();
     },
   };

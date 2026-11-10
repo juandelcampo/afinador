@@ -97,6 +97,17 @@ export function Neck({ ref, notes, capo, frets, notation, onPluck, onToggleFret 
       const amplitude = still ? 0 : amplitudes[stringIndex]!;
 
       context.lineWidth = 0.9 + (STRINGS - 1 - stringIndex) * 0.32;
+      // La cuerda apagada se ve tenue y no vibra.
+      if (fret < 0) {
+        context.globalAlpha = 0.2;
+        context.strokeStyle = stringColor;
+        context.beginPath();
+        context.moveTo(startX, y);
+        context.lineTo(box.width, y);
+        context.stroke();
+        context.globalAlpha = 1;
+        continue;
+      }
       context.globalAlpha = 0.45;
       context.strokeStyle = stringColor;
       context.beginPath();
@@ -182,9 +193,13 @@ export function Neck({ ref, notes, capo, frets, notation, onPluck, onToggleFret 
         {Array.from({ length: STRINGS }, (_, row) => {
           const stringIndex = STRINGS - 1 - row;
           const fret = frets[stringIndex]!;
-          const sounding = midiToNote(noteToMidi(notes[stringIndex]!) + capo + fret);
-          const label =
-            fret || capo ? noteLabel(sounding, notation) : noteLabel(notes[stringIndex]!, notation);
+          const muted = fret < 0;
+          const sounding = midiToNote(noteToMidi(notes[stringIndex]!) + capo + Math.max(0, fret));
+          const label = muted
+            ? '×'
+            : fret || capo
+              ? noteLabel(sounding, notation)
+              : noteLabel(notes[stringIndex]!, notation);
           return [
             <button
               key={`label-${row}`}
@@ -192,8 +207,13 @@ export function Neck({ ref, notes, capo, frets, notation, onPluck, onToggleFret 
               className={styles.neckLabel}
               style={{ gridRow: row + 1 }}
               data-label={stringIndex}
-              aria-label={`Tocar cuerda ${STRINGS - stringIndex}, suena ${label}`}
-              onClick={() => onPluck(stringIndex)}
+              aria-label={
+                muted
+                  ? `Cuerda ${STRINGS - stringIndex} apagada: tocala para que vuelva a sonar al aire`
+                  : `Tocar cuerda ${STRINGS - stringIndex}, suena ${label}`
+              }
+              // Tocar una cuerda apagada la vuelve al aire (toggleFret con traste 0) y la hace sonar.
+              onClick={() => (muted ? onToggleFret(stringIndex, 0) : onPluck(stringIndex))}
             >
               {label}
             </button>,
