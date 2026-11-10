@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent, type RefObject } from 'react';
-import { NavLink, useParams, type MetaFunction } from 'react-router';
+import { NavLink, useNavigate, useParams, type MetaFunction } from 'react-router';
 import { midiToNote, noteLabel, noteToMidi } from '~/core/notes';
 import { changeSummary, openChordName, chordShapes, stringIntervals, tensionWarning } from '~/core/tuning';
-import { GROUPS, TUNINGS, type HeardItem, type Tuning } from '~/data/tunings';
+import { normalize, searchTunings } from '~/core/search';
+import { GROUPS, TUNINGS, type Tuning } from '~/data/tunings';
 import { Fader } from '~/shared/Fader';
 import { TEMPO_RANGE, useFavorites, useSettings } from '~/shared/settings';
 import { Button, PageTitle, Segmented, Slab, SlabHead, Stepper } from '~/shared/ui/ui';
@@ -38,19 +39,6 @@ export const meta: MetaFunction = ({ params }) => {
   ];
 };
 
-const normalize = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
-
-function matches(tuning: Tuning, query: string): { match: boolean; item?: HeardItem } {
-  if (!query) return { match: true };
-  const texts = [tuning.name, tuning.notes.map((note) => note.replace(/\d/, '')).join('')];
-  if (texts.some((text) => normalize(text).includes(query))) return { match: true };
-  const item = (tuning.heard ?? []).find((entry) =>
-    normalize(`${entry.artist} ${entry.song ?? ''} ${entry.who ?? ''}`).includes(query),
-  );
-  if (item) return { match: true, item };
-  return { match: normalize(GROUPS.find((group) => group.id === tuning.group)?.name ?? '').includes(query) };
-}
-
 const FAVORITES_ID = 'favoritas';
 
 function TuningList({ currentId, onSelect }: { currentId: string; onSelect: (id: string) => void }) {
@@ -58,13 +46,14 @@ function TuningList({ currentId, onSelect }: { currentId: string; onSelect: (id:
   const [search, setSearch] = useState('');
   const notation = useSettings((s) => s.notation);
   const query = normalize(search.trim());
+  const matcher = useMemo(() => searchTunings(query), [query]);
 
   const describe = (notes: string[]) =>
     notes.map((note) => noteLabel(note, notation)).join(notation === 'solfege' ? ' ' : '');
   const favorites = useFavorites();
   const toggleFavorite = useSettings((s) => s.toggleFavorite);
   const withInfo = (tunings: Tuning[]) =>
-    tunings.map((tuning) => ({ tuning, info: matches(tuning, query) })).filter(({ info }) => info.match);
+    tunings.map((tuning) => ({ tuning, info: matcher(tuning) })).filter(({ info }) => info.match);
   const favoriteTunings = favorites.flatMap((id) => TUNINGS.filter((tuning) => tuning.id === id));
   const sections = [
     { id: FAVORITES_ID, name: 'Favoritas', items: withInfo(favoriteTunings) },
@@ -74,6 +63,10 @@ function TuningList({ currentId, onSelect }: { currentId: string; onSelect: (id:
     })),
   ].filter((section) => section.items.length > 0);
   const empty = sections.length === 0;
+  // Las favoritas se repiten en su sección de siempre: se cuentan una vez.
+  const resultCount = new Set(sections.flatMap((section) => section.items.map(({ tuning }) => tuning.id)))
+    .size;
+  const navigate = useNavigate();
   // Las secciones arrancan cerradas, menos Favoritas. Mientras se busca se abren todas las que tienen
   // resultados.
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set([FAVORITES_ID]));
@@ -109,8 +102,26 @@ function TuningList({ currentId, onSelect }: { currentId: string; onSelect: (id:
             placeholder="BUSCAR"
             autoComplete="off"
             onChange={(event) => setSearch(event.target.value)}
+            onKeyDown={(event) => {
+              // Enter abre el primer resultado; Escape borra la búsqueda.
+              if (event.key === 'Escape' && search) {
+                event.preventDefault();
+                setSearch('');
+              }
+              const first = sections[0]?.items[0]?.tuning;
+              if (event.key === 'Enter' && query && first) {
+                event.preventDefault();
+                setOpen(false);
+                navigate(`/afinador/${first.id}`);
+                onSelect(first.id);
+              }
+            }}
           />
         </label>
+        {/* Siempre en el HTML, para que el lector de pantalla anuncie cuando cambia. */}
+        <p className={styles.searchCount} aria-live="polite" data-testid="search-count">
+          {query && !empty && (resultCount === 1 ? '1 afinación' : `${resultCount} afinaciones`)}
+        </p>
         <nav className={styles.catalogList} aria-label="Afinaciones">
           {sections.map((section) => {
             const isOpen = query !== '' || expanded.has(section.id);

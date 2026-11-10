@@ -163,8 +163,16 @@ test.describe('afinación', () => {
     await page.getByPlaceholder('BUSCAR').fill('kool thing');
     await expect(page.locator('[data-id]')).toHaveCount(1);
     await expect(page.locator('[data-id="fsharp"]')).toBeVisible();
+    await expect(page.getByTestId('search-count')).toHaveText('1 afinación');
     await page.getByPlaceholder('BUSCAR').fill('zzzz');
     await expect(page.getByText('No hay afinaciones con esa búsqueda.')).toBeVisible();
+    // Escape borra; con notas en solfeo y Enter se abre el primer resultado.
+    await page.getByPlaceholder('BUSCAR').press('Escape');
+    await expect(page.getByPlaceholder('BUSCAR')).toHaveValue('');
+    await page.getByPlaceholder('BUSCAR').fill('re la re sol la re');
+    await page.getByPlaceholder('BUSCAR').press('Enter');
+    await expect(page).toHaveURL(/\/afinador\/dadgad$/);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('DADGAD');
   });
 
   test('las secciones de la lista arrancan cerradas y se abren al tocarlas', async ({ page }) => {
