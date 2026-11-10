@@ -1,0 +1,39 @@
+/* Una barra arriba y la página debajo. En pantallas chicas la barra se acomoda en dos filas. */
+.shell {
+  min-height: 100dvh;
+}
+
+.topBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  min-height: 52px;
+  padding: max(6px, env(safe-area-inset-top)) var(--gutter) 6px;
+  border-bottom: var(--rule);
+  background: var(--paper);
+}
+.brand {
+  font: 900 20px/1 var(--heavy);
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+.settings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+.main {
+  container: main / inline-size;
+  min-width: 0;
+}
+
+@media print {
+  .topBar {
+    display: none;
+  }
+}

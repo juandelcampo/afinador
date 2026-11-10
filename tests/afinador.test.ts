@@ -1,0 +1,314 @@
+// Lo que el afinador necesita que ande: notas, detección de altura, síntesis, el catálogo y el sorteo.
+// Sale de los tests de Scordatura (core, data y tools), sin lo de las otras herramientas.
+import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
+import {
+  centsBetween,
+  centsToTarget,
+  intervalName,
+  isNote,
+  midiToHz,
+  midiToNote,
+  noteToMidi,
+} from '~/core/notes';
+import { detectPitch, PitchTracker } from '~/core/pitch';
+import { pluck } from '~/core/pluck';
+import { createRng } from '~/core/rng';
+import { randomSafeTuning, rollTuning, SAFE_TUNING_RANGE, TUNING_POOL, type Risk } from '~/core/sorteo';
+import {
+  openChordName,
+  shiftString,
+  soloShapes,
+  stringIntervals,
+  stringOffsets,
+  tensionWarning,
+} from '~/core/tuning';
+import { GROUPS, SOURCES, STANDARD, TUNINGS } from '~/data/tunings';
+
+const SR = 48000;
+const WINDOW = 4096;
+
+describe('notas', () => {
+  it('convierte notas a MIDI y a frecuencia', () => {
+    expect(noteToMidi('A4')).toBe(69);
+    expect(noteToMidi('E2')).toBe(40);
+    expect(noteToMidi('F#2')).toBe(noteToMidi('Gb2'));
+    expect(midiToNote(40)).toBe('E2');
+    expect(midiToHz(40)).toBeCloseTo(82.407, 2);
+    expect(midiToHz(69, 432)).toBeCloseTo(432, 9);
+  });
+
+  it('pliega solo los errores de octava exacta', () => {
+    expect(Math.abs(centsToTarget(220, 110))).toBeLessThan(0.01);
+    expect(Math.abs(centsToTarget(110, 220))).toBeLessThan(0.01);
+    expect(centsToTarget(110 * Math.pow(2, 7 / 12), 110)).toBeGreaterThan(600);
+    expect(centsToTarget(110 * Math.pow(2, -5 / 12), 110)).toBeLessThan(-400);
+  });
+
+  it('nombra los intervalos entre cuerdas', () => {
+    expect(intervalName(40, 45)).toBe('4J');
+    expect(intervalName(43, 43)).toBe('=');
+    expect(intervalName(55, 52)).toBe('↓3m');
+    expect(intervalName(40, 52)).toBe('8J');
+  });
+});
+
+describe('detección de altura', () => {
+  const tone = (fn: (phase: number) => number, freq: number) =>
+    new Float32Array(WINDOW).map((_, i) => fn((2 * Math.PI * freq * i) / SR));
+
+  it('detecta senoidales desde el Si grave hasta el agudo con precisión menor a 1 cent', () => {
+    for (const note of ['B1', 'C2', 'E2', 'A2', 'D3', 'G3', 'E4', 'G4', 'B4']) {
+      const freq = midiToHz(noteToMidi(note));
+      const result = detectPitch(
+        tone((phase) => 0.5 * Math.sin(phase), freq),
+        SR,
+      );
+      expect(result, note).not.toBeNull();
+      expect(Math.abs(centsBetween(result!.freq, freq)), note).toBeLessThan(1);
+    }
+  });
+
+  it('no se confunde de octava cuando el segundo armónico domina', () => {
+    for (const note of ['B1', 'D2', 'E2', 'A2']) {
+      const freq = midiToHz(noteToMidi(note));
+      const signal = tone((p) => 0.2 * Math.sin(p) + 0.6 * Math.sin(2 * p) + 0.2 * Math.sin(3 * p), freq);
+      const result = detectPitch(signal, SR);
+      expect(result, note).not.toBeNull();
+      expect(Math.abs(centsBetween(result!.freq, freq)), note).toBeLessThan(5);
+    }
+  });
+
+  it('ignora el silencio y el ruido', () => {
+    expect(detectPitch(new Float32Array(WINDOW), SR)).toBeNull();
+    let state = 7;
+    const noise = new Float32Array(WINDOW).map(() => {
+      state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+      return state / 2147483648 - 1;
+    });
+    expect(detectPitch(noise, SR)).toBeNull();
+  });
+
+  it('con ruido de fondo no se corre ni salta de octava', () => {
+    let state = 11;
+    const noise = () => {
+      state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+      return state / 2147483648 - 1;
+    };
+    for (const note of ['E2', 'A2', 'G3', 'E4']) {
+      const freq = midiToHz(noteToMidi(note));
+      for (let phase = 0; phase < 6; phase++) {
+        const signal = tone(
+          (p) => 0.03 * (0.4 * Math.sin(p + phase) + 0.6 * Math.sin(2 * p + 2 * phase)) + 0.01 * noise(),
+          freq,
+        );
+        const result = detectPitch(signal, SR, { fallback: 0.3 });
+        expect(result, note).not.toBeNull();
+        expect(Math.abs(centsBetween(result!.freq, freq)), note).toBeLessThan(3);
+      }
+    }
+  });
+
+  it('el nivel de continua no cambia la lectura', () => {
+    const freq = midiToHz(noteToMidi('A2'));
+    const result = detectPitch(
+      tone((p) => 0.2 + 0.3 * Math.sin(p), freq),
+      SR,
+    );
+    expect(Math.abs(centsBetween(result!.freq, freq))).toBeLessThan(1);
+  });
+
+  it('descarta las lecturas sueltas con la mediana', () => {
+    const tracker = new PitchTracker(5);
+    [110, 110, 220, 110, 110].forEach((value) => tracker.push(value));
+    expect(tracker.push(110)).toBe(110);
+  });
+});
+
+describe('síntesis', () => {
+  it('los tonos de todas las afinaciones suenan afinados, también con capo y trastes', () => {
+    const notes = new Set(TUNINGS.flatMap((tuning) => tuning.notes));
+    for (const offset of [0, 7, 12]) {
+      for (const note of notes) {
+        const freq = midiToHz(noteToMidi(note) + offset);
+        const signal = pluck(freq, SR, 1);
+        const start = Math.floor(0.25 * SR);
+        const result = detectPitch(signal.subarray(start, start + WINDOW), SR);
+        expect(result, `${note}+${offset}`).not.toBeNull();
+        expect(Math.abs(centsBetween(result!.freq, freq)), `${note}+${offset}`).toBeLessThan(2);
+      }
+    }
+  });
+
+  it('funciona con otras frecuencias de muestreo', () => {
+    for (const sampleRate of [44100, 96000]) {
+      const freq = midiToHz(noteToMidi('B1'));
+      const signal = pluck(freq, sampleRate, 1);
+      const start = Math.floor(0.25 * sampleRate);
+      const result = detectPitch(signal.subarray(start, start + 8192), sampleRate);
+      expect(result).not.toBeNull();
+      expect(Math.abs(centsBetween(result!.freq, freq))).toBeLessThan(2);
+    }
+  });
+});
+
+describe('afinaciones', () => {
+  const byId = (id: string) => TUNINGS.find((tuning) => tuning.id === id)!.notes;
+
+  it('nombra el acorde que suena al aire', () => {
+    const expected: Record<string, string> = {
+      openg: 'G/D',
+      opend: 'D',
+      opene: 'E',
+      opena: 'A/E',
+      openc: 'C',
+      openf: 'F/C',
+      c6: 'C6',
+      dminor: 'Dm',
+      gminor: 'Gm/D',
+      eminor: 'Em',
+      cminor: 'Cm',
+      aminor: 'Am/E',
+      dadgad: 'Dsus4',
+      dadead: 'Dsus2',
+      cgcfcf: 'Csus4',
+      cgcfce: 'Cadd11',
+      cmaj9: 'Cmaj9',
+      cmaj7: 'Cmaj7',
+      em7: 'Em7',
+      gmaj7: 'Gmaj7/D',
+      dmaj7: 'Dmaj7',
+      g6: 'G6/D',
+      egdged: 'Em7(no5)',
+      ostrich: 'Solo D',
+      dronee: 'E5',
+      estandar: 'Em11',
+      minorthirds: 'Cdim7',
+      tritones: 'Sin nombre: un cúmulo',
+    };
+    for (const [id, chord] of Object.entries(expected)) expect(openChordName(byId(id)), id).toBe(chord);
+    expect(openChordName(byId('opend'), 'solfege')).toBe('Re');
+  });
+
+  it('calcula intervalos y desvíos', () => {
+    expect(stringIntervals(byId('dadgad'))).toEqual(['5J', '4J', '4J', '2M', '4J']);
+    expect(stringOffsets(byId('dropd'))).toEqual([-2, 0, 0, 0, 0, 0]);
+  });
+
+  it('avisa cuando una cuerda queda muy tensa o muy floja', () => {
+    expect(tensionWarning({ notes: STANDARD })).toBeNull();
+    expect(tensionWarning({ notes: byId('dadgdfs') })).toContain('2.ª (+3)');
+    expect(tensionWarning({ notes: byId('ggddgg') })).toContain('1.ª (−9)');
+  });
+
+  it('DADGDF# equivale a CGCFCE con capo en el traste 2', () => {
+    expect(byId('dadgdfs').map(noteToMidi)).toEqual(byId('cgcfce').map((note) => noteToMidi(note) + 2));
+    expect(byId('dadgdg').map(noteToMidi)).toEqual(byId('cgcfcf').map((note) => noteToMidi(note) + 2));
+  });
+
+  it('no deja mover una cuerda más allá del rango', () => {
+    const atLimit = [...STANDARD];
+    atLimit[0] = midiToNote(noteToMidi('E2') + 12);
+    expect(shiftString(atLimit, 0, 1)).toEqual(atLimit);
+    expect(shiftString(STANDARD, 0, 1)[0]).toBe('F2');
+  });
+
+  it('las afinaciones generadas respetan el límite y cambian algo', () => {
+    for (let seed = 0; seed < 200; seed++) {
+      const notes = randomSafeTuning(createRng(seed));
+      const offsets = stringOffsets(notes);
+      expect(offsets.every((offset) => Math.abs(offset) <= SAFE_TUNING_RANGE)).toBe(true);
+      expect(offsets.filter((offset) => offset !== 0).length).toBeGreaterThanOrEqual(3);
+    }
+  });
+});
+
+const noteSchema = z.string().refine(isNote, 'nota inválida');
+const heardSchema = z.strictObject({
+  artist: z.string().min(1),
+  song: z.string().min(1).optional(),
+  video: z
+    .string()
+    .regex(/^[\w-]{11}$/)
+    .optional(),
+  capo: z.number().int().min(1).max(12).optional(),
+  conf: z.enum(['fan', 'duda']).optional(),
+  who: z.string().min(1).optional(),
+});
+const tuningSchema = z.strictObject({
+  id: z.string().regex(/^[a-z0-9]+$/),
+  name: z.string().min(1),
+  group: z.string(),
+  notes: z.array(noteSchema).length(6),
+  desc: z.string().min(1),
+  octaves: z.literal('est').optional(),
+  restring: z.boolean().optional(),
+  heard: z.array(heardSchema).optional(),
+});
+
+describe('catálogo de afinaciones', () => {
+  it('cumple el esquema', () => {
+    for (const tuning of TUNINGS) expect(tuningSchema.safeParse(tuning).error, tuning.id).toBeUndefined();
+  });
+
+  it('tiene ids únicos y grupos conocidos', () => {
+    const groups = new Set(GROUPS.map((group) => group.id));
+    expect(new Set(TUNINGS.map((tuning) => tuning.id)).size).toBe(TUNINGS.length);
+    for (const tuning of TUNINGS) expect(groups.has(tuning.group), tuning.id).toBe(true);
+  });
+
+  it('no repite afinaciones', () => {
+    const keys = TUNINGS.map((tuning) => tuning.notes.map(noteToMidi).join());
+    expect(new Set(keys).size).toBe(TUNINGS.length);
+  });
+
+  it('los nombres en letras coinciden con las notas', () => {
+    for (const tuning of TUNINGS) {
+      if (!/^[A-G#b]+$/.test(tuning.name)) continue;
+      expect(tuning.notes.map((note) => note.replace(/\d/, '')).join(''), tuning.id).toBe(tuning.name);
+    }
+  });
+
+  it('las fuentes son enlaces https', () => {
+    for (const source of SOURCES) expect(source.url).toMatch(/^https:\/\//);
+  });
+});
+
+describe('qué se sortea', () => {
+  it('solo nombra afinaciones que existen', () => {
+    const ids = new Set(TUNINGS.map((tuning) => tuning.id));
+    for (const list of Object.values(TUNING_POOL)) {
+      for (const id of list) expect(ids.has(id), id).toBe(true);
+    }
+  });
+});
+
+describe('sorteo', () => {
+  it('siempre da una afinación válida con su regla y su link', () => {
+    for (const risk of [0, 1, 2] as Risk[]) {
+      for (let seed = 1; seed <= 60; seed++) {
+        const rolled = rollTuning({ risk, rng: createRng(seed) });
+        expect(rolled.value.notes).toHaveLength(6);
+        expect(rolled.value.notes.every(isNote)).toBe(true);
+        expect(rolled.rule.length).toBeGreaterThan(0);
+        expect(rolled.href).toMatch(/^\/afinador\//);
+      }
+    }
+  });
+});
+
+describe('qué suena solo', () => {
+  it('nombra lo que suena con un solo dedo', () => {
+    const shapes = soloShapes(TUNINGS.find((tuning) => tuning.id === 'opend')!.notes);
+    expect(shapes[0]).toMatchObject({ chord: 'D', label: 'Al aire' });
+    expect(shapes.some((shape) => shape.chord === 'E' && shape.label.includes('Cejilla'))).toBe(true);
+    expect(new Set(shapes.map((shape) => shape.chord)).size).toBe(shapes.length);
+  });
+});
+
+describe('afinaciones generales', () => {
+  it('toda nota del catálogo se puede leer', () => {
+    for (const tuning of TUNINGS)
+      for (const note of tuning.notes) expect(noteToMidi(note)).toBeGreaterThan(0);
+  });
+});
