@@ -48,6 +48,9 @@ export function useListener(
   notes: string[],
   a4: number,
   onSound: (stringIndex: number, velocity: number) => void,
+  /** El paso del patrón que está sonando, o null al parar. Solo para el patrón elegido, no para los
+   *  arpegios sueltos (al elegir afinación o una forma). */
+  onStep?: (step: number | null) => void,
 ) {
   const [capo, setCapoState] = useState(0);
   const [frets, setFrets] = useState<number[]>(() => new Array(STRINGS).fill(0));
@@ -58,17 +61,20 @@ export function useListener(
   const [running, setRunning] = useState(false);
 
   // El secuenciador corre fuera de los renders: siempre lee el último estado.
-  const latest = useRef({ notes, a4, capo, frets, tempo, loop, style, patternId, onSound });
+  const latest = useRef({ notes, a4, capo, frets, tempo, loop, style, patternId, onSound, onStep });
   useEffect(() => {
-    latest.current = { notes, a4, capo, frets, tempo, loop, style, patternId, onSound };
+    latest.current = { notes, a4, capo, frets, tempo, loop, style, patternId, onSound, onStep };
   });
 
   const timers = useRef<{
     interval: ReturnType<typeof setInterval> | null;
     end: ReturnType<typeof setTimeout> | null;
+    /** Los avisos de paso ya programados: al parar se cancelan, así no se enciende uno tarde. */
+    steps: ReturnType<typeof setTimeout>[];
   }>({
     interval: null,
     end: null,
+    steps: [],
   });
 
   const playString = useCallback((stringIndex: number, when?: number, velocity = 1) => {
@@ -82,7 +88,9 @@ export function useListener(
   const stop = useCallback(() => {
     if (timers.current.interval !== null) clearInterval(timers.current.interval);
     if (timers.current.end !== null) clearTimeout(timers.current.end);
-    timers.current = { interval: null, end: null };
+    timers.current.steps.forEach(clearTimeout);
+    timers.current = { interval: null, end: null, steps: [] };
+    latest.current.onStep?.(null);
     setRunning(false);
   }, []);
 
@@ -119,7 +127,10 @@ export function useListener(
               if (timers.current.interval !== null) clearInterval(timers.current.interval);
               timers.current.interval = null;
               timers.current.end = setTimeout(
-                () => setRunning(false),
+                () => {
+                  latest.current.onStep?.(null);
+                  setRunning(false);
+                },
                 Math.max(0, nextTime - ctx.currentTime) * 1000,
               );
               return;
@@ -127,6 +138,14 @@ export function useListener(
             step = 0;
           }
           playStep(step, nextTime);
+          if (!once) {
+            const current = step;
+            const delay = Math.max(0, (nextTime - ctx.currentTime) * 1000);
+            timers.current.steps = [
+              ...timers.current.steps.slice(-16),
+              setTimeout(() => latest.current.onStep?.(current), delay),
+            ];
+          }
           nextTime += stepSeconds;
           step += 1;
         }

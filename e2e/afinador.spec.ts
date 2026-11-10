@@ -32,6 +32,26 @@ test.describe('escuchador', () => {
     expect(errors).toEqual([]);
   });
 
+  test('la tira del patrón muestra los pasos y enciende el que suena', async ({ page }) => {
+    await goto(page, '/afinador/dadgad');
+    const steps = page.locator('[data-step]');
+    await expect(steps).toHaveCount(6);
+    await expect(steps.first()).toHaveText(/6/);
+
+    await page.getByRole('button', { name: 'Rasgueado' }).click();
+    await page.locator('#pattern').selectOption('folk');
+    await expect(steps).toHaveCount(8);
+    await expect(steps.first()).toContainText('↓');
+
+    await page.locator('#loop').check();
+    await page.locator('#play-toggle').click();
+    await expect(page.locator('[data-step][data-active]')).toHaveCount(1);
+    await page.locator('#play-toggle').click();
+    // Al parar no queda ningún paso encendido, ni se enciende uno tarde.
+    await page.waitForTimeout(400);
+    await expect(page.locator('[data-step][data-active]')).toHaveCount(0);
+  });
+
   test('el rasgueo a mano cruza las seis cuerdas aunque el gesto sea rápido', async ({ page }) => {
     await goto(page, '/afinador/dadgad');
     const box = (await page.getByTestId('strum-zone').boundingBox())!;

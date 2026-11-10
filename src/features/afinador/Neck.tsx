@@ -151,11 +151,18 @@ export function Neck({ ref, notes, capo, frets, notation, onPluck, onToggleFret 
   useEffect(() => {
     const root = container.current;
     if (!root) return;
-    const observer = new ResizeObserver(() => draw());
+    // El dibujo va al próximo cuadro: redimensionar el canvas dentro del aviso puede encadenar otro
+    // aviso, y el navegador lo reporta como error ("ResizeObserver loop").
+    let pending = 0;
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(pending);
+      pending = requestAnimationFrame(draw);
+    });
     observer.observe(root);
     const state = motion.current;
     return () => {
       observer.disconnect();
+      cancelAnimationFrame(pending);
       if (state.frame) cancelAnimationFrame(state.frame);
     };
     // Solo al montar: draw lee todo desde refs y el DOM.

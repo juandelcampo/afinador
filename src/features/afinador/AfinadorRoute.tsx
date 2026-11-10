@@ -8,6 +8,7 @@ import { useSettings } from '~/shared/settings';
 import { Button, PageTitle, Segmented, Slab, SlabHead, Stepper } from '~/shared/ui/ui';
 import styles from './afinador.module.css';
 import { Neck, type NeckHandle } from './Neck';
+import { markStep, PatternStrip } from './PatternStrip';
 import { TunerPanel } from './TunerPanel';
 import { ARP_PATTERNS, STRUM_PATTERNS, useListener } from './useListener';
 
@@ -323,8 +324,12 @@ function TuningPage({
   const notation = useSettings((s) => s.notation);
   const a4 = useSettings((s) => s.a4);
   const neck = useRef<NeckHandle>(null);
-  const listener = useListener(tuning.notes, a4, (stringIndex, velocity) =>
-    neck.current?.excite(stringIndex, velocity),
+  const strip = useRef<HTMLOListElement>(null);
+  const listener = useListener(
+    tuning.notes,
+    a4,
+    (stringIndex, velocity) => neck.current?.excite(stringIndex, velocity),
+    (step) => markStep(strip.current, step),
   );
   const listenerTitle = useRef<HTMLDivElement>(null);
   const patterns = listener.style === 'arp' ? ARP_PATTERNS : STRUM_PATTERNS;
@@ -390,6 +395,8 @@ function TuningPage({
           <p className={styles.hint}>
             Tocá un traste para pisarlo; pasá el dedo por la zona gris para rasguear.
           </p>
+
+          <PatternStrip ref={strip} style={listener.style} patternId={listener.patternId[listener.style]} />
 
           <div className={styles.controls}>
             <Button

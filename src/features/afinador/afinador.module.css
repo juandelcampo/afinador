@@ -700,6 +700,48 @@
   }
 }
 
+/* Pasos del patrón: cómo es antes de tocarlo y cuál suena mientras tanto. */
+.strip {
+  display: flex;
+  margin: 12px 0 0;
+  padding: 0;
+  border: var(--rule);
+  list-style: none;
+}
+.strip li {
+  display: grid;
+  flex: 1 1 0;
+  place-items: center;
+  min-width: 0;
+  height: 36px;
+  border-left: 1px solid var(--ink);
+  font: 700 14px/1 var(--mono);
+  font-variant-numeric: tabular-nums;
+  transition:
+    background-color 60ms linear,
+    color 60ms linear;
+}
+.strip li:first-child {
+  border-left: 0;
+}
+/* Los pasos que caen en el tiempo llevan raya gruesa. */
+.strip li[data-beat='true'] {
+  border-left-width: 3px;
+}
+.strip li:first-child[data-beat='true'] {
+  border-left-width: 0;
+}
+.strip[data-style='strum'] li {
+  font: 900 20px/1 var(--heavy);
+}
+.strip li[data-rest='true'] {
+  color: var(--muted);
+}
+.strip li[data-active] {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
 /* Flex y no grilla: cada fila se llena entera, sin huecos al final. */
 .controls {
   display: flex;
@@ -714,6 +756,10 @@
 }
 .controls > .pair {
   flex: 0 1 auto;
+}
+/* El patrón necesita lugar para su nombre más largo ("Pulgar alternado") sin cortarse. */
+.controls > .field:has(select) {
+  flex: 1 0 200px;
 }
 /* El capo (el único campo que es un div) necesita su ancho entero: "Sin capo" no se parte. */
 .controls > div.field {
