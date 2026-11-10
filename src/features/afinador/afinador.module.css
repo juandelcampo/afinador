@@ -177,12 +177,11 @@
   padding-left: calc(var(--gutter) + 4px);
   background: var(--soft);
 }
-/* La elegida: el bloque naranja se desliza de la anterior a esta al cambiar (ver global.css). */
+/* La elegida. */
 .tuningItem[aria-current='page'] {
   background: var(--accent);
   color: var(--on-accent);
   box-shadow: inset 6px 0 0 var(--ink);
-  view-transition-name: current-tuning;
 }
 .tuningItem strong {
   display: block;
@@ -298,7 +297,6 @@
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   border: var(--rule);
-  view-transition-name: tuning-strings;
 }
 .pillWrap {
   display: grid;

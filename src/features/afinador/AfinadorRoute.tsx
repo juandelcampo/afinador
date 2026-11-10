@@ -129,7 +129,6 @@ function TuningList({ currentId, onSelect }: { currentId: string; onSelect: (id:
                       <NavLink
                         key={tuning.id}
                         to={`/afinador/${tuning.id}`}
-                        viewTransition
                         onClick={(event) => select(event, tuning.id)}
                         className={styles.tuningItem}
                         data-id={tuning.id}

@@ -117,41 +117,9 @@ a {
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
-  *::after,
-  ::view-transition-group(*),
-  ::view-transition-old(*),
-  ::view-transition-new(*) {
+  *::after {
     transition: none !important;
     animation: none !important;
-  }
-}
-
-/* Cambio de afinación: la página se funde rápido y el nombre, las cuerdas y la marca de la lista se
-   desplazan a su lugar nuevo en vez de saltar. */
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation-duration: 160ms;
-}
-::view-transition-group(*) {
-  animation-duration: 280ms;
-  animation-timing-function: var(--ease);
-}
-::view-transition-old(tuning-name) {
-  animation: 160ms ease-in both out-up;
-}
-::view-transition-new(tuning-name) {
-  animation: 260ms var(--ease) both in-up;
-}
-@keyframes out-up {
-  to {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-}
-@keyframes in-up {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
   }
 }
 
