@@ -23,7 +23,7 @@ export const meta: MetaFunction = ({ params }) => {
       {
         name: 'description',
         content:
-          'Afiná y escuchá 74 afinaciones de guitarra: abiertas, drop, modales, DADGAD y las de Nick Drake o Sonic Youth.',
+          'Afiná y escuchá 147 afinaciones de guitarra: abiertas, drop, modales, DADGAD y las de Nick Drake o Sonic Youth.',
       },
     ];
   }

@@ -1,12 +1,12 @@
 # Afinador
 
-Afinador de guitarra con afinaciones alternativas: 74 afinaciones, afinador por micrófono, escuchador interactivo sobre un mástil y lo que suena con un solo dedo.
+Afinador de guitarra con afinaciones alternativas: 147 afinaciones, afinador por micrófono, escuchador interactivo sobre un mástil y lo que suena con un solo dedo.
 
 Salió de [Scordatura](../Afinador%20Drake), donde era una de las herramientas. Acá vive solo.
 
 | Parte          | Qué hace                                                                                                        |
 | -------------- | --------------------------------------------------------------------------------------------------------------- |
-| Lista          | Las 74 afinaciones agrupadas, con búsqueda por nombre, notas, artista o canción. |
+| Lista          | Las 147 afinaciones agrupadas, con búsqueda por nombre, notas, artista o canción. |
 | Ficha          | Acorde al aire, intervalos entre cuerdas, cuántas cuerdas cambian y aviso si alguna queda muy tensa o floja.    |
 | Afinar         | Micrófono, cuerda por cuerda o automático, con aguja en cents. Tocar una cuerda la hace sonar.                  |
 | Escuchar       | Mástil interactivo: trastes, capo, rasgueo a mano, arpegios y rasgueos con patrón y tempo.                      |
