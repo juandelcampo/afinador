@@ -110,12 +110,57 @@
   position: sticky;
   top: 0;
   z-index: 1;
-  padding: 6px var(--gutter);
+  border-bottom: 1px solid var(--paper);
   background: var(--ink);
   color: var(--paper);
   font: 800 expanded 12px/1.3 var(--heavy);
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+/* Cada sección se abre y se cierra tocando su nombre. */
+.groupTitle button {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  min-height: var(--touch);
+  padding: 6px var(--gutter);
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  text-transform: inherit;
+  cursor: pointer;
+}
+.groupTitle button:focus-visible {
+  outline-color: var(--paper);
+  outline-offset: -5px;
+}
+.groupTitle button:disabled {
+  cursor: default;
+}
+.groupTitle button > span:first-child {
+  flex: 1;
+}
+/* La sección de la afinación abierta lleva una marca de acento. */
+.groupTitle button[data-current] > span:first-child::before {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  background: var(--accent);
+  content: '';
+  vertical-align: 1px;
+}
+.groupCount {
+  font: 700 12px/1 var(--mono);
+}
+.groupTitle button > span[aria-hidden] {
+  width: 1ch;
+  font: 900 18px/1 var(--heavy);
+  text-align: center;
 }
 .tuningItem {
   position: relative;

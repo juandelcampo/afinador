@@ -64,7 +64,16 @@ function TuningList({ currentId, onSelect }: { currentId: string; onSelect: (id:
       .filter(({ info }) => info.match),
   })).filter((section) => section.items.length > 0);
   const empty = sections.length === 0;
+  // Las secciones arrancan cerradas. Mientras se busca se abren todas las que tienen resultados.
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
+  const toggleSection = (id: string) =>
+    setExpanded((current) => {
+      const next = new Set(current);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
   const select = (event: MouseEvent, id: string) => {
+    setOpen(false);
     // Abrir en otra pestaña no cuenta como elegir en esta.
     if (!event.metaKey && !event.ctrlKey && !event.shiftKey) onSelect(id);
   };
@@ -91,34 +100,55 @@ function TuningList({ currentId, onSelect }: { currentId: string; onSelect: (id:
             onChange={(event) => setSearch(event.target.value)}
           />
         </label>
-        <nav className={styles.catalogList} aria-label="Afinaciones" onClick={() => setOpen(false)}>
-          {sections.map((section) => (
-            <div key={section.id}>
-              <h2 className={styles.groupTitle}>{section.name}</h2>
-              {section.items.map(({ tuning, info }) => {
-                const noteText = describe(tuning.notes);
-                return (
-                  <NavLink
-                    key={tuning.id}
-                    to={`/afinador/${tuning.id}`}
-                    viewTransition
-                    onClick={(event) => select(event, tuning.id)}
-                    className={styles.tuningItem}
-                    data-id={tuning.id}
-                    aria-current={tuning.id === currentId ? 'page' : undefined}
+        <nav className={styles.catalogList} aria-label="Afinaciones">
+          {sections.map((section) => {
+            const isOpen = query !== '' || expanded.has(section.id);
+            const hasCurrent = section.items.some(({ tuning }) => tuning.id === currentId);
+            return (
+              <div key={section.id}>
+                <h2 className={styles.groupTitle}>
+                  <button
+                    type="button"
+                    aria-expanded={isOpen}
+                    aria-controls={`grupo-${section.id}`}
+                    disabled={query !== ''}
+                    data-current={hasCurrent || undefined}
+                    onClick={() => toggleSection(section.id)}
                   >
-                    <strong>{tuning.name}</strong>
-                    {noteText !== tuning.name && <small>{noteText}</small>}
-                    {info.item && (
-                      <small>
-                        {info.item.song ? `${info.item.song} · ${info.item.artist}` : info.item.artist}
-                      </small>
-                    )}
-                  </NavLink>
-                );
-              })}
-            </div>
-          ))}
+                    <span>{section.name}</span>
+                    {hasCurrent && <span className="sr-only">, tiene la afinación abierta</span>}
+                    <span className={styles.groupCount}>{section.items.length}</span>
+                    <span aria-hidden="true">{isOpen ? '−' : '+'}</span>
+                  </button>
+                </h2>
+                {/* Cerrada sigue en el HTML: la página estática enlaza todas las afinaciones. */}
+                <div id={`grupo-${section.id}`} hidden={!isOpen}>
+                  {section.items.map(({ tuning, info }) => {
+                    const noteText = describe(tuning.notes);
+                    return (
+                      <NavLink
+                        key={tuning.id}
+                        to={`/afinador/${tuning.id}`}
+                        viewTransition
+                        onClick={(event) => select(event, tuning.id)}
+                        className={styles.tuningItem}
+                        data-id={tuning.id}
+                        aria-current={tuning.id === currentId ? 'page' : undefined}
+                      >
+                        <strong>{tuning.name}</strong>
+                        {noteText !== tuning.name && <small>{noteText}</small>}
+                        {info.item && (
+                          <small>
+                            {info.item.song ? `${info.item.song} · ${info.item.artist}` : info.item.artist}
+                          </small>
+                        )}
+                      </NavLink>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
           {empty && <p className={styles.empty}>No hay afinaciones con esa búsqueda.</p>}
         </nav>
       </div>

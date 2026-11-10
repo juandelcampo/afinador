@@ -60,6 +60,7 @@ test.describe('escuchador', () => {
     await goto(page, '/afinador/dadgad');
     await page.getByRole('button', { name: 'Subir capo' }).click();
     await expect(page.getByTestId('capo-value')).toHaveText('Traste 1');
+    await page.getByRole('button', { name: /^Drop/ }).click();
     await page.locator('[data-id="dropd"]').click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Drop D');
     await expect(page.getByTestId('capo-value')).toHaveText('Sin capo');
@@ -97,6 +98,20 @@ test.describe('afinación', () => {
     await expect(page.locator('[data-id="fsharp"]')).toBeVisible();
     await page.getByPlaceholder('BUSCAR').fill('zzzz');
     await expect(page.getByText('No hay afinaciones con esa búsqueda.')).toBeVisible();
+  });
+
+  test('las secciones de la lista arrancan cerradas y se abren al tocarlas', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await goto(page, '/afinador/dadgad');
+    await expect(page.locator('[data-id="dadgad"]')).toBeHidden();
+    const modales = page.getByRole('button', { name: /^Modales y suspendidas/ });
+    await expect(modales).toHaveAttribute('aria-expanded', 'false');
+    // La sección de la afinación abierta se reconoce aunque esté cerrada.
+    await expect(modales).toHaveAttribute('data-current', 'true');
+    await modales.click();
+    await expect(page.locator('[data-id="dadgad"]')).toBeVisible();
+    await modales.click();
+    await expect(page.locator('[data-id="dadgad"]')).toBeHidden();
   });
 
   test('el solfeo cambia los nombres en toda la app', async ({ page }) => {

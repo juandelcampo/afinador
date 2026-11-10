@@ -6,7 +6,7 @@ Salió de [Scordatura](../Afinador%20Drake), donde era una de las herramientas. 
 
 | Parte          | Qué hace                                                                                                        |
 | -------------- | --------------------------------------------------------------------------------------------------------------- |
-| Lista          | Las 147 afinaciones agrupadas, con búsqueda por nombre, notas, artista o canción. |
+| Lista          | Las 147 afinaciones en secciones que arrancan cerradas, con búsqueda por nombre, notas, artista o canción. |
 | Ficha          | Acorde al aire, intervalos entre cuerdas, cuántas cuerdas cambian y aviso si alguna queda muy tensa o floja.    |
 | Afinar         | Micrófono, cuerda por cuerda o automático, con aguja en cents. Tocar una cuerda la hace sonar.                  |
 | Escuchar       | Mástil interactivo: trastes, capo, rasgueo a mano, arpegios y rasgueos con patrón y tempo.                      |
