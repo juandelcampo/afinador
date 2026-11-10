@@ -279,6 +279,13 @@ describe('acordes', () => {
     expect(shifted.find((shape) => shape.label === '0 2 2 0 0 0')?.chord).toBe('F#m');
   });
 
+  it('nombra los acordes en la notación elegida', () => {
+    const shapes = chordShapes(STANDARD, { notation: 'solfege' });
+    expect(shapes[0]!.chord).toBe(openChordName(STANDARD, 'solfege'));
+    expect(shapes.find((shape) => shape.label === '× 3 2 0 1 0')?.chord).toBe('Do');
+    expect(shapes.find((shape) => shape.label === '0 2 2 0 0 0')?.chord).toBe('Mim');
+  });
+
   it('solo propone figuras que una mano puede hacer', () => {
     for (const tuning of TUNINGS)
       for (const { frets, label } of chordShapes(tuning.notes)) {

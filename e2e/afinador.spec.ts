@@ -221,6 +221,7 @@ test.describe('afinación', () => {
     await goto(page, '/afinador/dadgad');
     await page.getByRole('button', { name: 'Mi La Re' }).click();
     await expect(page.getByTestId('fact-chord')).toHaveText('Resus4');
+    await expect(page.getByTestId('chord-shapes').getByRole('button').first()).toContainText('Resus4');
     await expect(page.locator('[data-label]').first()).toHaveText('Re');
   });
 });

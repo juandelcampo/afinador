@@ -168,7 +168,14 @@ function fingersFor(frets: number[]): { fingers: number; barre: number | null } 
  * sumo cuatro trastes de abertura, y como mucho las dos cuerdas graves apagadas. De cada
  * acorde común con la raíz en el bajo se queda con la figura más fácil.
  */
-export function chordShapes(notes: string[], maxFret = 7, limit = 18): ChordShape[] {
+export function chordShapes(
+  notes: string[],
+  {
+    notation = 'letters',
+    maxFret = 7,
+    limit = 18,
+  }: { notation?: Notation; maxFret?: number; limit?: number } = {},
+): ChordShape[] {
   const open = notes.map(noteToMidi);
   const best = new Map<string, { frets: number[]; score: number; suffix: string; root: number }>();
   const frets: number[] = [];
@@ -246,10 +253,10 @@ export function chordShapes(notes: string[], maxFret = 7, limit = 18): ChordShap
   };
   walk(0, Infinity, -Infinity);
 
-  const openName = openChordName(notes);
+  const openName = openChordName(notes, notation);
   const shapes: ChordShape[] = [{ frets: open.map(() => 0), chord: openName, label: 'Al aire' }];
   [...best.values()]
-    .map((shape) => ({ ...shape, chord: noteLabel(midiToNote(shape.root)) + shape.suffix }))
+    .map((shape) => ({ ...shape, chord: noteLabel(midiToNote(shape.root), notation) + shape.suffix }))
     .filter((shape) => shape.chord !== openName)
     .sort((a, b) => a.score - b.score)
     .slice(0, limit - 1)

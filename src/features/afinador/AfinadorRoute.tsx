@@ -383,8 +383,12 @@ function TuningPage({
   const { playAscending } = listener;
   // Con capo, las figuras se cuentan desde el capo y los nombres son los de lo que suena.
   const shapes = useMemo(
-    () => chordShapes(tuning.notes.map((note) => midiToNote(noteToMidi(note) + listener.capo))),
-    [tuning.notes, listener.capo],
+    () =>
+      chordShapes(
+        tuning.notes.map((note) => midiToNote(noteToMidi(note) + listener.capo)),
+        { notation },
+      ),
+    [tuning.notes, listener.capo, notation],
   );
 
   // Al elegir una afinación de la lista suena su arpegio ascendente, una sola vez.
