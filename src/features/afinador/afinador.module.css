@@ -632,6 +632,15 @@
   display: flex;
   gap: 6px;
 }
+.swap {
+  display: inline-grid;
+}
+.swap > span {
+  grid-area: 1 / 1;
+}
+.swap > span[data-on='false'] {
+  visibility: hidden;
+}
 /* Reproductor: debajo de la lista, en 16:9. En pantallas anchas los temas son el último bloque de la
    columna y el video se estira hasta abajo (YouTube agrega franjas si no da la proporción). */
 .video {

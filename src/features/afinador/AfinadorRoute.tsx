@@ -217,7 +217,11 @@ function Heard({
                           setOpenIndex(open ? null : index);
                         }}
                       >
-                        {open ? '■ Cerrar' : '▶ Escuchar'}
+                        {/* Los dos textos ocupan la misma celda: el botón no cambia de ancho al abrir. */}
+                        <span className={styles.swap}>
+                          <span data-on={!open}>▶ Escuchar</span>
+                          <span data-on={open}>■ Cerrar</span>
+                        </span>
                       </Button>
                     )}
                   </div>
