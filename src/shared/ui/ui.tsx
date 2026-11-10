@@ -81,6 +81,9 @@ interface ButtonProps {
   ariaLabel?: string;
   ariaPressed?: boolean;
   ariaExpanded?: boolean;
+  ariaControls?: string;
+  /** Encendido: el micrófono abierto o el patrón sonando. Cambia el color, no el nombre. */
+  on?: boolean;
   id?: string;
   disabled?: boolean;
   onPointerDown?: (event: PointerEvent<HTMLButtonElement>) => void;
@@ -95,6 +98,8 @@ export function Button({
   ariaLabel,
   ariaPressed,
   ariaExpanded,
+  ariaControls,
+  on,
   id,
   disabled,
   onPointerDown,
@@ -112,6 +117,8 @@ export function Button({
       aria-label={ariaLabel}
       aria-pressed={ariaPressed}
       aria-expanded={ariaExpanded}
+      aria-controls={ariaControls}
+      data-on={on}
     >
       {children}
     </button>
@@ -134,10 +141,22 @@ export function Slab({
   );
 }
 
-export function SlabHead({ title, children }: { title: string; children?: ReactNode }) {
+/** `number` es el rótulo de la sección (01, 02…): ordena la pantalla de un vistazo. */
+export function SlabHead({
+  title,
+  number,
+  children,
+}: {
+  title: string;
+  number?: string;
+  children?: ReactNode;
+}) {
   return (
     <div className={styles.slabHead}>
-      <h2>{title}</h2>
+      <h2>
+        {number && <span className={styles.number}>{number}</span>}
+        {title}
+      </h2>
       {children}
     </div>
   );

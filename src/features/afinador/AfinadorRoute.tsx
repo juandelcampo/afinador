@@ -94,13 +94,14 @@ function TuningList({ currentId, onSelect }: { currentId: string; onSelect: (id:
         <nav className={styles.catalogList} aria-label="Afinaciones" onClick={() => setOpen(false)}>
           {sections.map((section) => (
             <div key={section.id}>
-              <div className={styles.groupTitle}>{section.name}</div>
+              <h2 className={styles.groupTitle}>{section.name}</h2>
               {section.items.map(({ tuning, info }) => {
                 const noteText = describe(tuning.notes);
                 return (
                   <NavLink
                     key={tuning.id}
                     to={`/afinador/${tuning.id}`}
+                    viewTransition
                     onClick={(event) => select(event, tuning.id)}
                     className={styles.tuningItem}
                     data-id={tuning.id}
@@ -177,6 +178,16 @@ function Heard({
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const items = tuning.heard ?? [];
   const playing = openIndex === null ? undefined : items[openIndex];
+  const video = useRef<HTMLDivElement>(null);
+
+  // Al abrir un tema, el reproductor se muestra entero. Una sola vez: si la página se moviera mientras
+  // el mouse está sobre el video, YouTube cerraría el control de volumen.
+  useEffect(() => {
+    if (openIndex === null) return;
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    video.current?.scrollIntoView({ block: 'nearest', behavior: still ? 'auto' : 'smooth' });
+  }, [openIndex]);
+
   if (items.length === 0 && tuning.octaves !== 'est') return null;
   return (
     <Slab className={styles.heard} label="Dónde se escuchó">
@@ -184,17 +195,21 @@ function Heard({
       <ul>
         {items.map((item, index) => {
           const open = openIndex === index;
-          const details = [
-            item.artist,
-            item.who,
-            item.conf === 'duda' ? 'discutida' : null,
-          ].filter(Boolean);
+          const details = [item.artist, item.who].filter(Boolean);
           return (
             <li key={`${item.artist}-${item.song ?? ''}-${index}`}>
               <div className={styles.heardRow}>
                 <div className={styles.heardText}>
                   {item.song && <strong>{item.song} </strong>}
                   <span>{details.join(' · ')}</span>
+                  {item.conf === 'duda' && (
+                    <small
+                      className={styles.disputed}
+                      title="Las fuentes no coinciden en la afinación de este tema"
+                    >
+                      Discutida
+                    </small>
+                  )}
                 </div>
                 {(item.capo || item.video) && (
                   <div className={styles.heardActions}>
@@ -211,7 +226,8 @@ function Heard({
                       <Button
                         variant="mini"
                         ariaExpanded={open}
-                        ariaLabel={`Escuchar ${item.song}, de ${item.artist}`}
+                        ariaControls={open ? 'video' : undefined}
+                        ariaLabel={`${open ? 'Cerrar' : 'Escuchar'} ${item.song}, de ${item.artist}`}
                         onClick={() => {
                           if (!open) onVideoOpen();
                           setOpenIndex(open ? null : index);
@@ -239,15 +255,17 @@ function Heard({
       {/* El reproductor se crea recién al abrirlo: hasta entonces no se contacta a YouTube. Va debajo de
           la lista y en pantallas anchas ocupa todo el alto que le queda a la columna. */}
       {playing?.video && (
-        <div
-          className={styles.video}
-          ref={(node) => node?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })}
-        >
+        <div className={styles.video} id="video" ref={video}>
           <div className={styles.videoBar}>
             <span>
               <strong>{playing.song}</strong> · {playing.artist}
             </span>
-            <button type="button" aria-label="Cerrar video" onClick={() => setOpenIndex(null)}>
+            <button
+              type="button"
+              aria-label={`Cerrar ${playing.song}, de ${playing.artist}`}
+              title="Cerrar"
+              onClick={() => setOpenIndex(null)}
+            >
               ✕
             </button>
           </div>
@@ -316,7 +334,7 @@ function TuningPage({
       <div className={styles.column}>
         <Slab>
           <div ref={listenerTitle}>
-            <SlabHead title="Escuchar">
+            <SlabHead number="02" title="Escuchar">
               <div className={styles.headTools}>
                 <Fader channel="instrumento" />
                 <Segmented
@@ -347,6 +365,7 @@ function TuningPage({
           <div className={styles.controls}>
             <Button
               variant="primary"
+              on={listener.running}
               onClick={() => (listener.running ? listener.stop() : listener.start())}
               id="play-toggle"
             >
@@ -412,7 +431,7 @@ function TuningPage({
         </Slab>
 
         <Slab>
-          <SlabHead title="Qué suena solo" />
+          <SlabHead number="03" title="Qué suena solo" />
           <p className={styles.hint}>Al aire o con un solo dedo. Tocá uno para escucharlo en el mástil.</p>
           <div className={styles.shapes} data-testid="solo-shapes">
             {shapes.map((shape) => (
@@ -420,6 +439,7 @@ function TuningPage({
                 key={shape.frets.join()}
                 type="button"
                 aria-label={`${shape.label}: ${shape.chord}`}
+                aria-pressed={shape.frets.every((fret, index) => fret === listener.frets[index])}
                 onClick={() => listener.applyShape(shape.frets)}
               >
                 <strong>{shape.chord}</strong>

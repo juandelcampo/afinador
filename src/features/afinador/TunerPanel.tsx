@@ -15,6 +15,16 @@ function NoteName({ note, notation }: { note: string; notation: Notation }) {
   );
 }
 
+/** Un destello naranja que se apaga solo: confirma que la cuerda sonó, sin volver a renderizar. */
+export function flash(element: HTMLElement) {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const accent = getComputedStyle(element).getPropertyValue('--accent');
+  element.animate([{ offset: 0, backgroundColor: accent, color: '#000000' }], {
+    duration: 520,
+    easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+  });
+}
+
 interface TunerPanelProps {
   notes: string[];
 }
@@ -33,6 +43,8 @@ export function TunerPanel({ notes }: TunerPanelProps) {
     status.text = 'Tocá una cuerda de arriba para escuchar su nota, o activá el micrófono para afinar.';
   }
   const needle = needlePosition(reading);
+  // Qué luz se enciende: ♭ si está grave, ♯ si está aguda, la nota entera si está afinada.
+  const direction = !reading ? 'none' : status.state === 'ok' ? 'ok' : reading.cents < 0 ? 'flat' : 'sharp';
 
   const playReference = (index: number) => {
     pluckString(index, noteToMidi(notes[index]!), { a4 });
@@ -40,12 +52,12 @@ export function TunerPanel({ notes }: TunerPanelProps) {
 
   return (
     <Slab>
-      <SlabHead title="Afinar">
+      <SlabHead number="01" title="Afinar">
         <Segmented
           label="Modo de afinación"
           value={mode}
           options={[
-            { value: 'guided', label: 'Cuerda por cuerda' },
+            { value: 'guided', label: 'Una a una' },
             { value: 'auto', label: 'Automático' },
           ]}
           onChange={(value) => set({ tunerMode: value })}
@@ -64,9 +76,10 @@ export function TunerPanel({ notes }: TunerPanelProps) {
                 data-tuned={tuner.tuned[index]}
                 aria-pressed={index === selected}
                 aria-label={`Cuerda ${number}, ${noteLabel(note, notation)} ${splitNote(note).octave}${tuner.tuned[index] ? ', afinada' : ''}. Tocar nota de referencia.`}
-                onClick={() => {
+                onClick={(event) => {
                   tuner.selectString(index);
                   playReference(index);
+                  flash(event.currentTarget);
                 }}
               >
                 <span className={styles.pillNumber}>{tuner.tuned[index] ? '✓' : number}</span>
@@ -85,25 +98,32 @@ export function TunerPanel({ notes }: TunerPanelProps) {
       <div
         className={styles.meter}
         data-state={status.state}
+        data-dir={direction}
         data-testid="meter"
         data-cents={reading?.cents.toFixed(1)}
       >
         <div className={styles.meterReadout}>
-          <span className={styles.meterNote}>
-            <NoteName note={notes[selected]!} notation={notation} />
-          </span>
+          <div className={styles.meterDial}>
+            <span className={styles.meterLight} data-side="flat" aria-hidden="true">
+              ♭
+            </span>
+            <span className={styles.meterNote}>
+              <NoteName note={notes[selected]!} notation={notation} />
+            </span>
+            <span className={styles.meterLight} data-side="sharp" aria-hidden="true">
+              ♯
+            </span>
+          </div>
           <div className={styles.meterActions}>
-            {reading && (
-              <span className={styles.meterCents}>
-                {reading.freq.toFixed(1)} Hz
-                <br />
-                {reading.cents >= 0 ? '+' : '−'}
-                {Math.abs(reading.cents).toFixed(0)} cents
+            {/* Siempre ocupa su lugar: nada se corre cuando aparece la lectura. */}
+            <span className={styles.meterCents} data-empty={!reading}>
+              <span>{reading ? `${reading.freq.toFixed(1)} Hz` : '— Hz'}</span>
+              <span>
+                {reading
+                  ? `${reading.cents >= 0 ? '+' : '−'}${Math.abs(reading.cents).toFixed(0)} cents`
+                  : '± cents'}
               </span>
-            )}
-            <Button variant="primary" onClick={() => void tuner.toggle()} id="mic-toggle">
-              {tuner.active ? 'Apagar micrófono' : 'Activar micrófono'}
-            </Button>
+            </span>
           </div>
         </div>
         <div className={styles.meterScale} aria-hidden="true">
@@ -111,13 +131,20 @@ export function TunerPanel({ notes }: TunerPanelProps) {
           <div className={styles.meterNeedle} style={{ left: `${needle}%` }} />
           <div className={styles.meterLabels}>
             <span>−50</span>
+            <span>−25</span>
             <span>0</span>
+            <span>+25</span>
             <span>+50</span>
           </div>
         </div>
         <p className={styles.meterStatus} role="status" data-testid="meter-status">
           {tuner.message ?? status.text}
         </p>
+        {/* La acción principal del afinador: a lo ancho, debajo de lo que muestra. */}
+        <Button variant="primary" full on={tuner.active} onClick={() => void tuner.toggle()} id="mic-toggle">
+          {tuner.active && <span className={styles.rec} aria-hidden="true" />}
+          {tuner.active ? 'Apagar micrófono' : 'Activar micrófono'}
+        </Button>
       </div>
     </Slab>
   );

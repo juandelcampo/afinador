@@ -15,10 +15,33 @@
   background: var(--paper);
 }
 .brand {
-  font: 900 20px/1 var(--heavy);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--touch);
+  font: 900 expanded 21px/1 var(--heavy);
   letter-spacing: -0.02em;
   text-decoration: none;
   text-transform: uppercase;
+}
+/* La marca: tres cuerdas y un traste pisado, como el ícono de la pestaña. */
+.brand::before {
+  content: '';
+  flex: none;
+  width: 22px;
+  height: 22px;
+  background:
+    linear-gradient(var(--accent) 0 0) 12px 7px / 7px 8px no-repeat,
+    linear-gradient(
+      transparent 4px,
+      var(--paper) 4px 6px,
+      transparent 6px 10px,
+      var(--paper) 10px 12px,
+      transparent 12px 16px,
+      var(--paper) 16px 18px,
+      transparent 18px
+    ),
+    var(--ink);
 }
 .settingsToggle {
   display: inline-flex;
@@ -28,8 +51,8 @@
   padding: 6px 12px;
   border: var(--rule);
   background: none;
-  font-size: 13px;
-  font-weight: 700;
+  font: 700 semi-expanded 13px/1.2 var(--ui);
+  letter-spacing: 0.03em;
   text-transform: uppercase;
 }
 .settingsToggle[aria-expanded='true'] {
@@ -52,6 +75,17 @@
   grid-auto-flow: column;
   align-items: center;
   gap: 8px;
+}
+
+/* En el celular la marca y el botón de ajustes comparten la fila: los dos un poco más chicos. */
+@media (max-width: 719px) {
+  .brand {
+    font-size: 18px;
+  }
+  .settingsToggle {
+    padding-inline: 10px;
+    font-size: 12px;
+  }
 }
 
 /* En pantallas anchas los ajustes entran en la misma fila y la barra queda fija arriba. */

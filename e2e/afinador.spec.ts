@@ -125,7 +125,11 @@ test.describe('videos', () => {
     await page.getByRole('button', { name: /Escuchar Hazey Jane II/ }).click();
     await expect(page.locator('iframe')).toHaveCount(1);
     await expect(page.locator('iframe')).toHaveAttribute('src', /lCaDp1gb6D4/);
-    await page.getByRole('button', { name: /Escuchar Hazey Jane II/ }).click();
+    // Abierto, el botón dice "Cerrar" y su nombre accesible también.
+    await page
+      .getByRole('button', { name: /Cerrar Hazey Jane II/ })
+      .first()
+      .click();
     await expect(page.locator('iframe')).toHaveCount(0);
   });
 });

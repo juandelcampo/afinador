@@ -1,3 +1,13 @@
+/* Componentes compartidos. Botones y rótulos en Archivo; datos en Plex Mono (ver global.css). */
+
+/* Rótulo chico de los campos: PATRÓN, CAPO, VELOCIDAD. */
+.label,
+.fader > span {
+  font: 600 12px/1.5 var(--ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .segmented {
   display: inline-flex;
   max-width: 100%;
@@ -6,12 +16,15 @@
 }
 .segmented button {
   min-height: var(--touch);
-  padding: 6px 12px;
+  padding: 6px 14px;
   border: 0;
   background: none;
-  font-size: 13px;
-  font-weight: 700;
+  font: 700 semi-expanded 13px/1.2 var(--ui);
+  letter-spacing: 0.03em;
   text-transform: uppercase;
+  transition:
+    background-color 120ms var(--ease),
+    color 120ms var(--ease);
 }
 .segmented button + button {
   border-left: var(--rule);
@@ -44,13 +57,18 @@
   min-height: var(--touch);
   border: 0;
   background: none;
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1;
+  font: 700 20px/1 var(--ui);
+  transition:
+    background-color 120ms var(--ease),
+    color 120ms var(--ease);
 }
 .stepper button:hover {
   background: var(--ink);
   color: var(--paper);
+}
+.stepper button:active {
+  background: var(--accent);
+  color: var(--on-accent);
 }
 .stepper output {
   display: flex;
@@ -58,41 +76,70 @@
   justify-content: center;
   min-width: 84px;
   padding: 0 6px;
-  font-size: 13px;
-  font-weight: 700;
+  font: 700 13px/1.2 var(--mono);
   font-variant-numeric: tabular-nums;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
+/* Botones con cuerpo: una sombra dura que se achica al pasar el mouse y desaparece al apretar. */
+.primary,
+.ghost,
+.mini {
+  border: var(--rule);
+  font-family: var(--ui);
+  text-transform: uppercase;
+  transition:
+    transform 90ms var(--ease),
+    box-shadow 90ms var(--ease),
+    background-color 120ms var(--ease),
+    color 120ms var(--ease);
+}
 .primary {
   min-height: calc(var(--touch) + 4px);
-  padding: 8px 20px;
-  border: var(--rule);
+  padding: 8px 22px;
   background: var(--accent);
   color: var(--on-accent);
-  font: 900 18px/1.1 var(--heavy);
-  text-transform: uppercase;
+  box-shadow: var(--lift) var(--lift) 0 var(--ink);
+  font-weight: 900;
+  font-stretch: 112.5%;
+  font-size: 17px;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+}
+.primary:hover {
+  transform: translate(1px, 1px);
+  box-shadow: calc(var(--lift) - 1px) calc(var(--lift) - 1px) 0 var(--ink);
+}
+.primary:active {
+  transform: translate(var(--lift), var(--lift));
+  box-shadow: 0 0 0 var(--ink);
+}
+/* Encendido (micrófono abierto, patrón sonando): tinta en vez de naranja. */
+.primary[data-on='true'] {
+  background: var(--ink);
+  color: var(--paper);
 }
 .ghost {
   min-height: var(--touch);
-  padding: 6px 12px;
-  border: var(--rule);
-  background: none;
-  font-size: 13px;
+  padding: 6px 14px;
+  background: var(--paper);
   font-weight: 700;
-  text-transform: uppercase;
+  font-stretch: 112.5%;
+  font-size: 13px;
+  letter-spacing: 0.03em;
 }
 .mini {
   min-height: var(--touch-small);
   min-width: var(--touch-small);
-  padding: 2px 10px;
-  border: 2px solid var(--ink);
-  background: none;
-  font-size: 12px;
+  padding: 2px 12px;
+  border-width: 2px;
+  background: var(--paper);
   font-weight: 700;
-  text-transform: uppercase;
+  font-stretch: 112.5%;
+  font-size: 12px;
+  letter-spacing: 0.04em;
 }
-.primary:hover,
 .ghost:hover,
 .mini:hover,
 .mini[aria-expanded='true'],
@@ -100,13 +147,17 @@
   background: var(--ink);
   color: var(--paper);
 }
+.ghost:active,
+.mini:active {
+  transform: translate(2px, 2px);
+}
 .full {
   width: 100%;
 }
 
 .slab {
   min-width: 0;
-  padding: 12px var(--gutter) 14px;
+  padding: 14px var(--gutter) 16px;
   border-bottom: var(--rule);
 }
 .slabHead {
@@ -114,8 +165,8 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: 8px 12px;
+  margin-bottom: 12px;
 }
 .slabHead:last-child {
   margin-bottom: 0;
@@ -124,30 +175,43 @@
 .slabHead > div {
   margin-top: 0;
 }
+/* Rótulo de sección numerado: 01 AFINAR, 02 ESCUCHAR. La cuenta la lleva .board en la pantalla. */
 .slabHead h2 {
-  font: 900 clamp(20px, 3cqi, 26px)/1 var(--heavy);
-  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font: 900 expanded clamp(18px, 2.6cqi, 22px)/1 var(--heavy);
+  letter-spacing: -0.01em;
   text-transform: uppercase;
+}
+.number {
+  padding: 4px 6px 3px;
+  background: var(--ink);
+  color: var(--paper);
+  font: 700 12px/1 var(--mono);
+  letter-spacing: 0;
 }
 
 .pageTitle {
   min-width: 0;
 }
 .pageTitle h1 {
-  /* Grande, pero sin comerse la pantalla: abajo está la herramienta. El impacto queda para Inicio. */
-  margin: 0 0 6px;
-  font: 900 clamp(32px, 7cqi, 56px)/1 var(--heavy);
-  letter-spacing: -0.035em;
+  margin: 2px 0 8px;
+  font: 900 expanded clamp(34px, 6.5cqi, 60px)/0.95 var(--heavy);
+  letter-spacing: -0.03em;
   overflow-wrap: anywhere;
+  view-transition-name: tuning-name;
 }
 .pageTitle p {
-  max-width: 80ch;
+  max-width: 72ch;
   font-size: 14px;
-  line-height: 1.45;
+  line-height: 1.5;
 }
 .pageTitle .eyebrow {
-  font-size: 12px;
-  font-weight: 700;
+  display: inline-block;
+  margin-bottom: 4px;
+  font: 600 12px/1.5 var(--ui);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -165,8 +229,7 @@
   border-right: 1px solid var(--ink);
   border-bottom: 1px solid var(--ink);
   background: none;
-  font-size: 13px;
-  font-weight: 700;
+  font: 700 13px/1.2 var(--ui);
   text-transform: uppercase;
 }
 .tabs button:hover {
@@ -213,8 +276,6 @@ button:disabled {
   display: grid;
   gap: 1px;
   min-width: 0;
-  font-size: 12px;
-  text-transform: uppercase;
 }
 .fader input {
   width: 120px;

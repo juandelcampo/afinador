@@ -2,8 +2,11 @@
 import { useEffect, useImperativeHandle, useRef, type PointerEvent, type Ref } from 'react';
 import { midiToNote, noteLabel, noteToMidi, type Notation } from '~/core/notes';
 import styles from './afinador.module.css';
+import { flash } from './TunerPanel';
 
 const STRINGS = 6;
+/** Marcas de posición, como en el diapasón de una guitarra: una en 3, 5, 7 y 9, dos en el 12. */
+const INLAYS: Record<number, number> = { 3: 1, 5: 1, 7: 1, 9: 1, 12: 2, 15: 1, 17: 1, 19: 1, 21: 1, 24: 2 };
 // Se muestran tantos como entren: de 5 en el celular a 12 en una pantalla ancha (ver el CSS).
 const FRETS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
@@ -22,6 +25,7 @@ interface NeckProps {
 }
 
 export function Neck({ ref, notes, capo, frets, notation, onPluck, onToggleFret }: NeckProps) {
+  const capoRef = useRef(capo);
   const container = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const motion = useRef({
@@ -54,6 +58,29 @@ export function Neck({ ref, notes, capo, frets, notation, onPluck, onToggleFret 
     const activeColor = css.getPropertyValue('--accent');
     const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const { amplitudes, phases } = motion.current;
+
+    // Marcas de posición: van debajo de las cuerdas y se corren con el capo.
+    const rowCenter = (stringIndex: number) => {
+      const labelBox = root
+        .querySelector<HTMLElement>(`[data-label="${stringIndex}"]`)
+        ?.getBoundingClientRect();
+      return labelBox ? labelBox.top - box.top + labelBox.height / 2 : 0;
+    };
+    const middle = (rowCenter(2) + rowCenter(3)) / 2;
+    const pairs = [(rowCenter(4) + rowCenter(5)) / 2, (rowCenter(0) + rowCenter(1)) / 2];
+    context.fillStyle = css.getPropertyValue('--neck-inlay');
+    root.querySelectorAll<HTMLElement>('[data-fret^="0:"]').forEach((cell) => {
+      const count = INLAYS[capoRef.current + Number(cell.dataset.position)];
+      const cellBox = cell.getBoundingClientRect();
+      if (!count || cellBox.width === 0) return;
+      const x = cellBox.left - box.left + cellBox.width / 2;
+      const radius = Math.min(7, cellBox.width / 6, cellBox.height / 5);
+      for (const y of count === 1 ? [middle] : pairs) {
+        context.beginPath();
+        context.arc(x, y, radius, 0, Math.PI * 2);
+        context.fill();
+      }
+    });
 
     for (let stringIndex = 0; stringIndex < STRINGS; stringIndex++) {
       const label = root.querySelector<HTMLElement>(`[data-label="${stringIndex}"]`);
@@ -106,6 +133,9 @@ export function Neck({ ref, notes, capo, frets, notation, onPluck, onToggleFret 
 
   useImperativeHandle(ref, () => ({
     excite(stringIndex, velocity) {
+      // El nombre de la cuerda se enciende un instante: se ve qué cuerda suena.
+      const label = container.current?.querySelector<HTMLElement>(`[data-label="${stringIndex}"]`);
+      if (label) flash(label);
       const state = motion.current;
       state.amplitudes[stringIndex] = Math.max(state.amplitudes[stringIndex]!, velocity);
       if (!state.frame) state.frame = requestAnimationFrame(animate);
@@ -114,6 +144,7 @@ export function Neck({ ref, notes, capo, frets, notation, onPluck, onToggleFret 
 
   useEffect(() => {
     fretsRef.current = frets;
+    capoRef.current = capo;
     draw();
   });
 
