@@ -59,7 +59,7 @@ ESLint hace cumplir las dos primeras.
 
 ### Rutas
 
-`/` abre la afinación por defecto. Cada afinación tiene su página en `/afinador/<id>`, generada como HTML estático para los buscadores. Se mantuvieron las URL de Scordatura para que sus links sigan abriendo.
+`/` abre la afinación estándar. Cada afinación tiene su página en `/afinador/<id>`, generada como HTML estático para los buscadores. Se mantuvieron las URL de Scordatura para que sus links sigan abriendo.
 
 ### Agregar una afinación
 

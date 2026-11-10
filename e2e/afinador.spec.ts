@@ -139,6 +139,13 @@ test.describe('afinación', () => {
     await expect(page.getByText(/Puede cortarse/)).toHaveCount(0);
   });
 
+  test('al abrir la app aparece la afinación estándar', async ({ page }) => {
+    await goto(page, '/');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Estándar');
+    await goto(page, '/afinador');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Estándar');
+  });
+
   test('la búsqueda encuentra por tema y por notas', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await goto(page, '/afinador');

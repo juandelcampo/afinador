@@ -12,7 +12,8 @@ import { markStep, PatternStrip } from './PatternStrip';
 import { TunerPanel } from './TunerPanel';
 import { ARP_PATTERNS, STRUM_PATTERNS, useListener } from './useListener';
 
-const DEFAULT_ID = 'cgcfce';
+// Al abrir la app sin elegir afinación aparece la estándar.
+const DEFAULT_ID = 'estandar';
 
 const findTuning = (id: string | undefined) => TUNINGS.find((tuning) => tuning.id === (id ?? DEFAULT_ID));
 
