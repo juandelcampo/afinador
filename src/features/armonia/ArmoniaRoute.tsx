@@ -143,6 +143,52 @@ function SingOverList({ chord, keyOf, spell }: { chord: Chord; keyOf: Key; spell
   );
 }
 
+/** Mueve un acorde de lugar: lo saca de `from` y lo pone en `to`. */
+const moveItem = <T,>(list: readonly T[], from: number, to: number): T[] => {
+  const next = [...list];
+  const [item] = next.splice(from, 1);
+  next.splice(to, 0, item!);
+  return next;
+};
+
+/** Algo para poner en la vuelta: el botón grande lo pone, el ▶ lo hace sonar antes de decidir. */
+function Option({
+  title,
+  detail,
+  why,
+  pressed,
+  disabled,
+  onApply,
+  onPreview,
+}: {
+  title: string;
+  detail: string;
+  why?: string;
+  pressed?: boolean;
+  disabled?: boolean;
+  onApply: () => void;
+  onPreview: () => void;
+}) {
+  return (
+    <li className={styles.option}>
+      <button type="button" aria-pressed={pressed} disabled={disabled} onClick={onApply}>
+        <strong>
+          {title} <span>{detail}</span>
+        </strong>
+        {why && <small>{why}</small>}
+      </button>
+      <button
+        type="button"
+        className={styles.optionListen}
+        aria-label={`Escuchar ${detail}`}
+        onClick={onPreview}
+      >
+        ▶
+      </button>
+    </li>
+  );
+}
+
 function Feeling({ feeling }: { feeling: DegreeFeeling }) {
   return (
     <span className={styles.feeling} data-feeling={feeling.feeling}>
@@ -216,6 +262,12 @@ export default function ArmoniaRoute() {
   const [geometry, setGeometry] = useState<Geometry>('cuadrado');
   /** Un modal por vez: el editor del acorde, las vueltas para arrancar o las cadencias. */
   const [sheet, setSheet] = useState<'editor' | 'arrancar' | 'cerrar' | null>(null);
+  /** La vuelta como vista principal: pasa al medio y el mundo se va a un costado. */
+  const [wide, setWide] = useState(false);
+  /** El acorde que se está arrastrando y dónde caería. */
+  const [drag, setDrag] = useState<{ from: number; to: number } | null>(null);
+  /** El último acorde escuchado en los puntos cardinales, listo para sumar. */
+  const [heard, setHeard] = useState<Chord | null>(null);
   const [editorTab, setEditorTab] = useState<'color' | 'bajo' | 'cambiar' | 'cantar'>('color');
 
   // Dos toques seguidos no esperan a que la URL se actualice: cada cambio parte del último pedido.
@@ -336,12 +388,20 @@ export default function ArmoniaRoute() {
     setSheet('editor');
     listen(vuelta[index]!);
   };
+  const previewChords = (chords: Chord[]) =>
+    player.preview(chords.map((chord) => voicingOf(tuning, chord, finger(chord))));
+  /** Cómo suena un reemplazo en su lugar: el acorde de antes (la vuelta da la vuelta) y el nuevo. */
+  const previewInPlace = (index: number, chord: Chord) => {
+    const before = vuelta.length > 1 ? vuelta[(index - 1 + vuelta.length) % vuelta.length] : undefined;
+    previewChords(before ? [before, chord] : [chord]);
+  };
+  const shown = drag ? moveItem(vuelta, drag.from, drag.to) : vuelta;
   const neighbors =
     active === null ? [] : [active - 1, active + 1].filter((i) => i >= 0 && i < vuelta.length);
 
   return (
     <div className={styles.wrap}>
-      <div className={styles.page}>
+      <div className={styles.page} data-wide={wide || undefined}>
         {/* Al medio, el mundo y sus acordes: lo principal. */}
         <div className={styles.center}>
           <Slab>
@@ -517,8 +577,12 @@ export default function ArmoniaRoute() {
                               <button
                                 key={suffix}
                                 type="button"
-                                aria-label={`Sumar ${label} a la vuelta`}
-                                onClick={() => add(chord)}
+                                aria-label={`Escuchar ${label}`}
+                                aria-pressed={heard !== null && chordToken(heard) === chordToken(chord)}
+                                onClick={() => {
+                                  listen(chord);
+                                  setHeard(chord);
+                                }}
                               >
                                 {suffix === '' ? 'M' : 'm'}
                               </button>
@@ -530,6 +594,20 @@ export default function ArmoniaRoute() {
                   </section>
                 ))}
               </div>
+              {heard && (
+                <div className={styles.heard}>
+                  <span>
+                    Escuchaste <strong>{name(heard)}</strong>
+                  </span>
+                  <Button
+                    variant="primary"
+                    ariaLabel={`Sumar ${name(heard)} a la vuelta`}
+                    onClick={() => add(heard)}
+                  >
+                    + Sumar
+                  </Button>
+                </div>
+              )}
               {pole && (
                 <p className={styles.hint} data-testid="same-pole">
                   Tu último acorde está en el polo {pole.pole}. Por el mismo polo pasás a otro grupo:{' '}
@@ -550,6 +628,14 @@ export default function ArmoniaRoute() {
             <span id="vuelta" className={styles.anchor} />
             <SlabHead title="Tu vuelta">
               <Fader compact />
+              <Button
+                variant="mini"
+                ariaPressed={wide}
+                onClick={() => setWide(!wide)}
+                title="Que la vuelta ocupe el medio"
+              >
+                {wide ? 'Achicar' : 'Agrandar'}
+              </Button>
             </SlabHead>
             {vuelta.length === 0 ? (
               <div className={styles.empty} data-testid="vuelta-empty">
@@ -561,21 +647,84 @@ export default function ArmoniaRoute() {
                 </Button>
               </div>
             ) : (
-              <ol className={styles.chips} data-testid="vuelta">
-                {vuelta.map((chord, index) => {
+              <ol className={styles.chips} data-testid="vuelta" data-wide={wide || undefined}>
+                {shown.map((chord, index) => {
                   const feeling = feelingOf(chord, key);
+                  const fingering = finger(chord);
                   return (
-                    <li key={index}>
+                    <li
+                      key={index}
+                      data-slot={index}
+                      data-dragging={drag?.to === index || undefined}
+                      className={styles.chip}
+                    >
                       <button
                         type="button"
+                        className={styles.chipMain}
                         aria-pressed={active === index}
                         aria-haspopup="dialog"
-                        data-playing={player.current === index || undefined}
+                        data-playing={(!drag && player.current === index) || undefined}
                         onClick={() => openEditor(index)}
                       >
                         <small>{degreeLabel(chord, key)}</small>
                         <strong>{name(chord)}</strong>
                         {feeling && <Feeling feeling={feeling} />}
+                        {wide && feeling && <span className={styles.words}>{feeling.words.join('. ')}.</span>}
+                        {wide && (
+                          <span className={styles.tab} data-missing={!fingering}>
+                            {fingering ? fingering.label : 'La mano no llega'}
+                          </span>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.chipRemove}
+                        aria-label={`Sacar ${name(chord)}`}
+                        onClick={() => {
+                          setVuelta((current) => current.filter((_, position) => position !== index));
+                          setSelected(null);
+                        }}
+                      >
+                        ✕
+                      </button>
+                      {/* La manija: se arrastra con el dedo o el mouse, o se mueve con las flechas. */}
+                      <button
+                        type="button"
+                        className={styles.chipGrip}
+                        aria-label={`Mover ${name(chord)}`}
+                        title="Arrastrá para cambiarlo de lugar"
+                        onPointerDown={(event) => {
+                          event.preventDefault();
+                          event.currentTarget.setPointerCapture(event.pointerId);
+                          setDrag({ from: index, to: index });
+                        }}
+                        onPointerMove={(event) => {
+                          if (!drag) return;
+                          const slot = document
+                            .elementsFromPoint(event.clientX, event.clientY)
+                            .find(
+                              (element): element is HTMLElement =>
+                                element instanceof HTMLElement && element.dataset.slot !== undefined,
+                            );
+                          if (slot && Number(slot.dataset.slot) !== drag.to)
+                            setDrag({ ...drag, to: Number(slot.dataset.slot) });
+                        }}
+                        onPointerUp={() => {
+                          if (drag && drag.from !== drag.to) {
+                            const { from, to } = drag;
+                            setVuelta((current) => moveItem(current, from, to));
+                          }
+                          setDrag(null);
+                        }}
+                        onPointerCancel={() => setDrag(null)}
+                        onKeyDown={(event) => {
+                          const step = event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : 0;
+                          if (!step || !vuelta[index + step]) return;
+                          event.preventDefault();
+                          swap(index, index + step);
+                        }}
+                      >
+                        ⠿
                       </button>
                     </li>
                   );
@@ -761,46 +910,47 @@ export default function ArmoniaRoute() {
                 {variantsOf(activeChord).map((variant) => {
                   const next: Chord = { root: activeChord.root, suffix: variant.suffix };
                   return (
-                    <li key={variant.suffix}>
-                      <button
-                        type="button"
-                        aria-pressed={activeChord.suffix === variant.suffix}
-                        onClick={() => replaceAt(active, next)}
-                      >
-                        <strong>
-                          {variant.label} <span>{name(next)}</span>
-                        </strong>
-                        <small>{variant.why}</small>
-                      </button>
-                    </li>
+                    <Option
+                      key={variant.suffix}
+                      title={variant.label}
+                      detail={name(next)}
+                      why={variant.why}
+                      pressed={activeChord.suffix === variant.suffix}
+                      onApply={() => replaceAt(active, next)}
+                      onPreview={() => previewInPlace(active, next)}
+                    />
                   );
                 })}
               </ul>
             )}
             {editorTab === 'bajo' && (
-              <div className={styles.basses} role="group" aria-label="En el bajo">
+              <ul className={styles.variants} aria-label="En el bajo">
                 {BASS_ROLES.map((role) => {
                   const bass = bassFor(activeChord, role.id);
+                  const next: Chord = {
+                    ...activeChord,
+                    bass: bass === undefined || bass === activeChord.root ? undefined : bass,
+                  };
                   return (
-                    <button
+                    <Option
                       key={role.id}
-                      type="button"
+                      title={role.label}
+                      detail={name(next)}
+                      why={role.why}
                       disabled={bass === undefined}
-                      aria-pressed={bassRoleOf(activeChord) === role.id}
-                      onClick={() =>
+                      pressed={bassRoleOf(activeChord) === role.id}
+                      onApply={() =>
                         replaceAt(active, (item) => {
-                          const next = bassFor(item, role.id);
-                          if (next === undefined) return item;
-                          return { ...item, bass: next === item.root ? undefined : next };
+                          const value = bassFor(item, role.id);
+                          if (value === undefined) return item;
+                          return { ...item, bass: value === item.root ? undefined : value };
                         })
                       }
-                    >
-                      <strong>{role.label}</strong>
-                      <small>{role.why}</small>
-                    </button>
+                      onPreview={() => previewInPlace(active, next)}
+                    />
                   );
                 })}
-              </div>
+              </ul>
             )}
             {editorTab === 'bajo' && INVERSION_CHORDS.some((item) => item.suffix === activeChord.suffix) && (
               <Link
@@ -832,28 +982,36 @@ export default function ArmoniaRoute() {
                   ].map(
                     (swapItem) =>
                       swapItem.chord && (
-                        <li key={swapItem.id}>
-                          <button type="button" onClick={() => replaceAt(active, swapItem.chord!)}>
-                            <strong>
-                              {swapItem.label} <span>{name(swapItem.chord)}</span>
-                            </strong>
-                            <small>{swapItem.why}</small>
-                          </button>
-                        </li>
+                        <Option
+                          key={swapItem.id}
+                          title={swapItem.label}
+                          detail={name(swapItem.chord)}
+                          why={swapItem.why}
+                          onApply={() => replaceAt(active, swapItem.chord!)}
+                          onPreview={() => previewInPlace(active, swapItem.chord!)}
+                        />
                       ),
                   )}
                 </ul>
-                <p className={styles.label}>De dos en dos, desde {name(activeChord)}</p>
+                <p className={styles.label}>Qué poner después de {name(activeChord)}</p>
                 <ul className={styles.variants} data-testid="editor-moves">
                   {twoChordMoves(activeChord).map((move) => (
-                    <li key={move.label}>
-                      <button type="button" onClick={() => replaceAt(active, move.chord)}>
-                        <strong>
-                          {move.label} <span>{name(move.chord)}</span>
-                        </strong>
-                        <small>{move.why}</small>
-                      </button>
-                    </li>
+                    <Option
+                      key={move.label}
+                      title={move.label}
+                      detail={name(move.chord)}
+                      why={move.why}
+                      onApply={() => {
+                        setVuelta((current) =>
+                          current.length >= MAX_CHORDS
+                            ? current
+                            : [...current.slice(0, active + 1), move.chord, ...current.slice(active + 1)],
+                        );
+                        closeSheet();
+                      }}
+                      // El cambio entero: desde el acorde elegido hacia el propuesto.
+                      onPreview={() => previewChords([activeChord, move.chord])}
+                    />
                   ))}
                 </ul>
               </>
@@ -930,22 +1088,19 @@ export default function ArmoniaRoute() {
           {CADENCES.map((cadence) => {
             const chords = cadenceChords(cadence, tonic);
             return (
-              <li key={cadence.id}>
-                <button
-                  type="button"
-                  disabled={vuelta.length + chords.length > MAX_CHORDS}
-                  onClick={() => {
-                    extendVuelta(chords);
-                    listen(chords[chords.length - 1]!);
-                    closeSheet();
-                  }}
-                >
-                  <strong>
-                    {cadence.name} <span>{chords.map(name).join(' → ')}</span>
-                  </strong>
-                  <small>{cadence.why}</small>
-                </button>
-              </li>
+              <Option
+                key={cadence.id}
+                title={cadence.name}
+                detail={chords.map(name).join(' → ')}
+                why={cadence.why}
+                disabled={vuelta.length + chords.length > MAX_CHORDS}
+                onApply={() => {
+                  extendVuelta(chords);
+                  closeSheet();
+                }}
+                // Suena como final: desde el último acorde de tu vuelta.
+                onPreview={() => previewChords(last ? [last, ...chords] : chords)}
+              />
             );
           })}
         </ul>

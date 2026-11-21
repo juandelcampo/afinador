@@ -51,7 +51,7 @@ test.describe('armonía', () => {
 
     // El Am elegido se edita en un modal: con séptima menor, y el bajo en la tercera.
     const vuelta = page.getByTestId('vuelta');
-    await vuelta.getByRole('button', { name: /Am/ }).click();
+    await vuelta.getByRole('button', { name: /^VIm Am/ }).click();
     const editor = page.getByTestId('chord-editor');
     await editor.getByRole('button', { name: /\+7m/ }).click();
     await editor.getByRole('button', { name: 'Bajo', exact: true }).click();
@@ -87,10 +87,10 @@ test.describe('armonía', () => {
   test('los puntos cardinales suman acordes y avisan el paso por el mismo polo', async ({ page }) => {
     await goto(page, '/armonia');
     await page.getByTestId('sin-centro').locator('summary').click();
-    await page
-      .getByRole('region', { name: 'Grupo 2' })
-      .getByRole('button', { name: 'Sumar Cm a la vuelta' })
-      .click();
+    await page.getByRole('region', { name: 'Grupo 2' }).getByRole('button', { name: 'Escuchar Cm' }).click();
+    // Primero se escucha; recién después se suma.
+    await expect(page.getByTestId('vuelta-empty')).toBeVisible();
+    await page.getByRole('button', { name: 'Sumar Cm a la vuelta' }).click();
     await expect(page.getByTestId('same-pole')).toContainText('polo N');
     await expect(page.getByTestId('same-pole')).toContainText('B o Db');
   });
@@ -116,7 +116,7 @@ test.describe('armonía', () => {
 
     // El editor cambia un acorde por su relativo y dice qué notas se apoyan al cantar.
     const vuelta = page.getByTestId('vuelta');
-    await vuelta.getByRole('listitem').last().getByRole('button').click();
+    await vuelta.getByRole('listitem').last().getByRole('button').first().click();
     const editor = page.getByTestId('chord-editor');
     await editor.getByRole('button', { name: 'Cantar', exact: true }).click();
     await expect(page.getByTestId('sing-over')).toContainText('Se apoyan');
@@ -143,5 +143,52 @@ test.describe('armonía', () => {
     await starter.getByRole('button', { name: 'Usar' }).click();
     await expect(page).toHaveURL(/escala=natural/);
     await expect(page).toHaveURL(/v=Am_G_F_E/);
+  });
+
+  test('la vuelta se reordena arrastrando, se saca con la ✕ y se agranda', async ({ page }) => {
+    const errors = watchErrors(page);
+    await goto(page, '/armonia?escala=mayor&tono=0&v=C_G_Am_F');
+    const vuelta = page.getByTestId('vuelta');
+
+    // Arrastrar la manija del C hasta el lugar del Am.
+    const grip = await vuelta.getByRole('button', { name: 'Mover C' }).boundingBox();
+    const target = await vuelta.getByRole('listitem').nth(2).boundingBox();
+    await page.mouse.move(grip!.x + grip!.width / 2, grip!.y + grip!.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(target!.x + target!.width / 2, target!.y + target!.height / 2, { steps: 8 });
+    await page.mouse.up();
+    await expect(page).toHaveURL(/v=G_Am_C_F/);
+
+    // Con el teclado también: la manija con flecha a la izquierda.
+    await vuelta.getByRole('button', { name: 'Mover F' }).focus();
+    await page.keyboard.press('ArrowLeft');
+    await expect(page).toHaveURL(/v=G_Am_F_C/);
+
+    await vuelta.getByRole('button', { name: 'Sacar Am' }).click();
+    await expect(page).toHaveURL(/v=G_F_C/);
+
+    // Agrandada muestra la figura de cada acorde.
+    await page.getByRole('button', { name: 'Agrandar' }).click();
+    await expect(vuelta).toContainText('3 2 0 0 0 3');
+    expect(errors).toEqual([]);
+  });
+
+  test('cada propuesta se escucha antes de ponerla', async ({ page }) => {
+    await goto(page, '/armonia?escala=mayor&tono=0&v=C_G');
+    await page.getByTestId('vuelta').getByRole('button', { name: /^V G/ }).click();
+    const editor = page.getByTestId('chord-editor');
+    const before = await plucks(page);
+    await editor.getByRole('button', { name: 'Escuchar G7', exact: true }).click();
+    await expect.poll(() => plucks(page)).toBeGreaterThan(before);
+    // Escuchar no cambia la vuelta.
+    await expect(page).toHaveURL(/v=C_G$/);
+    await page.keyboard.press('Escape');
+
+    await page.getByRole('button', { name: 'Cerrar con…' }).click();
+    await page
+      .getByTestId('cadences')
+      .getByRole('button', { name: /^Escuchar F → C/ })
+      .click();
+    await expect(page).toHaveURL(/v=C_G$/);
   });
 });

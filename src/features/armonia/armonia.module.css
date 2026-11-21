@@ -14,6 +14,13 @@
   grid-template-columns: minmax(0, 1fr);
   min-width: 0;
 }
+/* En el celular, agrandada va primero. */
+.page[data-wide] {
+  grid-template-areas:
+    'right'
+    'center'
+    'left';
+}
 .center {
   grid-area: center;
   min-width: 0;
@@ -48,6 +55,22 @@
   .right > section {
     border-bottom: 0;
   }
+  /* Agrandada, la vuelta pasa a ser lo principal y el mundo se corre a la derecha. */
+  .page[data-wide] {
+    grid-template-areas:
+      'right center'
+      'right left';
+    grid-template-columns: minmax(0, 1fr) 360px;
+  }
+  .page[data-wide] .right {
+    max-height: calc(100dvh - var(--bar));
+    border-right: var(--rule);
+    border-left: 0;
+  }
+  .page[data-wide] .center,
+  .page[data-wide] .left {
+    border-left: 0;
+  }
 }
 @container content (min-width: 1180px) {
   .page {
@@ -68,6 +91,22 @@
   }
   .center {
     min-height: calc(100dvh - var(--bar));
+  }
+  .page[data-wide] {
+    grid-template-areas: 'left right center';
+    grid-template-columns: 320px minmax(0, 1fr) 360px;
+  }
+  .page[data-wide] .right {
+    border-right: 0;
+  }
+  .page[data-wide] .center {
+    position: sticky;
+    top: var(--bar);
+    max-height: calc(100dvh - var(--bar));
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-left: var(--rule);
   }
 }
 
@@ -319,7 +358,7 @@
   padding: 0;
   list-style: none;
 }
-.chips button {
+.chipMain {
   display: grid;
   align-content: start;
   gap: 2px;
@@ -330,15 +369,15 @@
   background: var(--paper);
   text-align: left;
 }
-.chips button:hover {
+.chipMain:hover {
   background: var(--soft);
 }
-.chips button[aria-pressed='true'] {
+.chipMain[aria-pressed='true'] {
   box-shadow: 4px 4px 0 var(--ink);
   transform: translate(-2px, -2px);
 }
 /* El acorde que está sonando. */
-.chips button[data-playing] {
+.chipMain[data-playing] {
   background: var(--ink);
   color: var(--paper);
 }
@@ -410,8 +449,8 @@
 .variants strong,
 .cadences strong,
 .basses strong {
-  font: 800 13px/1.25 var(--ui);
-  text-transform: uppercase;
+  /* Sin mayúsculas automáticas: "IVm" no es "IVM", ni "+7m" es "+7M". */
+  font: 800 14px/1.25 var(--ui);
 }
 .variants strong span,
 .cadences strong span {
@@ -738,4 +777,112 @@
 .singNotes [data-blue] {
   text-decoration: underline 2px;
   text-underline-offset: 3px;
+}
+
+/* Cada acorde de la vuelta: tocarlo lo edita, la ✕ lo saca y la manija lo cambia de lugar. */
+.chip {
+  position: relative;
+  display: grid;
+}
+.chip > .chipMain {
+  height: 100%;
+}
+.chip[data-dragging] .chipMain {
+  outline: 3px dashed var(--accent);
+  outline-offset: 2px;
+}
+.chipMain {
+  padding-right: 34px;
+}
+.chipRemove,
+.chipGrip {
+  position: absolute;
+  right: 2px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: 800 14px/1 var(--ui);
+}
+.chipRemove {
+  top: 2px;
+}
+.chipGrip {
+  bottom: 2px;
+  cursor: grab;
+  font-size: 18px;
+  touch-action: none;
+}
+.chipGrip:active {
+  cursor: grabbing;
+}
+.chipRemove:hover,
+.chipGrip:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+.chip:has([data-playing]) .chipRemove,
+.chip:has([data-playing]) .chipGrip {
+  color: var(--paper);
+}
+.chips[data-wide] {
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 8px;
+}
+.chips[data-wide] .chipMain {
+  min-height: 150px;
+  padding: 8px 36px 10px 10px;
+}
+.chips[data-wide] strong {
+  font-size: 30px;
+}
+
+/* Una opción: el botón grande la pone en la vuelta, el ▶ la hace sonar antes. */
+.option {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--touch);
+}
+.variants .option > button:first-child,
+.cadences .option > button:first-child {
+  border-right: 0;
+}
+.variants .optionListen,
+.cadences .optionListen {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  padding: 0;
+  font: 800 14px/1 var(--ui);
+  text-align: center;
+}
+.variants .optionListen:hover,
+.cadences .optionListen:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+.variants button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Puntos cardinales: lo escuchado, listo para sumar. */
+.pole button[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.heard {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border: var(--rule);
+}
+.heard strong {
+  font: 900 semi-expanded 18px/1 var(--heavy);
 }
