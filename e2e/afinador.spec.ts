@@ -231,6 +231,9 @@ test.describe('videos', () => {
       requests.push(route.request().url());
       return route.abort();
     });
+    // Sin movimiento, abrir un video desplaza la página al instante: con el scroll suave, el clic al
+    // segundo video podía caer mientras la página todavía se movía.
+    await page.emulateMedia({ reducedMotion: 'reduce' });
     await goto(page, '/afinador/cgcfce');
     await page.waitForTimeout(200);
     expect(requests).toEqual([]);
