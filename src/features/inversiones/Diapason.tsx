@@ -1,4 +1,5 @@
-// El diapasón de las inversiones: todas las notas del acorde, tenues, y la forma elegida encima.
+// El diapasón de las inversiones: todas las notas del acorde, tenues, y la forma elegida encima. Tocar una
+// nota tenue pone un dedo ahí; tocar un dedo lo saca. Así se arma una forma propia.
 import { useEffect, useRef } from 'react';
 import { toneName, type Voicing } from '~/core/inversions';
 import { noteLabel, type Notation } from '~/core/notes';
@@ -22,12 +23,13 @@ interface DiapasonProps {
   steps: readonly number[];
   voicing: Voicing | null;
   notation: Notation;
-  onPluck: (stringIndex: number) => void;
+  /** Pone o saca un dedo: el traste en esa cuerda, 0 al aire. */
+  onToggle: (stringIndex: number, fret: number) => void;
 }
 
 const mod12 = (value: number) => ((value % 12) + 12) % 12;
 
-export function Diapason({ notes, open, root, suffix, steps, voicing, notation, onPluck }: DiapasonProps) {
+export function Diapason({ notes, open, root, suffix, steps, voicing, notation, onToggle }: DiapasonProps) {
   const scroller = useRef<HTMLDivElement>(null);
   const count = notes.length;
   const chordSteps = new Set(steps.map(mod12));
@@ -54,35 +56,58 @@ export function Diapason({ notes, open, root, suffix, steps, voicing, notation, 
           const stringIndex = count - 1 - row;
           const fret = voicing ? voicing.frets[stringIndex]! : MUTED;
           const muted = voicing !== null && fret === MUTED;
+          const where = (column: number) =>
+            `${count - stringIndex}.ª cuerda, ${column === 0 ? 'al aire' : `traste ${column}`}`;
           const dot = (column: number) => {
             const step = mod12(open[stringIndex]! + column - root);
+            const tone = toneName(step, suffix);
             if (fret === column) {
               return (
                 <button
                   type="button"
                   className={styles.dot}
                   data-bass={stringIndex === bassString || undefined}
-                  aria-label={`Tocar la ${count - stringIndex}.ª cuerda, ${toneName(step, suffix)} del acorde`}
-                  onClick={() => onPluck(stringIndex)}
+                  aria-label={`Sacar el dedo de la ${where(column)} (${tone})`}
+                  onClick={() => onToggle(stringIndex, column)}
                 >
-                  {toneName(step, suffix)}
+                  {tone}
                 </button>
               );
             }
             if (column > 0 && chordSteps.has(step)) {
               return (
-                <span className={styles.ghost} aria-hidden="true">
-                  {toneName(step, suffix)}
-                </span>
+                <button
+                  type="button"
+                  className={styles.ghost}
+                  aria-label={`Poner un dedo en la ${where(column)} (${tone})`}
+                  onClick={() => onToggle(stringIndex, column)}
+                >
+                  {tone}
+                </button>
               );
             }
             return null;
           };
+          // La cuerda al aire se suma tocando su nombre, si su nota es del acorde.
+          const openTone = chordSteps.has(mod12(open[stringIndex]! - root));
           return (
             <div key={stringIndex} className={styles.string} data-muted={muted || undefined}>
               <div className={styles.nut} data-column={0}>
                 {fret === 0 ? (
                   dot(0)
+                ) : openTone ? (
+                  <button
+                    type="button"
+                    className={styles.openName}
+                    data-tone
+                    aria-label={`Dejar sonar al aire la ${count - stringIndex}.ª cuerda (${toneName(
+                      mod12(open[stringIndex]! - root),
+                      suffix,
+                    )})`}
+                    onClick={() => onToggle(stringIndex, 0)}
+                  >
+                    {muted ? '×' : noteLabel(notes[stringIndex]!, notation)}
+                  </button>
                 ) : (
                   <span className={styles.openName}>
                     {muted ? '×' : noteLabel(notes[stringIndex]!, notation)}

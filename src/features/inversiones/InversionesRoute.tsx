@@ -3,15 +3,25 @@ import { Link, useSearchParams, type MetaFunction } from 'react-router';
 import { getAudio } from '~/audio/engine';
 import { pluckString } from '~/audio/instrument';
 import { CHORD_STEPS, chordToken, parseChord, plainName, type Chord, type Suffix } from '~/core/harmony';
-import { INVERSION_CHORDS, inversionsOf, tabOf, type InversionGroup, type Voicing } from '~/core/inversions';
+import {
+  describeShape,
+  encodeFrets,
+  INVERSION_CHORDS,
+  inversionsOf,
+  parseFrets,
+  tabOf,
+  toneName,
+  type InversionGroup,
+  type Voicing,
+} from '~/core/inversions';
 import { noteLabel, noteToMidi } from '~/core/notes';
-import { openChord } from '~/core/tuning';
+import { MUTED, openChord } from '~/core/tuning';
 import { GROUPS, TUNINGS, type Tuning } from '~/data/tunings';
 import { Fader } from '~/shared/Fader';
 import { useSettings } from '~/shared/settings';
 import { useHydrated } from '~/shared/useHydrated';
 import { Button, PageTitle, Slab } from '~/shared/ui/ui';
-import { Diapason } from './Diapason';
+import { Diapason, LAST_FRET } from './Diapason';
 import styles from './inversiones.module.css';
 
 export const meta: MetaFunction = () => [
@@ -106,7 +116,35 @@ export default function InversionesRoute() {
     0,
     shapes.findIndex((shape) => shape.frets.join() === wanted),
   );
-  const voicing = shapes[index] ?? null;
+  const listed = shapes[index] ?? null;
+
+  // La forma propia, armada tocando el diapasón. Vive en la URL para poder compartirla; una nota que no
+  // es del acorde (de un link viejo, o de otra afinación) se apaga.
+  const customFrets = useMemo(() => {
+    const frets = parseFrets(params.get('forma'), open.length, LAST_FRET);
+    if (!frets) return null;
+    const chordSteps = CHORD_STEPS[chord.suffix]!.map((item) => item % 12);
+    return frets.map((fret, stringIndex) =>
+      fret !== MUTED && chordSteps.includes((open[stringIndex]! + fret - chord.root + 120) % 12)
+        ? fret
+        : MUTED,
+    );
+  }, [params, open, chord.root, chord.suffix]);
+  const editing = customFrets !== null;
+  const custom = customFrets ? describeShape(open, chord.root, chord.suffix, customFrets) : null;
+  const voicing: Voicing | null = editing ? custom : listed;
+  const shownGroup = (custom && groups.find((item) => item.bass === custom.bass)) || group;
+  // Si la forma propia ya está en la lista, se dice cuál es.
+  const known = custom
+    ? groups
+        .map((item) => ({ item, list: shapesOf(item) }))
+        .map(({ item, list }) => ({
+          item,
+          list,
+          at: list.findIndex((shape) => shape.frets.join() === custom.frets.join()),
+        }))
+        .find(({ at }) => at >= 0)
+    : undefined;
 
   const tourTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const stopTour = () => {
@@ -137,7 +175,7 @@ export default function InversionesRoute() {
   const setChord = (change: Partial<Chord>) =>
     update((base) => {
       const before = readChord(base.get('acorde')) ?? homeChord(findTuning(base.get('afinacion')));
-      return { acorde: chordToken({ ...before, ...change }) };
+      return { acorde: chordToken({ ...before, ...change }), forma: null };
     });
 
   // Con el bemol de verdad: en mayúsculas "Db" se leería como dos letras.
@@ -154,6 +192,7 @@ export default function InversionesRoute() {
   /** Elegir una forma la hace sonar: primero se escucha. */
   const show = (inversion: number, shape: Voicing | undefined) => {
     stopTour();
+    if (editing) update({ forma: null });
     setView({ key: chordKey, inversion, frets: shape ? shape.frets.join() : null });
     play(shape);
   };
@@ -161,15 +200,24 @@ export default function InversionesRoute() {
     const next = shapes[index + delta];
     if (next) show(current.inversion, next);
   };
-  const pluck = (stringIndex: number) => {
-    const midi = voicing?.midis[stringIndex];
-    if (midi === null || midi === undefined) return;
-    pluckString(stringIndex, midi, { a4 });
+  /** Pone o saca un dedo. La primera vez parte de la forma que se ve; poner un dedo hace sonar esa nota. */
+  const toggle = (stringIndex: number, fret: number) => {
+    const removing = voicing?.frets[stringIndex] === fret;
+    if (!removing) pluckString(stringIndex, open[stringIndex]! + fret, { a4 });
+    update((base) => {
+      const before =
+        parseFrets(base.get('forma'), open.length, LAST_FRET) ?? listed?.frets ?? open.map(() => MUTED);
+      const next = [...before];
+      next[stringIndex] = next[stringIndex] === fret ? MUTED : fret;
+      return { forma: encodeFrets(next) };
+    });
   };
+  const startEmpty = () => update({ forma: encodeFrets(open.map(() => MUTED)) });
 
   // Para comparar de oído: la forma más fácil de cada inversión, una detrás de otra, y el diapasón la sigue.
   const playTour = () => {
     stopTour();
+    if (editing) update({ forma: null });
     const { ctx } = getAudio();
     const start = ctx.currentTime + 0.04;
     groups.forEach((item, position) => {
@@ -189,7 +237,7 @@ export default function InversionesRoute() {
     ? [
         `${voicing.strings} cuerdas`,
         voicing.barre !== null && `cejilla en el ${voicing.barre}`,
-        voicing.noFifth && 'sin la 5.ª',
+        !editing && voicing.noFifth && 'sin la 5.ª',
       ].filter(Boolean)
     : [];
 
@@ -209,7 +257,10 @@ export default function InversionesRoute() {
               id="afinacion"
               value={tuning.id}
               onChange={(event) =>
-                update({ afinacion: event.target.value === DEFAULT_TUNING ? null : event.target.value })
+                update({
+                  afinacion: event.target.value === DEFAULT_TUNING ? null : event.target.value,
+                  forma: null,
+                })
               }
             >
               {GROUPS.map((item) => (
@@ -261,7 +312,7 @@ export default function InversionesRoute() {
             <button
               key={item.bass}
               type="button"
-              aria-pressed={item.inversion === group.inversion}
+              aria-pressed={item.inversion === shownGroup.inversion && (!editing || custom !== null)}
               disabled={item.bare.length + item.full.length === 0}
               onClick={() => show(item.inversion, easiest(item))}
             >
@@ -272,8 +323,16 @@ export default function InversionesRoute() {
         </div>
 
         <p className={styles.why}>
-          <strong>{group.inversion === 0 ? 'La raíz en el bajo.' : `La ${group.tone} en el bajo.`}</strong>{' '}
-          {group.why}
+          {editing && !custom ? (
+            'Tocá las notas tenues del diapasón para poner los dedos.'
+          ) : (
+            <>
+              <strong>
+                {shownGroup.inversion === 0 ? 'La raíz en el bajo.' : `La ${shownGroup.tone} en el bajo.`}
+              </strong>{' '}
+              {shownGroup.why}
+            </>
+          )}
         </p>
 
         <Diapason
@@ -284,10 +343,60 @@ export default function InversionesRoute() {
           steps={CHORD_STEPS[chord.suffix]!}
           voicing={voicing}
           notation={notation}
-          onPluck={pluck}
+          onToggle={toggle}
         />
 
-        {voicing ? (
+        {editing ? (
+          <div className={styles.mine} data-testid="mi-forma">
+            {custom ? (
+              <button
+                type="button"
+                className={styles.current}
+                aria-label={`Escuchar tu forma, ${nameWithBass(shownGroup)}: ${tabOf(custom.frets)}`}
+                onClick={() => play(custom)}
+              >
+                <span className={styles.counter}>Tu forma · {ORDINALS[shownGroup.inversion]}</span>
+                <strong className={styles.mineName}>{nameWithBass(shownGroup)}</strong>
+                <strong className={styles.tab}>{tabOf(custom.frets)}</strong>
+                <small>{details.join(' · ')}</small>
+              </button>
+            ) : (
+              <p className={styles.mineEmpty}>Tu forma está vacía.</p>
+            )}
+            {custom && (
+              <ul className={styles.notes} data-testid="mi-forma-notas">
+                {custom.missing.length > 0 && (
+                  <li data-kind="falta">
+                    {custom.missing.length === 1 ? 'Le falta la ' : 'Le faltan '}
+                    {custom.missing.map((item) => toneName(item, chord.suffix)).join(', ')}
+                    {custom.missing.length === 1 && custom.missing[0] === 7
+                      ? ': sin la quinta el acorde se reconoce igual.'
+                      : ': todavía no es el acorde entero.'}
+                  </li>
+                )}
+                {custom.unplayable && <li data-kind="mano">{custom.unplayable}</li>}
+                {custom.gap && <li>Hay una cuerda apagada en el medio: apagala apoyando un dedo vecino.</li>}
+                {known && (
+                  <li data-kind="lista">
+                    Está en la lista: es la forma {known.at + 1} de {known.list.length} de la{' '}
+                    {ORDINALS[known.item.inversion]!.toLowerCase()}.
+                  </li>
+                )}
+                {!known && !custom.unplayable && custom.missing.length === 0 && (
+                  <li data-kind="nueva">No está en la lista: es tuya.</li>
+                )}
+              </ul>
+            )}
+            <div className={styles.mineTools}>
+              <Button variant="ghost" onClick={startEmpty}>
+                Empezar de cero
+              </Button>
+              <Button variant="ghost" onClick={() => show(group.inversion, undefined)}>
+                Volver a las formas
+              </Button>
+            </div>
+          </div>
+        ) : voicing ? (
           <div className={styles.browse}>
             <button
               type="button"
@@ -328,11 +437,17 @@ export default function InversionesRoute() {
           <Button variant="primary" onClick={playTour}>
             ▶ Escuchar las inversiones
           </Button>
+          {!editing && (
+            <Button variant="ghost" onClick={startEmpty}>
+              Armar la mía
+            </Button>
+          )}
           <Fader compact />
         </div>
         <p className={styles.hint}>
           Lo tenue son las notas del acorde en todo el mástil; lo blanco, la forma elegida, con el bajo en
-          naranja. Tocá un punto para escuchar esa nota sola.
+          naranja. Para armar la tuya, tocá una nota tenue y el dedo va ahí; tocá un dedo para sacarlo, o el
+          nombre de una cuerda para que suene al aire.
         </p>
       </Slab>
     </div>

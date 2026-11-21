@@ -259,3 +259,67 @@ export function tabOf(frets: readonly number[]): string {
     .map((fret) => (fret === MUTED ? '×' : String(fret)))
     .join(frets.some((fret) => fret > 9) ? '-' : ' ');
 }
+
+/** Lo que dice una forma armada a mano: qué inversión es, qué le falta y si la mano llega. */
+export interface ShapeReport extends Voicing {
+  /** Las notas del acorde que no suenan, como pasos desde la raíz. */
+  missing: number[];
+  /** Por qué la mano no llega, si no llega. */
+  unplayable: string | null;
+  /** Hay una cuerda apagada entre dos que suenan: se puede, pero hay que apagarla con otro dedo. */
+  gap: boolean;
+}
+
+/** Describe una forma cualquiera del acorde, o null si no suena ninguna cuerda. */
+export function describeShape(
+  notes: readonly number[],
+  root: number,
+  suffix: Suffix,
+  frets: readonly number[],
+): ShapeReport | null {
+  const sounding = frets.flatMap((fret, index) => (fret === MUTED ? [] : [index]));
+  if (!sounding.length) return null;
+  const midis = frets.map((fret, index) => (fret === MUTED ? null : notes[index]! + fret));
+  const steps = midis.map((midi) => (midi === null ? null : mod12(midi - root)));
+  const bassMidi = Math.min(...midis.filter((midi): midi is number => midi !== null));
+  const pressed = frets.filter((fret) => fret > 0);
+  const position = pressed.length ? Math.min(...pressed) : 0;
+  const top = pressed.length ? Math.max(...pressed) : 0;
+  const { fingers, barre } = fingersFor([...frets]);
+  const chordSteps = [...new Set(CHORD_STEPS[suffix]!.map(mod12))];
+  const missing = chordSteps.filter((step) => !steps.includes(step));
+  const unplayable =
+    top - position > 3
+      ? 'Abre más de cuatro trastes: la mano no llega.'
+      : fingers > 4
+        ? 'Pide más de cuatro dedos.'
+        : null;
+  return {
+    frets: [...frets],
+    midis,
+    steps,
+    bass: mod12(bassMidi - root),
+    position,
+    top,
+    barre,
+    noFifth: missing.includes(7),
+    strings: sounding.length,
+    effort: Number.isFinite(fingers) ? fingers : 99,
+    missing,
+    unplayable,
+    gap: sounding.at(-1)! - sounding[0]! + 1 > sounding.length,
+  };
+}
+
+/** La forma para la URL: "x-3-2-0-1-0". */
+export const encodeFrets = (frets: readonly number[]) =>
+  frets.map((fret) => (fret === MUTED ? 'x' : String(fret))).join('-');
+
+/** Lee una forma de la URL, o null si no tiene una entrada válida por cuerda. */
+export function parseFrets(text: string | null, strings: number, maxFret: number): number[] | null {
+  if (!text) return null;
+  const parts = text.split('-');
+  if (parts.length !== strings) return null;
+  const frets = parts.map((part) => (part === 'x' ? MUTED : /^\d{1,2}$/.test(part) ? Number(part) : NaN));
+  return frets.every((fret) => fret === MUTED || (fret >= 0 && fret <= maxFret)) ? frets : null;
+}

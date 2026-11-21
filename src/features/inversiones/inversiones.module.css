@@ -206,7 +206,23 @@
   border-right: 7px solid var(--neck-ink);
 }
 .openName {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--neck-ink);
   font: 700 13px/1 var(--mono);
+}
+/* Si la cuerda al aire es del acorde, su nombre es un botón: se ve como una nota tenue. */
+.openName[data-tone] {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1.5px dashed var(--neck-line);
+  border-radius: 50%;
+}
+.openName[data-tone]:hover {
+  border-color: var(--accent);
 }
 .string[data-muted] .openName {
   color: var(--accent);
@@ -218,13 +234,29 @@
   position: relative;
   display: grid;
   place-items: center;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
   border: 1.5px solid var(--neck-line);
   border-radius: 50%;
   background: var(--neck);
   color: #9a9a9a;
   font: 600 10px/1 var(--mono);
+}
+/* El círculo es chico, pero se toca todo el casillero: la zona sensible llega a 44 px de alto con el
+   ::after, sin agrandar el dibujo. */
+.ghost::after {
+  content: '';
+  position: absolute;
+  inset: -10px -8px;
+}
+.ghost:hover {
+  border-color: var(--accent);
+  color: var(--neck-ink);
+}
+.ghost:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
 }
 .string[data-muted] .ghost {
   opacity: 0.45;
@@ -343,4 +375,50 @@
   align-items: center;
   gap: 10px 16px;
   margin-top: 16px;
+}
+
+/* Tu forma: lo que armaste tocando el diapasón. */
+.mine {
+  display: grid;
+  margin-top: 12px;
+  border: var(--rule);
+}
+.mine > .current {
+  border-bottom: var(--rule);
+}
+.mineName {
+  font: 900 semi-expanded 22px/1.1 var(--heavy);
+}
+.mineEmpty {
+  padding: 14px 12px;
+  border-bottom: var(--rule);
+  font-weight: 700;
+  text-align: center;
+}
+.notes {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 10px 12px;
+  border-bottom: var(--rule);
+  list-style: none;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.notes li::before {
+  content: '· ';
+}
+.notes li[data-kind='mano'],
+.notes li[data-kind='nueva'] {
+  font-weight: 700;
+}
+.notes li[data-kind='nueva']::before {
+  content: '★ ';
+  color: var(--accent);
+}
+.mineTools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 12px;
 }

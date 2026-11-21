@@ -1,7 +1,16 @@
 // Inversiones: todas las figuras de un acorde, agrupadas por la nota del bajo.
 import { describe, expect, it } from 'vitest';
 import { CHORD_STEPS } from '~/core/harmony';
-import { INVERSION_CHORDS, inversionsOf, tabOf, toneName, voicingsOf } from '~/core/inversions';
+import {
+  describeShape,
+  encodeFrets,
+  INVERSION_CHORDS,
+  inversionsOf,
+  parseFrets,
+  tabOf,
+  toneName,
+  voicingsOf,
+} from '~/core/inversions';
 import { noteToMidi } from '~/core/notes';
 import { MUTED } from '~/core/tuning';
 import { STANDARD, TUNINGS } from '~/data/tunings';
@@ -25,7 +34,8 @@ describe('voicingsOf', () => {
         expect(voicing.noFifth).toBe(missing.length > 0);
       }
     }
-  });
+    // Recorre miles de figuras con un expect cada una: con la máquina cargada pasa los 5 s de siempre.
+  }, 30_000);
 
   it('el bajo es la nota más grave que suena', () => {
     for (const voicing of voicingsOf(standard, 0, [0, 4, 7])) {
@@ -95,5 +105,32 @@ describe('toneName', () => {
     expect(toneName(2, 'add9')).toBe('9');
     expect(toneName(2, 'sus2')).toBe('2');
     expect(toneName(10, 'm7')).toBe('♭7');
+  });
+});
+
+describe('una forma armada a mano', () => {
+  const x = MUTED;
+
+  it('dice qué nota va en el bajo y qué le falta', () => {
+    const shape = describeShape(standard, 0, '', [0, 3, 2, 0, 1, 3])!;
+    expect(shape.bass).toBe(4);
+    expect(shape.missing).toEqual([]);
+    expect(shape.unplayable).toBeNull();
+    const lean = describeShape(standard, 0, '', [x, 3, 2, x, 1, x])!;
+    expect(lean.missing).toEqual([7]);
+    expect(lean.gap).toBe(true);
+  });
+
+  it('avisa cuando la mano no llega', () => {
+    expect(describeShape(standard, 0, '', [8, 3, 2, x, x, x])!.unplayable).toMatch(/cuatro trastes/);
+    expect(describeShape(standard, 0, '', [x, x, x, x, x, x])).toBeNull();
+  });
+
+  it('va y vuelve de la URL', () => {
+    expect(encodeFrets([x, 3, 2, 0, 1, 0])).toBe('x-3-2-0-1-0');
+    expect(parseFrets('x-3-2-0-1-0', 6, 15)).toEqual([x, 3, 2, 0, 1, 0]);
+    expect(parseFrets('x-3-2-0-1', 6, 15)).toBeNull();
+    expect(parseFrets('x-3-2-0-1-99', 6, 15)).toBeNull();
+    expect(parseFrets('x-3-2-a-1-0', 6, 15)).toBeNull();
   });
 });

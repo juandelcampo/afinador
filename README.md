@@ -38,9 +38,11 @@ Elegís la nota y el tipo de acorde (mayor, menor, séptimas, disminuidos, aumen
 
 Todo pasa en un diapasón, como el del Afinador: tenues, las notas del acorde en todo el mástil; encima, la forma elegida, con qué nota del acorde es cada dedo (R, 3, ♭7) y la del bajo en naranja. Con ◀ ▶ se recorren las formas de esa inversión del aire hacia el cuerpo; cada cambio suena, y tocar un punto hace sonar esa nota sola. En el celular el diapasón se desplaza de costado hasta la forma. "Escuchar las inversiones" toca una de cada una, y el diapasón las va siguiendo.
 
+También se puede armar una forma propia: tocar una nota tenue pone un dedo ahí (y la hace sonar), tocar un dedo lo saca y tocar el nombre de una cuerda la deja al aire. La pantalla dice qué inversión quedó según la nota del bajo, qué nota del acorde falta, si la mano no llega y si esa forma ya está en la lista. La forma va en la URL (`forma=x-3-2-0-1-0`), así se comparte con un link.
+
 Las figuras salen de recorrer el mástil hasta el traste 12 (`core/inversions.ts`): las cuerdas que suenan van de corrido, todas son notas del acorde, hasta cuatro dedos con la cejilla contando como uno y cuatro trastes de abertura. En los acordes de cuatro notas puede faltar la quinta. Entran las justas (cada nota una vez, en cuerdas vecinas) y las llenas (con notas dobladas); una llena que es otra con alguna cuerda menos no se muestra. En afinaciones de solo cuartas y quintas, algunos acordes (el aumentado, el dim7) no entran en la mano, y la pantalla lo dice.
 
-El acorde y la afinación van en la URL (`/inversiones?afinacion=dadgad&acorde=Gmaj7`). Armonía lleva acá desde el acorde elegido de la vuelta.
+El acorde, la afinación y la forma propia van en la URL (`/inversiones?afinacion=dadgad&acorde=Gmaj7`). Armonía lleva acá desde el acorde elegido de la vuelta.
 
 La barra de arriba tiene los nombres de las notas (E A D o Mi La Re) y la referencia del La. El volumen está en Escuchar, que es lo único que suena.
 

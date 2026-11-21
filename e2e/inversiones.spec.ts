@@ -40,7 +40,7 @@ test.describe('inversiones', () => {
     await expect(bass.getByRole('button', { name: /C\/E/ })).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByText('La 3 en el bajo.')).toBeVisible();
     await expect(
-      page.getByTestId('diapason').getByRole('button', { name: /6\.ª cuerda, 3 del acorde/ }),
+      page.getByTestId('diapason').getByRole('button', { name: /^Sacar el dedo de la 6\.ª cuerda.*\(3\)$/ }),
     ).toBeVisible();
 
     await page.locator('#tipo').selectOption('maj7');
@@ -58,6 +58,40 @@ test.describe('inversiones', () => {
     ).toHaveText(/^GFundamental/);
     await page.getByRole('link', { name: 'Afinar en DADGAD →' }).click();
     await expect(page).toHaveURL(/\/afinador\/dadgad$/);
+    expect(errors).toEqual([]);
+  });
+
+  test('arma una forma propia tocando el diapasón y queda en la URL', async ({ page }) => {
+    const errors = watchErrors(page);
+    await goto(page, '/inversiones?acorde=C');
+    const neck = page.getByTestId('diapason');
+    // Del C de siempre: la 6.ª al aire pone el Mi en el bajo.
+    await neck.getByRole('button', { name: 'Dejar sonar al aire la 6.ª cuerda (3)' }).click();
+    await expect(page).toHaveURL(/forma=0-3-2-0-1-0/);
+    await expect.poll(() => plucks(page)).toBeGreaterThanOrEqual(1);
+    const mine = page.getByTestId('mi-forma');
+    await expect(mine).toContainText('C/E');
+    await expect(mine).toContainText('Está en la lista');
+    await expect(
+      page.getByRole('group', { name: 'Qué va en el bajo' }).getByRole('button', { name: /C\/E/ }),
+    ).toHaveAttribute('aria-pressed', 'true');
+
+    // Sacar dedos hasta que falte la quinta.
+    await neck.getByRole('button', { name: 'Sacar el dedo de la 3.ª cuerda, al aire (5)' }).click();
+    await neck.getByRole('button', { name: 'Sacar el dedo de la 1.ª cuerda, al aire (3)' }).click();
+    await expect(page).toHaveURL(/forma=0-3-2-x-1-x/);
+    await expect(mine).toContainText('Le falta la 5');
+
+    // Al recargar, la forma sigue ahí.
+    await page.reload();
+    await expect(page.getByTestId('mi-forma')).toContainText('0 3 2 × 1 ×');
+
+    await page.getByRole('button', { name: 'Volver a las formas' }).click();
+    await expect(page).not.toHaveURL(/forma=/);
+    await expect(page.getByTestId('shape-counter')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Armar la mía' }).click();
+    await expect(page.getByTestId('mi-forma')).toContainText('Tu forma está vacía');
     expect(errors).toEqual([]);
   });
 
