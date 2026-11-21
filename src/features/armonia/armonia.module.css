@@ -1,36 +1,43 @@
-/* Armonía: explorar a la izquierda, la vuelta a la derecha. En pantallas angostas, todo en una columna
-   y la vuelta antes de los puntos cardinales. */
+/* Armonía: el mundo y sus acordes al medio; a la izquierda, de dónde sacar más color; a la derecha, tu
+   vuelta. Las dos laterales miden lo mismo y quedan fijas mientras el medio baja. En pantallas medianas la
+   izquierda pasa abajo del medio, y en el celular todo va en una columna: mundo, vuelta, más color. */
 .wrap {
   container: content / inline-size;
   min-width: 0;
 }
 .page {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-areas:
+    'center'
+    'right'
+    'left';
+  grid-template-columns: minmax(0, 1fr);
   min-width: 0;
 }
-.column {
-  display: contents;
+.center {
+  grid-area: center;
+  min-width: 0;
 }
-.page .sinCentro {
-  order: 1;
+.left {
+  grid-area: left;
+}
+.right {
+  grid-area: right;
+}
+.side {
+  container: side / inline-size;
+  min-width: 0;
 }
 @container content (min-width: 860px) {
   .page {
-    display: grid;
-    grid-template-columns: minmax(0, 7fr) minmax(340px, 5fr);
+    grid-template-areas:
+      'center right'
+      'left right';
+    grid-template-columns: minmax(0, 1fr) 340px;
+    grid-template-rows: auto 1fr;
     align-items: start;
   }
-  .column {
-    container: main / inline-size;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-  }
-  .page .sinCentro {
-    order: 0;
-  }
-  .column + .column {
+  .right {
     position: sticky;
     top: var(--bar);
     max-height: calc(100dvh - var(--bar));
@@ -38,8 +45,29 @@
     overscroll-behavior: contain;
     border-left: var(--rule);
   }
-  .column + .column > section {
+  .right > section {
     border-bottom: 0;
+  }
+}
+@container content (min-width: 1180px) {
+  .page {
+    grid-template-areas: 'left center right';
+    grid-template-columns: 320px minmax(0, 1fr) 320px;
+    grid-template-rows: auto;
+  }
+  .left {
+    position: sticky;
+    top: var(--bar);
+    max-height: calc(100dvh - var(--bar));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-right: var(--rule);
+  }
+  .left > section:last-child {
+    border-bottom: 0;
+  }
+  .center {
+    min-height: calc(100dvh - var(--bar));
   }
 }
 
@@ -553,6 +581,87 @@
   .dock {
     display: none;
   }
+}
+
+/* Lo que se abre a pedido */
+.section > summary {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  list-style: none;
+}
+.section > summary::-webkit-details-marker {
+  display: none;
+}
+.section > summary > * {
+  flex: 1;
+}
+.section > summary::after {
+  content: '↓';
+  font: 900 18px/1 var(--heavy);
+}
+.section[open] > summary::after {
+  content: '↑';
+}
+.more {
+  margin-top: 10px;
+}
+.more > summary,
+.pills button {
+  font: 700 12px/1.2 var(--ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.more > summary {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  cursor: pointer;
+}
+.more > summary::after {
+  content: ' ↓';
+  white-space: pre;
+}
+.more[open] > summary::after {
+  content: ' ↑';
+}
+.more .controls {
+  margin-top: 4px;
+}
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+.pills button {
+  flex: 1 1 auto;
+  min-height: 40px;
+  padding: 4px 10px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+}
+.pills button:hover:not(:disabled) {
+  background: var(--ink);
+  color: var(--paper);
+}
+.pills button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.empty {
+  display: grid;
+  gap: 10px;
+}
+.editorTabs {
+  margin: 10px 0 8px;
+}
+.editorTabs [role='group'] {
+  display: flex;
+}
+.editorTabs [role='group'] button {
+  flex: 1;
+  padding-inline: 4px;
 }
 
 /* 03 Para arrancar */

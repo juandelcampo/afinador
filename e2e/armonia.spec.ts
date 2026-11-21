@@ -49,17 +49,25 @@ test.describe('armonía', () => {
     await degrees.getByRole('button', { name: 'Sumar Am a la vuelta' }).click();
     await expect(page).toHaveURL(/v=C_Am/);
 
-    // El Am elegido: con séptima menor, y el bajo en la tercera.
+    // El Am elegido se edita en un modal: con séptima menor, y el bajo en la tercera.
     const vuelta = page.getByTestId('vuelta');
     await vuelta.getByRole('button', { name: /Am/ }).click();
     const editor = page.getByTestId('chord-editor');
     await editor.getByRole('button', { name: /\+7m/ }).click();
+    await editor.getByRole('button', { name: 'Bajo', exact: true }).click();
     await editor.getByRole('button', { name: /^3\.ª/ }).click();
     await expect(vuelta).toContainText('Am7/C');
     await expect(page.getByTestId('common-tones')).toContainText('Con C comparte');
+    await page.keyboard.press('Escape');
+    await expect(editor).toBeHidden();
 
-    // Cerrar con la plagal suma F y C.
-    await page.getByRole('button', { name: /^Plagal/ }).click();
+    // Cerrar con la plagal suma F y C, y el modal se cierra solo.
+    await page.getByRole('button', { name: 'Cerrar con…' }).click();
+    await page
+      .getByTestId('cadences')
+      .getByRole('button', { name: /^Plagal/ })
+      .click();
+    await expect(page.getByTestId('cadences')).toBeHidden();
     await expect(vuelta.getByRole('listitem')).toHaveCount(4);
     await expect(page).toHaveURL(/v=C_Am7%2FC_F_C|v=C_Am7\/C_F_C/);
 
@@ -78,6 +86,7 @@ test.describe('armonía', () => {
 
   test('los puntos cardinales suman acordes y avisan el paso por el mismo polo', async ({ page }) => {
     await goto(page, '/armonia');
+    await page.getByTestId('sin-centro').locator('summary').click();
     await page
       .getByRole('region', { name: 'Grupo 2' })
       .getByRole('button', { name: 'Sumar Cm a la vuelta' })
@@ -89,6 +98,7 @@ test.describe('armonía', () => {
   test('una vuelta para arrancar se escucha, se usa y se transforma', async ({ page }) => {
     const errors = watchErrors(page);
     await goto(page, '/armonia?escala=mayor&tono=0');
+    await page.getByRole('button', { name: 'Arrancar con una vuelta' }).click();
     const starter = page.getByTestId('vuelta-i-vi-iv-v');
     await expect(starter).toContainText('C · Am · F · G');
     await expect(starter).toContainText('Stand By Me');
@@ -97,7 +107,8 @@ test.describe('armonía', () => {
 
     await starter.getByRole('button', { name: 'Usar' }).click();
     await expect(page).toHaveURL(/v=C_Am_F_G/);
-    const transforms = page.getByRole('list', { name: 'Transformar la vuelta' });
+    await expect(page.getByTestId('starters')).toBeHidden();
+    const transforms = page.getByRole('group', { name: 'Transformar la vuelta' });
     await transforms.getByRole('button', { name: /^Desplazar/ }).click();
     await expect(page).toHaveURL(/v=Am_F_G_C/);
     await transforms.getByRole('button', { name: /^Bajo que baja/ }).click();
@@ -107,11 +118,15 @@ test.describe('armonía', () => {
     const vuelta = page.getByTestId('vuelta');
     await vuelta.getByRole('listitem').last().getByRole('button').click();
     const editor = page.getByTestId('chord-editor');
+    await editor.getByRole('button', { name: 'Cantar', exact: true }).click();
     await expect(page.getByTestId('sing-over')).toContainText('Se apoyan');
+    await editor.getByRole('button', { name: 'Cambiar', exact: true }).click();
+    await expect(page.getByTestId('editor-moves')).toContainText('I → VI');
     await editor.getByRole('button', { name: /^Relativo/ }).click();
     await expect(vuelta.getByRole('listitem').last()).toContainText('Am');
+    await page.getByRole('button', { name: 'Cerrar', exact: true }).click();
 
-    // De dos en dos, desde el acorde elegido.
+    // De dos en dos, desde el último acorde, a la izquierda.
     const moves = page.getByTestId('moves');
     await moves.locator('summary').click();
     await expect(moves).toContainText('desde Am');
@@ -121,6 +136,7 @@ test.describe('armonía', () => {
 
   test('una vuelta en menor cambia el mundo a la menor natural', async ({ page }) => {
     await goto(page, '/armonia?escala=mayor&tono=9');
+    await page.getByRole('button', { name: 'Arrancar con una vuelta' }).click();
     const starter = page.getByTestId('vuelta-m-i-vii-vi-vmaj');
     await starter.locator('xpath=ancestor::details').locator('summary').click();
     await expect(starter).toContainText('Am · G · F · E');

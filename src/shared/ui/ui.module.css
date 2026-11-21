@@ -299,3 +299,57 @@ button:disabled {
 .mixer .fader input {
   width: 100%;
 }
+
+/* Sheet: un modal por vez */
+.sheet {
+  width: min(680px, calc(100vw - 32px));
+  max-width: none;
+  max-height: min(88dvh, 920px);
+  padding: 0;
+  border: var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 8px 8px 0 var(--ink);
+}
+.sheet::backdrop {
+  background: rgb(0 0 0 / 0.5);
+}
+.sheetBody {
+  padding: 0 var(--gutter) 18px;
+}
+.sheetHead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 calc(-1 * var(--gutter)) 10px;
+  padding: 8px var(--gutter);
+  border-bottom: var(--rule);
+  background: var(--paper);
+}
+.sheetHead h2 {
+  flex: 1;
+  min-width: 0;
+  font: 900 expanded 20px/1.1 var(--heavy);
+  text-transform: uppercase;
+}
+.sheetClose {
+  flex: none;
+  width: var(--touch);
+  height: var(--touch);
+  border: var(--rule);
+  background: var(--ink);
+  color: var(--paper);
+  font: 900 18px/1 var(--ui);
+}
+@media (max-width: 719px) {
+  .sheet {
+    width: 100%;
+    max-height: 90dvh;
+    margin: auto 0 0;
+    border-width: 3px 0 0;
+    box-shadow: none;
+  }
+}
