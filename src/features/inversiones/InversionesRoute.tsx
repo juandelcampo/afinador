@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams, type MetaFunction } from 'react-router';
 import { getAudio } from '~/audio/engine';
-import { pluckString } from '~/audio/instrument';
+import { pluckString, strumShape } from '~/audio/instrument';
 import { CHORD_STEPS, chordToken, parseChord, plainName, type Chord, type Suffix } from '~/core/harmony';
 import {
   describeShape,
@@ -18,6 +18,7 @@ import { noteLabel, noteToMidi } from '~/core/notes';
 import { MUTED, openChord } from '~/core/tuning';
 import { GROUPS, TUNINGS, type Tuning } from '~/data/tunings';
 import { Fader } from '~/shared/Fader';
+import { ShapeStyleToggle } from '~/shared/ShapeStyle';
 import { useSettings } from '~/shared/settings';
 import { useHydrated } from '~/shared/useHydrated';
 import { Button, PageTitle, Slab } from '~/shared/ui/ui';
@@ -36,8 +37,8 @@ export const meta: MetaFunction = () => [
 const DEFAULT_TUNING = 'estandar';
 const EMPTY = new URLSearchParams();
 const ORDINALS = ['Fundamental', '1.ª inversión', '2.ª inversión', '3.ª inversión', '4.ª inversión'];
-/** Cuánto tarda cada inversión en el recorrido, en segundos. */
-const TOUR_STEP = 1.4;
+/** Cuánto queda sonando cada inversión en el recorrido después de su última nota, en segundos. */
+const TOUR_REST = 1.1;
 
 const findTuning = (id: string | null) =>
   TUNINGS.find((item) => item.id === id) ?? TUNINGS.find((item) => item.id === DEFAULT_TUNING)!;
@@ -72,16 +73,6 @@ function easiest(group: InversionGroup): Voicing | undefined {
   return [...pool].sort((a, b) => a.effort - b.effort)[0];
 }
 
-/** Un rasguido hacia abajo, de la cuerda más grave a la más aguda. */
-function strumVoicing(midis: Voicing['midis'], a4: number, when: number) {
-  let position = 0;
-  midis.forEach((midi, stringIndex) => {
-    if (midi === null) return;
-    pluckString(stringIndex, midi, { a4, when: when + position * 0.035, velocity: 0.9 });
-    position += 1;
-  });
-}
-
 interface View {
   /** Para qué acorde y afinación vale: si cambian, se vuelve a la fundamental. */
   key: string;
@@ -97,6 +88,7 @@ export default function InversionesRoute() {
   const params = hydrated ? searchParams : EMPTY;
   const notation = useSettings((s) => s.notation);
   const a4 = useSettings((s) => s.a4);
+  const style = useSettings((s) => s.chordStyle);
 
   const tuning = findTuning(params.get('afinacion'));
   const chord = readChord(params.get('acorde')) ?? homeChord(tuning);
@@ -105,6 +97,10 @@ export default function InversionesRoute() {
     () => inversionsOf(open, chord.root, chord.suffix),
     [open, chord.root, chord.suffix],
   );
+
+  /** La nota de esa cuerda en ese traste, en semitonos desde la raíz. */
+  const stepAt = (stringIndex: number, fret: number) => (open[stringIndex]! + fret - chord.root + 120) % 12;
+  const chordSteps = new Set(CHORD_STEPS[chord.suffix]!.map((item) => item % 12));
 
   const chordKey = `${tuning.id}|${chordToken(chord)}`;
   const [view, setView] = useState<View>({ key: chordKey, inversion: 0, frets: null });
@@ -187,7 +183,7 @@ export default function InversionesRoute() {
   const play = (shape: Voicing | null | undefined) => {
     if (!shape) return;
     const { ctx } = getAudio();
-    strumVoicing(shape.midis, a4, ctx.currentTime + 0.02);
+    strumShape(shape.midis, a4, ctx.currentTime + 0.02, style);
   };
   /** Elegir una forma la hace sonar: primero se escucha. */
   const show = (inversion: number, shape: Voicing | undefined) => {
@@ -196,9 +192,10 @@ export default function InversionesRoute() {
     setView({ key: chordKey, inversion, frets: shape ? shape.frets.join() : null });
     play(shape);
   };
+  /** Las flechas dan la vuelta: después de la última forma viene la primera, y al revés. */
   const step = (delta: number) => {
-    const next = shapes[index + delta];
-    if (next) show(current.inversion, next);
+    if (!shapes.length) return;
+    show(current.inversion, shapes[(index + delta + shapes.length) % shapes.length]);
   };
   /** Pone o saca un dedo. La primera vez parte de la forma que se ve; poner un dedo hace sonar esa nota. */
   const toggle = (stringIndex: number, fret: number) => {
@@ -220,14 +217,17 @@ export default function InversionesRoute() {
     if (editing) update({ forma: null });
     const { ctx } = getAudio();
     const start = ctx.currentTime + 0.04;
-    groups.forEach((item, position) => {
+    // Cada inversión espera a que la anterior termine de sonar: el arpegio tarda más que el rasgueo.
+    let offset = 0;
+    groups.forEach((item) => {
       const shape = easiest(item);
       if (!shape) return;
-      strumVoicing(shape.midis, a4, start + position * TOUR_STEP);
+      const at = offset;
+      offset += strumShape(shape.midis, a4, start + at, style) + TOUR_REST;
       tourTimers.current.push(
         setTimeout(
           () => setView({ key: chordKey, inversion: item.inversion, frets: shape.frets.join() }),
-          position * TOUR_STEP * 1000,
+          at * 1000,
         ),
       );
     });
@@ -337,12 +337,10 @@ export default function InversionesRoute() {
 
         <Diapason
           notes={tuning.notes}
-          open={open}
-          root={chord.root}
-          suffix={chord.suffix}
-          steps={CHORD_STEPS[chord.suffix]!}
           voicing={voicing}
           notation={notation}
+          toneAt={(stringIndex, fret) => toneName(stepAt(stringIndex, fret), chord.suffix)}
+          canPlace={(stringIndex, fret) => chordSteps.has(stepAt(stringIndex, fret))}
           onToggle={toggle}
         />
 
@@ -402,7 +400,7 @@ export default function InversionesRoute() {
               type="button"
               className={styles.arrow}
               aria-label="Forma anterior, más cerca de la cejuela"
-              disabled={index === 0}
+              disabled={shapes.length < 2}
               onClick={() => step(-1)}
             >
               ◀
@@ -423,7 +421,7 @@ export default function InversionesRoute() {
               type="button"
               className={styles.arrow}
               aria-label="Forma siguiente, más arriba en el mástil"
-              disabled={index === shapes.length - 1}
+              disabled={shapes.length < 2}
               onClick={() => step(1)}
             >
               ▶
@@ -442,6 +440,7 @@ export default function InversionesRoute() {
               Armar la mía
             </Button>
           )}
+          <ShapeStyleToggle />
           <Fader compact />
         </div>
         <p className={styles.hint}>

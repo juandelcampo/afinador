@@ -325,6 +325,11 @@ describe('afinaciones generales', () => {
 });
 
 describe('preferencias guardadas', () => {
+  it('se acuerda si los acordes suenan rasgueados o arpegiados, y descarta otra cosa', () => {
+    expect(sanitize({ chordStyle: 'arp' }).chordStyle).toBe('arp');
+    expect(sanitize({ chordStyle: 'tremolo' as never }).chordStyle).toBeUndefined();
+  });
+
   it('junta el volumen general y el del instrumento de antes sin cambiar cuánto suena', () => {
     expect(sanitize({ volumes: { master: 0.5, instrumento: 0.8 } }).volume).toBeCloseTo(0.4);
     expect(sanitize({ volume: 0.3, volumes: { master: 1, instrumento: 1 } }).volume).toBe(0.3);

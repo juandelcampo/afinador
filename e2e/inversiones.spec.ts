@@ -95,6 +95,32 @@ test.describe('inversiones', () => {
     expect(errors).toEqual([]);
   });
 
+  test('las flechas dan la vuelta y el arpegio se recuerda', async ({ page }) => {
+    const errors = watchErrors(page);
+    await goto(page, '/inversiones?acorde=C');
+    const counter = page.getByTestId('shape-counter');
+    const total = Number(/de (\d+)/.exec((await counter.textContent())!)![1]);
+    // De la primera, para atrás, se pasa a la última; y de ahí, para adelante, a la primera.
+    while (!(await counter.textContent())!.startsWith('Forma 1 ')) {
+      await page.getByRole('button', { name: /Forma anterior/ }).click();
+    }
+    await page.getByRole('button', { name: /Forma anterior/ }).click();
+    await expect(counter).toHaveText(`Forma ${total} de ${total}`);
+    await page.getByRole('button', { name: /Forma siguiente/ }).click();
+    await expect(counter).toHaveText(`Forma 1 de ${total}`);
+
+    const style = page.getByRole('group', { name: 'Cómo suena el acorde' });
+    await style.getByRole('button', { name: 'Arpegio' }).click();
+    await page.reload();
+    await expect(
+      page.getByRole('group', { name: 'Cómo suena el acorde' }).getByRole('button', { name: 'Arpegio' }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    const before = await plucks(page);
+    await page.getByRole('button', { name: /^Escuchar C: / }).click();
+    await expect.poll(() => plucks(page)).toBeGreaterThanOrEqual(before + 3);
+    expect(errors).toEqual([]);
+  });
+
   test('avisa cuando la mano no llega a ninguna forma', async ({ page }) => {
     await goto(page, '/inversiones?afinacion=bebebe&acorde=Dbaug');
     await expect(page.getByText(/la mano no llega a ninguna forma/)).toBeVisible();

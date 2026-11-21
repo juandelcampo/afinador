@@ -97,7 +97,7 @@ export function useVuelta({
   /** Un acorde suelto, para escucharlo antes de sumarlo. */
   const strum = useCallback((voicing: Voicing) => {
     const { ctx } = getAudio();
-    strumVoicing(voicing, latest.current.a4, ctx.currentTime + 0.02, 0.9, 0.035);
+    strumVoicing(voicing, latest.current.a4, ctx.currentTime + 0.02, 0.9, 0.06);
   }, []);
 
   /** Una vuelta de muestra: cada acorde una vez, dos pulsos cada uno, sin quedar sonando. */
@@ -107,7 +107,7 @@ export function useVuelta({
       const { ctx } = getAudio();
       const step = 120 / latest.current.tempo;
       list.forEach((voicing, index) =>
-        strumVoicing(voicing, latest.current.a4, ctx.currentTime + 0.04 + index * step, 0.85, 0.03),
+        strumVoicing(voicing, latest.current.a4, ctx.currentTime + 0.04 + index * step, 0.85, 0.05),
       );
     },
     [stop],

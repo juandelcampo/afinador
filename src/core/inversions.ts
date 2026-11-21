@@ -157,7 +157,8 @@ const hasThird = (steps: readonly number[]) => steps.includes(3) || steps.includ
 /** El lugar de cada nota apilando terceras: raíz, tercera (o la que la reemplaza), quinta, séptima, novena. */
 function stackRank(step: number, steps: readonly number[]): number {
   if (step === 0) return 0;
-  if (step === 2 && hasThird(steps)) return 4;
+  // La novena (también la ♭9) y la oncena son color encima de la tríada, no la tercera.
+  if (step === 1 || ((step === 2 || step === 5) && hasThird(steps))) return 4;
   if (step <= 5) return 1;
   if (step <= 8) return 2;
   return 3;
@@ -165,6 +166,7 @@ function stackRank(step: number, steps: readonly number[]): number {
 
 const TONE_NAMES: Record<number, string> = {
   0: 'R',
+  1: '♭9',
   2: '2',
   3: '♭3',
   4: '3',
@@ -180,6 +182,7 @@ const TONE_NAMES: Record<number, string> = {
 /** Cómo se llama una nota dentro del acorde: R, 3, ♭7. En el dim7, la sexta hace de séptima. */
 export function toneName(step: number, suffix: Suffix): string {
   if (step === 2 && hasThird(CHORD_STEPS[suffix]!)) return '9';
+  if (step === 5 && hasThird(CHORD_STEPS[suffix]!)) return '11';
   if (step === 9 && suffix === 'dim7') return '𝄫7';
   return TONE_NAMES[step] ?? String(step);
 }
@@ -191,6 +194,18 @@ function bassWhy(rank: number): string {
   if (rank === 2) return 'Muy inestable: entra y sale por paso, de pasada.';
   if (rank === 3) return 'Tira para abajo: pide que el bajo baje un paso.';
   return 'El color en el bajo: suena suspendido, sin piso.';
+}
+
+/** Qué inversión da cada nota en el bajo y qué le pasa al acorde. Sirve para cualquier acorde. */
+export function bassReading(suffix: Suffix, bass: number): { inversion: number; tone: string; why: string } {
+  const steps = CHORD_STEPS[suffix]!;
+  const ordered = [...new Set(steps.map(mod12))].sort((a, b) => stackRank(a, steps) - stackRank(b, steps));
+  const step = mod12(bass);
+  return {
+    inversion: Math.max(0, ordered.indexOf(step)),
+    tone: toneName(step, suffix),
+    why: bassWhy(stackRank(step, steps)),
+  };
 }
 
 export interface InversionGroup {

@@ -24,6 +24,8 @@ interface Settings {
   volume: number;
   tunerMode: TunerMode;
   listen: ListenPrefs;
+  /** Cómo suena un acorde suelto: rasgueado o arpegiado, nota por nota. */
+  chordStyle: PlayStyle;
   /** Ids de las afinaciones favoritas, en el orden en que se marcaron. */
   favorites: string[];
   toggleFavorite: (id: string) => void;
@@ -68,6 +70,7 @@ export function sanitize(
           : DEFAULT_LISTEN.tempo,
     };
   }
+  if (saved.chordStyle === 'arp' || saved.chordStyle === 'strum') clean.chordStyle = saved.chordStyle;
   if (Array.isArray(saved.favorites)) {
     // Una afinación que ya no está en el catálogo se olvida, y ninguna aparece dos veces.
     const known = new Set(TUNINGS.map((tuning) => tuning.id));
@@ -86,6 +89,7 @@ export const useSettings = create<Settings>()(
       volume: DEFAULT_VOLUME,
       tunerMode: 'auto',
       listen: { ...DEFAULT_LISTEN, patterns: { ...DEFAULT_LISTEN.patterns } },
+      chordStyle: 'strum',
       favorites: [],
       toggleFavorite: (id) =>
         set(({ favorites }) => ({

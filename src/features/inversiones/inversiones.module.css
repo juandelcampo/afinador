@@ -260,6 +260,34 @@
 .string[data-muted] .ghost {
   opacity: 0.45;
 }
+/* En modo libre todo el casillero se toca: no se dibuja nada hasta que el mouse o el foco pasan encima. */
+.spot {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.spot::after {
+  content: '';
+  width: 24px;
+  height: 24px;
+  border: 1.5px solid transparent;
+  border-radius: 50%;
+}
+.spot:hover::after {
+  border-color: var(--accent);
+}
+.spot:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
+}
+.string[data-muted] .spot {
+  opacity: 0.6;
+}
 /* La forma elegida. */
 .dot {
   position: relative;

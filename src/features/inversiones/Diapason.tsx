@@ -1,9 +1,9 @@
 // El diapasón de las inversiones: todas las notas del acorde, tenues, y la forma elegida encima. Tocar una
-// nota tenue pone un dedo ahí; tocar un dedo lo saca. Así se arma una forma propia.
+// nota tenue pone un dedo ahí; tocar un dedo lo saca. Así se arma una forma propia. En modo libre (¿Qué
+// acorde?) se puede tocar cualquier casillero y la cejuela deja sonar o apaga cada cuerda.
 import { useEffect, useRef } from 'react';
-import { toneName, type Voicing } from '~/core/inversions';
+import type { Voicing } from '~/core/inversions';
 import { noteLabel, type Notation } from '~/core/notes';
-import type { Suffix } from '~/core/harmony';
 import { MUTED } from '~/core/tuning';
 import styles from './inversiones.module.css';
 
@@ -16,26 +16,32 @@ const INLAYS: Record<number, number> = { 3: 1, 5: 1, 7: 1, 9: 1, 12: 2, 15: 1 };
 interface DiapasonProps {
   /** El nombre de cada cuerda al aire, de la 6.ª a la 1.ª. */
   notes: string[];
-  /** El MIDI de cada cuerda al aire. */
-  open: number[];
-  root: number;
-  suffix: Suffix;
-  steps: readonly number[];
-  voicing: Voicing | null;
+  /** La forma que se ve, o null si no hay ninguna. */
+  voicing: Pick<Voicing, 'frets' | 'midis' | 'position'> | null;
   notation: Notation;
+  /** Qué dice la nota de esa cuerda en ese traste: su función en el acorde (R, 3) o su nombre. */
+  toneAt: (stringIndex: number, fret: number) => string;
+  /** Si se puede poner un dedo ahí. En modo libre, en todos lados. */
+  canPlace?: (stringIndex: number, fret: number) => boolean;
+  /** Cualquier casillero se toca, sin notas tenues; la cejuela alterna entre al aire y apagada. */
+  free?: boolean;
   /** Pone o saca un dedo: el traste en esa cuerda, 0 al aire. */
   onToggle: (stringIndex: number, fret: number) => void;
 }
 
-const mod12 = (value: number) => ((value % 12) + 12) % 12;
-
-export function Diapason({ notes, open, root, suffix, steps, voicing, notation, onToggle }: DiapasonProps) {
+export function Diapason({
+  notes,
+  voicing,
+  notation,
+  toneAt,
+  canPlace = () => true,
+  free = false,
+  onToggle,
+}: DiapasonProps) {
   const scroller = useRef<HTMLDivElement>(null);
   const count = notes.length;
-  const chordSteps = new Set(steps.map(mod12));
-  const bassString = voicing
-    ? voicing.midis.indexOf(Math.min(...voicing.midis.filter((midi): midi is number => midi !== null)))
-    : -1;
+  const sounding = voicing ? voicing.midis.filter((midi): midi is number => midi !== null) : [];
+  const bassString = sounding.length ? voicing!.midis.indexOf(Math.min(...sounding)) : -1;
 
   // En el celular el diapasón se desplaza de costado: la forma elegida queda a la vista.
   const position = voicing?.position ?? 0;
@@ -59,37 +65,41 @@ export function Diapason({ notes, open, root, suffix, steps, voicing, notation, 
           const where = (column: number) =>
             `${count - stringIndex}.ª cuerda, ${column === 0 ? 'al aire' : `traste ${column}`}`;
           const dot = (column: number) => {
-            const step = mod12(open[stringIndex]! + column - root);
-            const tone = toneName(step, suffix);
+            const tone = toneAt(stringIndex, column);
             if (fret === column) {
               return (
                 <button
                   type="button"
                   className={styles.dot}
                   data-bass={stringIndex === bassString || undefined}
-                  aria-label={`Sacar el dedo de la ${where(column)} (${tone})`}
+                  aria-label={
+                    free && column === 0
+                      ? `Apagar la ${count - stringIndex}.ª cuerda (${tone})`
+                      : `Sacar el dedo de la ${where(column)} (${tone})`
+                  }
                   onClick={() => onToggle(stringIndex, column)}
                 >
                   {tone}
                 </button>
               );
             }
-            if (column > 0 && chordSteps.has(step)) {
+            if (column > 0 && canPlace(stringIndex, column)) {
               return (
                 <button
                   type="button"
-                  className={styles.ghost}
+                  className={free ? styles.spot : styles.ghost}
                   aria-label={`Poner un dedo en la ${where(column)} (${tone})`}
                   onClick={() => onToggle(stringIndex, column)}
                 >
-                  {tone}
+                  {free ? '' : tone}
                 </button>
               );
             }
             return null;
           };
-          // La cuerda al aire se suma tocando su nombre, si su nota es del acorde.
-          const openTone = chordSteps.has(mod12(open[stringIndex]! - root));
+          // La cuerda al aire se suma tocando su nombre, si su nota es del acorde (en modo libre, siempre).
+          const openTone = free || canPlace(stringIndex, 0);
+          const openLabel = muted ? '×' : noteLabel(notes[stringIndex]!, notation);
           return (
             <div key={stringIndex} className={styles.string} data-muted={muted || undefined}>
               <div className={styles.nut} data-column={0}>
@@ -100,18 +110,17 @@ export function Diapason({ notes, open, root, suffix, steps, voicing, notation, 
                     type="button"
                     className={styles.openName}
                     data-tone
-                    aria-label={`Dejar sonar al aire la ${count - stringIndex}.ª cuerda (${toneName(
-                      mod12(open[stringIndex]! - root),
-                      suffix,
-                    )})`}
+                    aria-label={
+                      free && !muted
+                        ? `Apagar la ${count - stringIndex}.ª cuerda (${noteLabel(notes[stringIndex]!, notation)})`
+                        : `Dejar sonar al aire la ${count - stringIndex}.ª cuerda (${toneAt(stringIndex, 0)})`
+                    }
                     onClick={() => onToggle(stringIndex, 0)}
                   >
-                    {muted ? '×' : noteLabel(notes[stringIndex]!, notation)}
+                    {openLabel}
                   </button>
                 ) : (
-                  <span className={styles.openName}>
-                    {muted ? '×' : noteLabel(notes[stringIndex]!, notation)}
-                  </span>
+                  <span className={styles.openName}>{openLabel}</span>
                 )}
               </div>
               {FRETS.map((column) => (

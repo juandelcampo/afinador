@@ -162,6 +162,37 @@ export function strum(midis: number[], a4: number, when?: number, spread = 0.025
   );
 }
 
+/** Cómo suena una forma: rasgueada, o arpegiada nota por nota. */
+export type ShapeStyle = 'strum' | 'arp';
+
+/** Segundos entre cuerda y cuerda. El rasgueo va pausado, para que se oiga cada nota. */
+export const SHAPE_SPREAD: Record<ShapeStyle, number> = { strum: 0.06, arp: 0.2 };
+
+/**
+ * Una forma de la más grave a la más aguda, cada cuerda que suena con su voz. Devuelve cuántos segundos
+ * tarda en sonar la última nota.
+ */
+export function strumShape(
+  midis: ReadonlyArray<number | null>,
+  a4: number,
+  when?: number,
+  style: ShapeStyle = 'strum',
+): number {
+  const start = when ?? getAudio().ctx.currentTime;
+  const spread = SHAPE_SPREAD[style];
+  let position = 0;
+  midis.forEach((midi, stringIndex) => {
+    if (midi === null) return;
+    pluckString(stringIndex, midi, {
+      a4,
+      when: start + position * spread,
+      velocity: style === 'arp' ? 0.8 : 0.9,
+    });
+    position += 1;
+  });
+  return Math.max(0, position - 1) * spread;
+}
+
 export interface TimedNote {
   midi: number;
   /** En corcheas. */
