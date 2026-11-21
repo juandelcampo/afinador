@@ -601,7 +601,11 @@ export function variantsOf(chord: Chord): Variant[] {
       { suffix: 'madd9', label: '+9', why: 'Una segunda agregada: más aire, sin resolver nada.' },
       { suffix: 'm6', label: '+6', why: 'Sexta mayor: anguloso, no tan triste. Más luz, algo antiguo.' },
       { suffix: 'm(b6)', label: '+♭6', why: 'Sexta menor: intensifica el menor, lo vuelve inquietante.' },
-      { suffix: 'sus2', label: '2.ª por 3.ª', why: 'Sin tercera: vacío, espacioso. Buen reemplazo de un menor.' },
+      {
+        suffix: 'sus2',
+        label: '2.ª por 3.ª',
+        why: 'Sin tercera: vacío, espacioso. Buen reemplazo de un menor.',
+      },
       { suffix: '5', label: 'Quinta', why: 'Solo raíz y quinta: neutro y duro, lo del rock.' },
       { suffix: '(b3)', label: 'Bimodal', why: 'Las dos terceras juntas: agresivo y agridulce.' },
     ];
@@ -625,7 +629,11 @@ export function variantsOf(chord: Chord): Variant[] {
       label: '4.ª por 3.ª',
       why: 'Muy tenso: la cuarta quiere caer a la tercera. Bueno justo antes de un estribillo.',
     },
-    { suffix: 'sus2', label: '2.ª por 3.ª', why: 'Sin tercera: vacío, espacioso, para canciones atmosféricas.' },
+    {
+      suffix: 'sus2',
+      label: '2.ª por 3.ª',
+      why: 'Sin tercera: vacío, espacioso, para canciones atmosféricas.',
+    },
     { suffix: '7sus4', label: '7sus4', why: 'Suspendido con séptima: menos tenso que el sus4.' },
     { suffix: '5', label: 'Quinta', why: 'Solo raíz y quinta: neutro y duro, lo del rock.' },
     { suffix: '6', label: '+6', why: 'La sexta agregada: dulce, algo de jazz y de música latina.' },
