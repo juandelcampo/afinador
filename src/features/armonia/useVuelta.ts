@@ -100,5 +100,18 @@ export function useVuelta({
     strumVoicing(voicing, latest.current.a4, ctx.currentTime + 0.02, 0.9, 0.035);
   }, []);
 
-  return { running, current, start, stop, strum };
+  /** Una vuelta de muestra: cada acorde una vez, dos pulsos cada uno, sin quedar sonando. */
+  const preview = useCallback(
+    (list: Voicing[]) => {
+      stop();
+      const { ctx } = getAudio();
+      const step = 120 / latest.current.tempo;
+      list.forEach((voicing, index) =>
+        strumVoicing(voicing, latest.current.a4, ctx.currentTime + 0.04 + index * step, 0.85, 0.03),
+      );
+    },
+    [stop],
+  );
+
+  return { running, current, start, stop, strum, preview };
 }

@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useSearchParams, type MetaFunction } from 'react-router';
 import {
   BASS_ROLES,
@@ -8,6 +8,7 @@ import {
   cadenceChords,
   cardinalGroups,
   CHORD_STEPS,
+  chordColor,
   chordName,
   chordToken,
   colorGroups,
@@ -33,8 +34,19 @@ import {
   type Key,
 } from '~/core/harmony';
 import { noteLabel, noteToMidi } from '~/core/notes';
+import {
+  displace,
+  polarityOf,
+  relativeOf,
+  romanChord,
+  singOver,
+  stretch,
+  twoChordMoves,
+  walkingBass,
+} from '~/core/progressions';
 import { fingeringFor, MUTED, openChord, type Fingering } from '~/core/tuning';
 import { GROUPS, TUNINGS, type Tuning } from '~/data/tunings';
+import { VUELTA_GROUPS, VUELTAS, type VueltaMode } from '~/data/vueltas';
 import { Fader } from '~/shared/Fader';
 import { TEMPO_RANGE, useSettings } from '~/shared/settings';
 import { useHydrated } from '~/shared/useHydrated';
@@ -74,6 +86,59 @@ function voicingOf(tuning: Tuning, chord: Chord, fingering: Fingering | null): V
   const base = 48 + (chord.bass ?? chord.root);
   const steps = CHORD_STEPS[chord.suffix]!.map((step) => 48 + chord.root + step);
   return [base - 12, ...steps.map((midi) => (midi < base ? midi + 12 : midi))];
+}
+
+const readVuelta = (text: string) =>
+  text
+    .split('_')
+    .map(parseChord)
+    .filter((chord): chord is Chord => chord !== null)
+    .slice(0, MAX_CHORDS);
+
+/** El grado como lo escribe Rooksby, con el bemol de verdad: "♭VII", "II mayor". */
+const romanLabel = (token: string) => token.replace(/^b/, '♭').replace(/maj$/, ' M');
+
+const sameChords = (a: readonly Chord[], b: readonly Chord[]) =>
+  a.length === b.length && a.every((chord, index) => chordToken(chord) === chordToken(b[index]!));
+
+/** Lo que se apoya, lo que tensa y lo que choca al cantar sobre un acorde. */
+function SingOverList({ chord, keyOf, spell }: { chord: Chord; keyOf: Key; spell: (pc: number) => string }) {
+  const notes = singOver(chord, keyOf);
+  const rows = [
+    { id: 'inside', label: 'Se apoyan', why: 'las del acorde: para terminar una frase', list: notes.inside },
+    { id: 'outside', label: 'Tensan', why: 'de la escala: piden moverse a una vecina', list: notes.outside },
+    {
+      id: 'against',
+      label: 'Chocan',
+      why: 'fuera de la escala: de paso, o con intención',
+      list: notes.against,
+    },
+  ];
+  return (
+    <div className={styles.sing} data-testid="sing-over">
+      <p className={styles.label}>Para cantar encima</p>
+      <dl>
+        {rows.map((row) => (
+          <div key={row.id} data-kind={row.id}>
+            <dt>{row.label}</dt>
+            <dd>
+              <span className={styles.singNotes}>
+                {row.list.map((pc) => (
+                  <span key={pc} data-blue={notes.blue.includes(pc) || undefined}>
+                    {spell(pc)}
+                  </span>
+                ))}
+              </span>
+              <small>{row.why}</small>
+            </dd>
+          </div>
+        ))}
+      </dl>
+      {notes.blue.length > 0 && (
+        <p className={styles.hint}>Las subrayadas son de blues: chocan, pero bien puestas dan color.</p>
+      )}
+    </div>
+  );
 }
 
 function Feeling({ feeling }: { feeling: DegreeFeeling }) {
@@ -140,15 +205,7 @@ export default function ArmoniaRoute() {
       : home.tonic;
   const key: Key = { tonic, scale };
   const vueltaParam = params.get('v') ?? '';
-  const vuelta = useMemo(
-    () =>
-      vueltaParam
-        .split('_')
-        .map(parseChord)
-        .filter((chord): chord is Chord => chord !== null)
-        .slice(0, MAX_CHORDS),
-    [vueltaParam],
-  );
+  const vuelta = useMemo(() => readVuelta(vueltaParam), [vueltaParam]);
 
   const [selected, setSelected] = useState<number | null>(null);
   const [tempo, setTempo] = useState(80);
@@ -156,19 +213,38 @@ export default function ArmoniaRoute() {
   const [feel, setFeel] = useState<Feel>('pulso');
   const [geometry, setGeometry] = useState<Geometry>('cuadrado');
 
-  const update = (patch: Record<string, string | null>) =>
-    setSearchParams(
-      (previous) => {
-        const next = new URLSearchParams(previous);
-        for (const [name, value] of Object.entries(patch)) {
-          if (value === null || value === '') next.delete(name);
-          else next.set(name, value);
-        }
-        return next;
-      },
-      { replace: true, preventScrollReset: true },
-    );
-  const setVuelta = (chords: Chord[]) => update({ v: chords.slice(0, MAX_CHORDS).map(chordToken).join('_') });
+  // Dos toques seguidos no esperan a que la URL se actualice: cada cambio parte del último pedido.
+  const pending = useRef<string | null>(null);
+  useEffect(() => {
+    if (pending.current === searchParams.toString()) pending.current = null;
+  }, [searchParams]);
+  const update = (
+    patch: Record<string, string | null> | ((base: URLSearchParams) => Record<string, string | null>),
+  ) => {
+    const base = new URLSearchParams(pending.current ?? searchParams);
+    const next = new URLSearchParams(base);
+    for (const [param, value] of Object.entries(typeof patch === 'function' ? patch(base) : patch)) {
+      if (value === null || value === '') next.delete(param);
+      else next.set(param, value);
+    }
+    pending.current = next.toString();
+    setSearchParams(next, { replace: true, preventScrollReset: true });
+  };
+  const vueltaText = (chords: Chord[]) => chords.slice(0, MAX_CHORDS).map(chordToken).join('_');
+  /** Cambia la vuelta a partir de la última pedida, no de la que se ve. */
+  const setVuelta = (change: Chord[] | ((current: Chord[]) => Chord[])) =>
+    update((base) => ({
+      v: vueltaText(typeof change === 'function' ? change(readVuelta(base.get('v') ?? '')) : change),
+    }));
+  const extendVuelta = (chords: Chord[]) =>
+    setVuelta((current) => (current.length + chords.length > MAX_CHORDS ? current : [...current, ...chords]));
+  const swap = (from: number, to: number) =>
+    setVuelta((current) => {
+      if (!current[from] || !current[to]) return current;
+      const next = [...current];
+      [next[from], next[to]] = [next[to]!, next[from]!];
+      return next;
+    });
 
   const finger = (chord: Chord) =>
     fingeringFor(tuning.notes, chord.root, CHORD_STEPS[chord.suffix]!, chord.bass ?? chord.root);
@@ -179,12 +255,13 @@ export default function ArmoniaRoute() {
   const listen = (chord: Chord) => player.strum(voicingOf(tuning, chord, finger(chord)));
   const add = (chord: Chord) => {
     listen(chord);
-    if (vuelta.length >= MAX_CHORDS) return;
-    setVuelta([...vuelta, chord]);
+    extendVuelta([chord]);
   };
-  const replaceAt = (index: number, chord: Chord) => {
-    setVuelta(vuelta.map((item, position) => (position === index ? chord : item)));
-    listen(chord);
+  /** Cambia un acorde; si el cambio es una función, se aplica sobre el acorde pedido, no sobre el que se ve. */
+  const replaceAt = (index: number, change: Chord | ((item: Chord) => Chord)) => {
+    const apply = typeof change === 'function' ? change : () => change;
+    setVuelta((current) => current.map((item, position) => (position === index ? apply(item) : item)));
+    if (vuelta[index]) listen(apply(vuelta[index]));
   };
 
   const degrees = scaleDegrees(key);
@@ -197,6 +274,40 @@ export default function ArmoniaRoute() {
   const active = selected !== null && selected < vuelta.length ? selected : null;
   const activeChord = active === null ? null : vuelta[active]!;
   const pole = last && !last.bass ? samePole(last.root) : null;
+  // De dónde salen los cambios de dos en dos: el acorde que estás editando, o el último.
+  const from = activeChord ?? last;
+  const mode: VueltaMode = chordColor(degrees[0]!.chord.suffix) === 'minor' ? 'menor' : 'mayor';
+  const starter = (degreesOf: readonly string[], vueltaMode: VueltaMode) =>
+    degreesOf.map((token) => romanChord(token, tonic, vueltaMode));
+  const applyStarter = (chords: Chord[], vueltaMode: VueltaMode) => {
+    player.stop();
+    setSelected(null);
+    // Si la vuelta es de la otra familia, el mundo pasa a la mayor o a la menor natural.
+    update({
+      v: chords.map(chordToken).join('_'),
+      ...(vueltaMode === mode ? {} : { escala: vueltaMode === 'mayor' ? 'mayor' : 'natural' }),
+    });
+  };
+  const transforms = [
+    {
+      id: 'desplazar',
+      label: 'Desplazar',
+      why: 'Arranca en el segundo acorde: el I deja de mandar.',
+      apply: displace,
+    },
+    {
+      id: 'estirar',
+      label: 'Estirar',
+      why: 'Repite el primer cambio antes de seguir: la vuelta respira.',
+      apply: (chords: readonly Chord[]) => stretch(chords).slice(0, MAX_CHORDS),
+    },
+    {
+      id: 'bajo',
+      label: 'Bajo que baja',
+      why: 'Inversiones para que el bajo baje de a paso.',
+      apply: walkingBass,
+    },
+  ];
 
   const card = (chord: Chord, label: string, extra: Partial<CardProps> = {}) => (
     <ChordCard
@@ -315,7 +426,57 @@ export default function ArmoniaRoute() {
           </Slab>
 
           <Slab>
-            <SlabHead number="03" title="Más color" />
+            <SlabHead number="03" title="Para arrancar" />
+            <p className={styles.hint}>
+              Vueltas de cuatro acordes que ya funcionaron, según Rikky Rooksby. Son para arrancar: después
+              desplazalas, estiralas o cambiá un acorde por su relativo.
+            </p>
+            {VUELTA_GROUPS.map((group, index) => {
+              const items = VUELTAS.filter((item) => item.group === group.id);
+              return (
+                <details key={group.id} className={styles.group} open={index === 0}>
+                  <summary>
+                    {group.title}
+                    {group.mode !== mode && <span> · {group.mode}</span>}
+                    <span> · {items.length}</span>
+                  </summary>
+                  <p className={styles.hint}>{group.intro}</p>
+                  <ul className={styles.starters}>
+                    {items.map((item) => {
+                      const chords = starter(item.degrees, group.mode);
+                      return (
+                        <li key={item.id} className={styles.starter} data-testid={`vuelta-${item.id}`}>
+                          <p className={styles.starterDegrees}>{item.degrees.map(romanLabel).join(' ')}</p>
+                          <strong className={styles.starterChords}>{chords.map(name).join(' · ')}</strong>
+                          {item.why && <p className={styles.words}>{item.why}</p>}
+                          {item.songs.length > 0 && (
+                            <p className={styles.songs}>Como en {item.songs.join(', ')}</p>
+                          )}
+                          <div className={styles.starterTools}>
+                            <Button
+                              variant="mini"
+                              ariaLabel={`Escuchar ${chords.map(name).join(' ')}`}
+                              onClick={() =>
+                                player.preview(chords.map((chord) => voicingOf(tuning, chord, finger(chord))))
+                              }
+                            >
+                              ▶
+                            </Button>
+                            <Button variant="mini" onClick={() => applyStarter(chords, group.mode)}>
+                              Usar
+                            </Button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </details>
+              );
+            })}
+          </Slab>
+
+          <Slab>
+            <SlabHead number="04" title="Más color" />
             <p className={styles.hint}>
               ¿Se puede ir del III al I, cerrar con II-I, mezclar escalas? Siempre sí: lo que importa es saber
               qué emoción elegís.
@@ -335,10 +496,26 @@ export default function ArmoniaRoute() {
                 </ul>
               </details>
             ))}
+            {from && (
+              <details className={styles.group} data-testid="moves">
+                <summary>
+                  De dos en dos<span> · desde {name(from)}</span>
+                </summary>
+                <p className={styles.hint}>
+                  Qué da cada cambio de dos acordes, contando {name(from)} como I. Repetí dos acordes varias
+                  veces y ya tenés un riff o una estrofa.
+                </p>
+                <ul className={styles.cards}>
+                  {twoChordMoves(from).map((move) =>
+                    card(move.chord, move.label, { words: move.why, feeling: undefined }),
+                  )}
+                </ul>
+              </details>
+            )}
           </Slab>
 
           <Slab className={styles.sinCentro}>
-            <SlabHead number="05" title="Sin centro" />
+            <SlabHead number="06" title="Sin centro" />
             <p>
               Los puntos cardinales: un sistema consonante pero sin tónica. Dentro de un grupo vale ir de
               cualquier acorde a cualquiera, mayor o menor, y todo suena a fantasía.
@@ -396,7 +573,7 @@ export default function ArmoniaRoute() {
         <div className={styles.column}>
           <Slab className={styles.vueltaSlab} label="Tu vuelta">
             <span id="vuelta" className={styles.anchor} />
-            <SlabHead number="04" title="Tu vuelta">
+            <SlabHead number="05" title="Tu vuelta">
               <Fader compact />
             </SlabHead>
             {vuelta.length === 0 ? (
@@ -438,9 +615,7 @@ export default function ArmoniaRoute() {
                       ariaLabel="Mover a la izquierda"
                       disabled={active === 0}
                       onClick={() => {
-                        const next = [...vuelta];
-                        [next[active - 1], next[active]] = [next[active]!, next[active - 1]!];
-                        setVuelta(next);
+                        swap(active, active - 1);
                         setSelected(active - 1);
                       }}
                     >
@@ -451,9 +626,7 @@ export default function ArmoniaRoute() {
                       ariaLabel="Mover a la derecha"
                       disabled={active === vuelta.length - 1}
                       onClick={() => {
-                        const next = [...vuelta];
-                        [next[active + 1], next[active]] = [next[active]!, next[active + 1]!];
-                        setVuelta(next);
+                        swap(active, active + 1);
                         setSelected(active + 1);
                       }}
                     >
@@ -463,7 +636,7 @@ export default function ArmoniaRoute() {
                       variant="mini"
                       ariaLabel="Sacar de la vuelta"
                       onClick={() => {
-                        setVuelta(vuelta.filter((_, position) => position !== active));
+                        setVuelta((current) => current.filter((_, position) => position !== active));
                         setSelected(null);
                       }}
                     >
@@ -491,6 +664,39 @@ export default function ArmoniaRoute() {
                     );
                   })}
                 </ul>
+                {(relativeOf(activeChord) || polarityOf(activeChord)) && (
+                  <>
+                    <p className={styles.label}>Cambiar por</p>
+                    <ul className={styles.variants}>
+                      {[
+                        {
+                          id: 'relativo',
+                          label: 'Relativo',
+                          chord: relativeOf(activeChord),
+                          why: 'Comparten dos notas: el cambio es suave y cambia el clima.',
+                        },
+                        {
+                          id: 'polaridad',
+                          label: 'Al revés',
+                          chord: polarityOf(activeChord),
+                          why: 'Misma raíz, de mayor a menor o al revés: sorprende.',
+                        },
+                      ].map(
+                        (swap) =>
+                          swap.chord && (
+                            <li key={swap.id}>
+                              <button type="button" onClick={() => replaceAt(active, swap.chord!)}>
+                                <strong>
+                                  {swap.label} <span>{name(swap.chord)}</span>
+                                </strong>
+                                <small>{swap.why}</small>
+                              </button>
+                            </li>
+                          ),
+                      )}
+                    </ul>
+                  </>
+                )}
                 <p className={styles.label}>En el bajo</p>
                 <div className={styles.basses} role="group" aria-label="En el bajo">
                   {BASS_ROLES.map((role) => {
@@ -503,9 +709,10 @@ export default function ArmoniaRoute() {
                         aria-pressed={bassRoleOf(activeChord) === role.id}
                         onClick={() =>
                           bass !== undefined &&
-                          replaceAt(active, {
-                            ...activeChord,
-                            bass: bass === activeChord.root ? undefined : bass,
+                          replaceAt(active, (item) => {
+                            const next = bassFor(item, role.id);
+                            if (next === undefined) return item;
+                            return { ...item, bass: next === item.root ? undefined : next };
                           })
                         }
                       >
@@ -527,6 +734,11 @@ export default function ArmoniaRoute() {
                     })
                     .join(' ')}
                 </p>
+                <SingOverList
+                  chord={activeChord}
+                  keyOf={key}
+                  spell={(pc) => pitchName(spellIn(pc, key), notation)}
+                />
               </div>
             )}
 
@@ -586,6 +798,27 @@ export default function ArmoniaRoute() {
                   onChange={setFeel}
                 />
               </div>
+            </div>
+            {vuelta.length > 1 && (
+              <ul className={styles.variants} aria-label="Transformar la vuelta">
+                {transforms.map((transform) => (
+                  <li key={transform.id}>
+                    <button
+                      type="button"
+                      disabled={sameChords(transform.apply(vuelta), vuelta)}
+                      onClick={() => {
+                        setVuelta((current) => transform.apply(current));
+                        setSelected(null);
+                      }}
+                    >
+                      <strong>{transform.label}</strong>
+                      <small>{transform.why}</small>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className={styles.controls}>
               {vuelta.length > 0 && (
                 <Button
                   onClick={() => {
@@ -610,7 +843,7 @@ export default function ArmoniaRoute() {
                       type="button"
                       disabled={vuelta.length + chords.length > MAX_CHORDS}
                       onClick={() => {
-                        setVuelta([...vuelta, ...chords]);
+                        extendVuelta(chords);
                         setSelected(null);
                         listen(chords[chords.length - 1]!);
                       }}

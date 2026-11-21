@@ -85,4 +85,47 @@ test.describe('armonía', () => {
     await expect(page.getByTestId('same-pole')).toContainText('polo N');
     await expect(page.getByTestId('same-pole')).toContainText('B o Db');
   });
+
+  test('una vuelta para arrancar se escucha, se usa y se transforma', async ({ page }) => {
+    const errors = watchErrors(page);
+    await goto(page, '/armonia?escala=mayor&tono=0');
+    const starter = page.getByTestId('vuelta-i-vi-iv-v');
+    await expect(starter).toContainText('C · Am · F · G');
+    await expect(starter).toContainText('Stand By Me');
+    await starter.getByRole('button', { name: 'Escuchar C Am F G' }).click();
+    await expect.poll(() => plucks(page)).toBeGreaterThanOrEqual(10);
+
+    await starter.getByRole('button', { name: 'Usar' }).click();
+    await expect(page).toHaveURL(/v=C_Am_F_G/);
+    const transforms = page.getByRole('list', { name: 'Transformar la vuelta' });
+    await transforms.getByRole('button', { name: /^Desplazar/ }).click();
+    await expect(page).toHaveURL(/v=Am_F_G_C/);
+    await transforms.getByRole('button', { name: /^Bajo que baja/ }).click();
+    await expect(page.getByTestId('vuelta')).toContainText('F/A');
+
+    // El editor cambia un acorde por su relativo y dice qué notas se apoyan al cantar.
+    const vuelta = page.getByTestId('vuelta');
+    await vuelta.getByRole('listitem').last().getByRole('button').click();
+    const editor = page.getByTestId('chord-editor');
+    await expect(page.getByTestId('sing-over')).toContainText('Se apoyan');
+    await editor.getByRole('button', { name: /^Relativo/ }).click();
+    await expect(vuelta.getByRole('listitem').last()).toContainText('Am');
+
+    // De dos en dos, desde el acorde elegido.
+    const moves = page.getByTestId('moves');
+    await moves.locator('summary').click();
+    await expect(moves).toContainText('desde Am');
+    await expect(moves.getByRole('button', { name: 'Sumar C a la vuelta' })).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+
+  test('una vuelta en menor cambia el mundo a la menor natural', async ({ page }) => {
+    await goto(page, '/armonia?escala=mayor&tono=9');
+    const starter = page.getByTestId('vuelta-m-i-vii-vi-vmaj');
+    await starter.locator('xpath=ancestor::details').locator('summary').click();
+    await expect(starter).toContainText('Am · G · F · E');
+    await starter.getByRole('button', { name: 'Usar' }).click();
+    await expect(page).toHaveURL(/escala=natural/);
+    await expect(page).toHaveURL(/v=Am_G_F_E/);
+  });
 });

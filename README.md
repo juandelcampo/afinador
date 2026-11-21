@@ -18,15 +18,16 @@ Salió de [Scordatura](../Afinador%20Drake), donde era una de las herramientas. 
 
 ### Armonía
 
-Sale de Mauro De María, _Composición integral_ (capítulos 1 a 8), sin pentagramas ni escritura a cuatro voces.
+Sale de Mauro De María, _Composición integral_ (capítulos 1 a 8), sin pentagramas ni escritura a cuatro voces. Las vueltas para arrancar, cómo transformarlas, los cambios de dos en dos, lo de cantar encima y el bajo que baja salen de Rikky Rooksby, _How to Write Songs on Guitar_.
 
-| Parte      | Qué hace                                                                                                                                                                 |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Mundo      | Mayor, las tres menores (natural, armónica, bachiana) y los modos, con su carácter. En los modos, los grados característicos y el disminuido que tira hacia otra tónica. |
-| Acordes    | Cada grado con su emoción (ALEGRE ++, TRISTE −−, RARO) y su figura en la afinación elegida. Tocar lo hace sonar; el + lo suma a la vuelta.                               |
-| Más color  | Lo prestado de otras escalas, dominantes secundarias, ♭II napolitano y los cinco enlaces de cine desde el último acorde.                                                 |
-| Tu vuelta  | Séptimas, novenas y otros colores con su emoción, qué va en el bajo, notas comunes, cuerdas al aire que pueden sonar de pedal, y las ocho cadencias finales.             |
-| Sin centro | Los puntos cardinales: grupos de acordes sin tónica, con el paso de grupo por el mismo polo.                                                                             |
+| Parte         | Qué hace                                                                                                                                                                                                                                                                                                                          |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Mundo         | Mayor, las tres menores (natural, armónica, bachiana) y los modos, con su carácter. En los modos, los grados característicos y el disminuido que tira hacia otra tónica.                                                                                                                                                          |
+| Acordes       | Cada grado con su emoción (ALEGRE ++, TRISTE −−, RARO) y su figura en la afinación elegida. Tocar lo hace sonar; el + lo suma a la vuelta.                                                                                                                                                                                        |
+| Para arrancar | Vueltas de cuatro acordes en grados, agrupadas por lo que dan, con temas de ejemplo. Se escuchan y se cargan en tu tónica; si son de la otra familia, el mundo pasa a mayor o menor natural.                                                                                                                                      |
+| Más color     | Lo prestado de otras escalas, dominantes secundarias, ♭II napolitano y los cinco enlaces de cine desde el último acorde, y qué da cada cambio de dos acordes desde el elegido.                                                                                                                                                    |
+| Tu vuelta     | Séptimas, novenas y otros colores con su emoción, qué va en el bajo, notas comunes, cuerdas al aire que pueden sonar de pedal, cambiar un acorde por su relativo o al revés, qué notas se apoyan, tensan o chocan al cantar encima, desplazar o estirar la vuelta, el bajo que baja con inversiones y las ocho cadencias finales. |
+| Sin centro    | Los puntos cardinales: grupos de acordes sin tónica, con el paso de grupo por el mismo polo.                                                                                                                                                                                                                                      |
 
 La afinación, la tónica, la escala y la vuelta viven en la URL (`/armonia?afinacion=dadgad&v=D_G_A7`): se comparten con un link. El Afinador lleva a Armonía con su afinación desde Acordes.
 
@@ -54,9 +55,9 @@ El micrófono solo funciona en `localhost` o por `https`, así que para usarlo d
 
 ```text
 src/
-  core/        notas, detección de altura (pitch.ts), síntesis de cuerda (pluck.ts), afinaciones y figuras (tuning.ts), y armonía (harmony.ts). TypeScript puro.
-  data/        el catálogo de afinaciones (tunings.ts). Solo datos.
-  audio/       AudioContext y mezcla, instrumento y micrófono. Sin React.
+  core/        notas, detección de altura (pitch.ts), síntesis de cuerda (pluck.ts), afinaciones y figuras (tuning.ts), armonía (harmony.ts) y lo de Rooksby (progressions.ts). TypeScript puro.
+  data/        el catálogo de afinaciones (tunings.ts) y las vueltas para arrancar (vueltas.ts). Solo datos.
+  audio/       AudioContext y mezcla, instrumento (muestras de guitarra en samples.ts) y micrófono. Sin React.
   shared/      preferencias, el hook del afinador (useTuner.ts) y componentes de interfaz.
   shell/       la barra de arriba, con las herramientas.
   features/    una carpeta por pantalla: inicio/ (la portada), afinador/ y armonia/.
@@ -96,3 +97,5 @@ Las fuentes principales:
 - [Far Out: What guitar tuning did Nick Drake use?](https://faroutmagazine.co.uk/what-guitar-tuning-did-nick-drake-use/)
 - [Wikipedia: Ostrich guitar](https://en.wikipedia.org/wiki/Ostrich_guitar)
 - [Wikipedia: Open C tuning](https://en.wikipedia.org/wiki/Open_C_tuning)
+
+La guitarra que suena es una acústica grabada nota por nota por los [University of Iowa Electronic Music Studios](https://theremin.music.uiowa.edu/MIS.html), tomada de [tonejs-instruments](https://github.com/nbrosowsky/tonejs-instruments) y recortada en `public/sonidos/guitarra/`. Cada muestra se midió con el detector del afinador y se corrige al tocarla. Con `?guitarra=sintetica` en la dirección suena la cuerda sintetizada de antes, que también suena mientras una muestra no terminó de bajar.

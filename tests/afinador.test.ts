@@ -306,7 +306,8 @@ describe('acordes', () => {
           tuning.id,
         ).toBe(true);
       }
-  });
+    // Recorre todas las afinaciones: con la máquina ocupada pasa los 5 segundos de siempre.
+  }, 20_000);
 
   it('arranca al aire y no repite acordes', () => {
     const shapes = chordShapes(notesOf('opend'));

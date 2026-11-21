@@ -2,6 +2,8 @@
 // color, las cadencias finales y los puntos cardinales salen de Mauro De María, "Composición integral"
 // (capítulos 1 a 8). Las palabras de cada grado son las suyas; él mismo aclara que la armonía es solo
 // una de las catorce dimensiones de la música y que todo enlace vale si sabés qué emoción elegís.
+// Lo que dicen los colores sus2, 5, 7sus4 y las dos sextas menores sale de Rikky Rooksby, "How to Write
+// Songs on Guitar" (capítulos 2 y 9).
 import { noteLabel, type Notation } from './notes';
 
 // ---------------------------------------------------------------- acordes
@@ -21,10 +23,14 @@ export const CHORD_STEPS: Record<string, readonly number[]> = {
   '9': [0, 4, 7, 10, 14],
   '7b9': [0, 4, 7, 10, 13],
   sus4: [0, 5, 7],
+  sus2: [0, 2, 7],
+  '5': [0, 7],
+  '7sus4': [0, 5, 7, 10],
   add9: [0, 2, 4, 7],
   madd9: [0, 2, 3, 7],
   '6': [0, 4, 7, 9],
   m6: [0, 3, 7, 9],
+  'm(b6)': [0, 3, 7, 8],
   '(b3)': [0, 3, 4, 7],
 };
 
@@ -53,10 +59,14 @@ const DEGREE_SUFFIX: Record<string, string> = {
   '9': '9',
   '7b9': '7♭9',
   sus4: 'sus4',
+  sus2: 'sus2',
+  '5': '5',
+  '7sus4': '7sus4',
   add9: 'add9',
   madd9: 'madd9',
   '6': '6',
   m6: 'm6',
+  'm(b6)': 'm(♭6)',
   '(b3)': '(♭3)',
 };
 
@@ -589,7 +599,10 @@ export function variantsOf(chord: Chord): Variant[] {
       { suffix: 'm7', label: '+7m', why: 'Nostalgia optimista, dulzura, sin maldad.' },
       { suffix: 'm(maj7)', label: '+7M', why: 'Triste y frío, punzante, herido. Culpa, dolor.' },
       { suffix: 'madd9', label: '+9', why: 'Una segunda agregada: más aire, sin resolver nada.' },
-      { suffix: 'm6', label: '+6', why: 'La sexta mayor sobre menor: más luz, algo antiguo.' },
+      { suffix: 'm6', label: '+6', why: 'Sexta mayor: anguloso, no tan triste. Más luz, algo antiguo.' },
+      { suffix: 'm(b6)', label: '+♭6', why: 'Sexta menor: intensifica el menor, lo vuelve inquietante.' },
+      { suffix: 'sus2', label: '2.ª por 3.ª', why: 'Sin tercera: vacío, espacioso. Buen reemplazo de un menor.' },
+      { suffix: '5', label: 'Quinta', why: 'Solo raíz y quinta: neutro y duro, lo del rock.' },
       { suffix: '(b3)', label: 'Bimodal', why: 'Las dos terceras juntas: agresivo y agridulce.' },
     ];
   }
@@ -603,12 +616,19 @@ export function variantsOf(chord: Chord): Variant[] {
   return [
     { suffix: '', label: 'Tríada', why: 'Alegre, estable: la base.' },
     { suffix: '7', label: '+7m', why: 'Alegre, pero pregunta, cuestiona, se plantea cosas.' },
-    { suffix: 'maj7', label: '+7M', why: 'Alegre, moderno, ligeramente incisivo.' },
+    { suffix: 'maj7', label: '+7M', why: 'Alegre, moderno, romántico. Mejor en tempos lentos.' },
     { suffix: '9', label: '+7 +9', why: 'Novena mayor: dulce y moderno.' },
     { suffix: '7b9', label: '+7 +♭9', why: 'Novena menor: nervioso y clásico.' },
     { suffix: 'add9', label: '+9', why: 'Una segunda agregada: más aire, sin resolver nada.' },
-    { suffix: 'sus4', label: '4.ª por 3.ª', why: 'Sin tercera: ni alegre ni triste, queda en suspenso.' },
-    { suffix: '6', label: '+6', why: 'La sexta agregada: dulce, de otra época.' },
+    {
+      suffix: 'sus4',
+      label: '4.ª por 3.ª',
+      why: 'Muy tenso: la cuarta quiere caer a la tercera. Bueno justo antes de un estribillo.',
+    },
+    { suffix: 'sus2', label: '2.ª por 3.ª', why: 'Sin tercera: vacío, espacioso, para canciones atmosféricas.' },
+    { suffix: '7sus4', label: '7sus4', why: 'Suspendido con séptima: menos tenso que el sus4.' },
+    { suffix: '5', label: 'Quinta', why: 'Solo raíz y quinta: neutro y duro, lo del rock.' },
+    { suffix: '6', label: '+6', why: 'La sexta agregada: dulce, algo de jazz y de música latina.' },
     { suffix: 'aug', label: '5+', why: 'La quinta aumentada: morboso, muy tenso.' },
     { suffix: '(b3)', label: 'Bimodal', why: 'Las dos terceras juntas: agresivo y agridulce.' },
   ];
