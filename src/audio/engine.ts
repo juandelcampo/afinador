@@ -6,12 +6,13 @@ let volume = 0.68;
 let context: AudioContext | null = null;
 let output: GainNode | null = null;
 let instrumentInput: GainNode | null = null;
+let sampleInput: GainNode | null = null;
 
 /** El oído percibe el volumen de forma logarítmica: el cuadrado da un fader más parejo. */
 const toGain = (value: number) => value * value;
 
-export function getAudio(): { ctx: AudioContext; bus: GainNode } {
-  if (!context || !output || !instrumentInput) {
+export function getAudio(): { ctx: AudioContext; bus: GainNode; sampleBus: GainNode } {
+  if (!context || !output || !instrumentInput || !sampleInput) {
     context = new AudioContext({ latencyHint: 'interactive' });
     const limiter = context.createDynamicsCompressor();
     limiter.threshold.value = -6;
@@ -34,9 +35,22 @@ export function getAudio(): { ctx: AudioContext; bus: GainNode } {
     air.gain.value = -5;
     instrumentInput = context.createGain();
     instrumentInput.connect(body).connect(air).connect(output);
+
+    // La guitarra grabada ya tiene cuerpo: solo se le saca un poco de barro y se le suma brillo.
+    const mud = context.createBiquadFilter();
+    mud.type = 'peaking';
+    mud.frequency.value = 250;
+    mud.Q.value = 1;
+    mud.gain.value = -2;
+    const shine = context.createBiquadFilter();
+    shine.type = 'highshelf';
+    shine.frequency.value = 2800;
+    shine.gain.value = 5;
+    sampleInput = context.createGain();
+    sampleInput.connect(mud).connect(shine).connect(output);
   }
   if (context.state === 'suspended') void context.resume();
-  return { ctx: context, bus: instrumentInput };
+  return { ctx: context, bus: instrumentInput, sampleBus: sampleInput };
 }
 
 /** Se puede llamar antes de que exista el audio: el valor se aplica al crearlo. */

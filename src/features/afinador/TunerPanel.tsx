@@ -1,4 +1,5 @@
-import { pluckString } from '~/audio/instrument';
+import { useEffect } from 'react';
+import { pluckString, preloadGuitar } from '~/audio/instrument';
 import { noteToMidi, splitNote, noteLabel, type Notation } from '~/core/notes';
 import { isFarFromStandard, stringOffsets } from '~/core/tuning';
 import { useSettings } from '~/shared/settings';
@@ -35,6 +36,8 @@ export function TunerPanel({ notes }: TunerPanelProps) {
   const mode = useSettings((s) => s.tunerMode);
   const set = useSettings((s) => s.set);
   const tuner = useTuner(notes, a4, mode);
+  const notesKey = notes.join(' ');
+  useEffect(() => preloadGuitar(notesKey.split(' ').map(noteToMidi)), [notesKey]);
 
   const offsets = stringOffsets(notes);
   const { reading, selected } = tuner;
