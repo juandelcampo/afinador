@@ -59,7 +59,7 @@ export function ErrorBoundary() {
     <main style={{ padding: 16 }}>
       <h1>{notFound ? 'Esa página no existe' : 'Algo se rompió'}</h1>
       <p>
-        <a href="/">Volver al afinador</a>
+        <a href="/">Volver al inicio</a>
       </p>
     </main>
   );

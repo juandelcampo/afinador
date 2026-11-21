@@ -7,7 +7,7 @@ import styles from './shell.module.css';
 
 /** Las herramientas, cada una por su lado. `match` dice qué rutas son de cada una. */
 const TOOLS = [
-  { to: '/', label: 'Afinador', match: (path: string) => path === '/' || path.startsWith('/afinador') },
+  { to: '/afinador', label: 'Afinador', match: (path: string) => path.startsWith('/afinador') },
   { to: '/armonia', label: 'Armonía', match: (path: string) => path.startsWith('/armonia') },
 ];
 
@@ -31,6 +31,13 @@ export default function AppShell() {
     <div className={styles.shell}>
       <header className={styles.topBar} data-open={settingsOpen}>
         <nav className={styles.tools} aria-label="Herramientas">
+          {/* La marca lleva a la portada, donde se elige la herramienta. */}
+          <Link
+            to="/"
+            className={styles.home}
+            aria-label="Inicio"
+            aria-current={pathname === '/' ? 'page' : undefined}
+          />
           {TOOLS.map((tool) => (
             <Link
               key={tool.to}
@@ -48,10 +55,12 @@ export default function AppShell() {
           className={styles.settingsToggle}
           aria-expanded={settingsOpen}
           aria-controls="ajustes"
+          aria-label={`Ajustes: notación y La ${a4}`}
+          title="Ajustes"
           onClick={() => setSettingsOpen((open) => !open)}
         >
-          Ajustes<span className={styles.wide}> · La {a4}</span>{' '}
-          <span aria-hidden="true">{settingsOpen ? '↑' : '↓'}</span>
+          {/* Solo existe en el celular, donde la barra no tiene lugar para la palabra. */}
+          <span aria-hidden="true">⚙︎ {settingsOpen ? '↑' : '↓'}</span>
         </button>
         <div className={styles.settings} id="ajustes">
           <Segmented

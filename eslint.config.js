@@ -2,7 +2,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
 
 /** Las herramientas, una carpeta cada una en src/features. */
-const FEATURES = ['afinador', 'armonia'];
+const FEATURES = ['inicio', 'afinador', 'armonia'];
 
 const restrict = (files, patterns, message) => ({
   files,

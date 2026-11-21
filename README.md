@@ -1,6 +1,6 @@
 # Afinador
 
-Herramientas para componer con guitarra, pensadas para quien toca de oído y quiere salir de lo de siempre. Cada herramienta se usa sola; la barra de arriba pasa de una a otra.
+Herramientas para componer con guitarra, pensadas para quien toca de oído y quiere salir de lo de siempre. La portada (`/`) muestra las herramientas para elegir; cada una se usa sola, y la barra de arriba pasa de una a otra (la marca vuelve a la portada).
 
 - **Afinador**: 147 afinaciones, afinador por micrófono, escuchador interactivo sobre un mástil y acordes que se pueden hacer con la mano en cada afinación.
 - **Armonía** (`/armonia`): acordes por emoción para armar una vuelta con las figuras de tu afinación.
@@ -59,7 +59,7 @@ src/
   audio/       AudioContext y mezcla, instrumento y micrófono. Sin React.
   shared/      preferencias, el hook del afinador (useTuner.ts) y componentes de interfaz.
   shell/       la barra de arriba, con las herramientas.
-  features/    una carpeta por herramienta: afinador/ y armonia/.
+  features/    una carpeta por pantalla: inicio/ (la portada), afinador/ y armonia/.
 tests/         lógica y validación del catálogo (Vitest)
 e2e/           pruebas en Chrome real, con micrófono simulado (Playwright)
 ```
@@ -70,14 +70,14 @@ ESLint hace cumplir las tres primeras.
 
 1. **`core` y `data` no conocen React, el audio ni la interfaz.**
 2. **`audio` no depende de React.** La interfaz observa al audio, no al revés.
-3. **Las herramientas no se importan entre sí.** Cada una se usa sola y se conectan por la URL. Una herramienta nueva va en `FEATURES` de `eslint.config.js`, en `routes.ts`, en el prerender de `react-router.config.ts` y en `TOOLS` de `shell/AppShell.tsx`.
+3. **Las herramientas no se importan entre sí.** Cada una se usa sola y se conectan por la URL. Una herramienta nueva va en `FEATURES` de `eslint.config.js`, en `routes.ts`, en el prerender de `react-router.config.ts`, en `TOOLS` de `shell/AppShell.tsx` y en la portada (`features/inicio/InicioRoute.tsx`).
 4. **Dónde va el estado:** la URL dice qué afinación está abierta y guarda la vuelta de Armonía; Zustand guarda las preferencias en `localStorage` (`shared/settings.ts`), y se validan al leerlas.
 5. **Las páginas estáticas no conocen la URL.** Un componente que lee parámetros durante el render usa `useHydrated`.
 6. **El catálogo se valida con esquemas** en `tests/afinador.test.ts`.
 
 ### Rutas
 
-`/` abre el afinador con la afinación estándar, y `/armonia` la armonía. Cada afinación tiene su página en `/afinador/<id>`, generada como HTML estático para los buscadores. Se mantuvieron las URL de Scordatura para que sus links sigan abriendo.
+`/` es la portada, `/afinador` abre la afinación estándar y `/armonia` la armonía. Cada afinación tiene su página en `/afinador/<id>`, generada como HTML estático para los buscadores. Se mantuvieron las URL de Scordatura para que sus links sigan abriendo.
 
 ### Agregar una afinación
 

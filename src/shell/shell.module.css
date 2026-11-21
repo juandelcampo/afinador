@@ -19,6 +19,29 @@
   align-items: stretch;
   border: var(--rule);
 }
+/* La marca: tres cuerdas y un traste pisado, como el ícono de la pestaña. Lleva a la portada. */
+.home {
+  flex: none;
+  width: var(--touch);
+  min-height: var(--touch);
+  border-right: var(--rule);
+  background:
+    linear-gradient(var(--accent) 0 0) 24px 17px / 9px 10px no-repeat,
+    linear-gradient(
+        transparent 13px,
+        var(--paper) 13px 15px,
+        transparent 15px 21px,
+        var(--paper) 21px 23px,
+        transparent 23px 29px,
+        var(--paper) 29px 31px,
+        transparent 31px
+      )
+      center / 100% 100% no-repeat,
+    var(--ink);
+}
+.home:hover {
+  background-color: var(--muted);
+}
 /* Cada herramienta es una pestaña; la abierta va en tinta, con la marca del traste pisado. */
 .tool {
   display: inline-flex;
@@ -85,15 +108,12 @@
 /* En el celular la marca y el botón de ajustes comparten la fila: los dos un poco más chicos. */
 @media (max-width: 719px) {
   .tool {
-    padding-inline: 9px;
-    font-size: 14px;
-  }
-  .wide {
-    display: none;
+    padding-inline: 7px;
+    font-size: 13px;
   }
   .settingsToggle {
-    padding-inline: 10px;
-    font-size: 12px;
+    padding-inline: 8px;
+    font-size: 16px;
   }
 }
 
