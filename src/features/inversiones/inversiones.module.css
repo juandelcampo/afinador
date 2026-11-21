@@ -5,7 +5,6 @@
 }
 
 .hint {
-  max-width: 72ch;
   margin-top: 10px;
   color: var(--muted);
   font-size: 12px;

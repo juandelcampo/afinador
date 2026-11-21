@@ -199,7 +199,6 @@
   overflow-wrap: anywhere;
 }
 .pageTitle p {
-  max-width: 72ch;
   font-size: 14px;
   line-height: 1.5;
 }

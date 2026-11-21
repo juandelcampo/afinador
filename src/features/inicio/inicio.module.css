@@ -21,7 +21,6 @@
   overflow-wrap: anywhere;
 }
 .intro p:last-child {
-  max-width: 60ch;
   font-size: 15px;
 }
 
@@ -47,6 +46,9 @@
 
 /* Toda la tarjeta es el link: se toca en cualquier parte. */
 .tool {
+  /* El nombre se mide contra la tarjeta, no contra la página: con varias columnas, "Inversiones" entra
+     entero en vez de partirse. */
+  container: tool / inline-size;
   display: grid;
   align-content: start;
   gap: 10px;
@@ -81,13 +83,12 @@
   color: var(--on-accent);
 }
 .name {
-  font: 900 expanded clamp(30px, 6cqi, 52px)/1 var(--heavy);
+  font: 900 expanded clamp(24px, 9cqi, 52px)/1 var(--heavy);
   letter-spacing: -0.02em;
   text-transform: uppercase;
   overflow-wrap: anywhere;
 }
 .pitch {
-  max-width: 44ch;
   font-size: 15px;
   font-weight: 700;
 }
