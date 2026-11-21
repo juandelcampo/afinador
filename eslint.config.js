@@ -1,6 +1,9 @@
 import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
 
+/** Las herramientas, una carpeta cada una en src/features. */
+const FEATURES = ['afinador', 'armonia'];
+
 const restrict = (files, patterns, message) => ({
   files,
   rules: {
@@ -39,4 +42,12 @@ export default tseslint.config(
   ),
   restrict(['src/shared/**'], ['~/features/*', '~/shell/*'], 'shared no conoce las herramientas.'),
   restrict(['src/shell/**'], ['~/features/*'], 'El marco de la app no importa herramientas.'),
+  // Cada herramienta se usa sola: se conectan por la URL, nunca importándose entre sí.
+  ...FEATURES.map((feature) =>
+    restrict(
+      [`src/features/${feature}/**`],
+      FEATURES.filter((other) => other !== feature).map((other) => `~/features/${other}/*`),
+      'Las herramientas no se importan entre sí: se conectan por la URL.',
+    ),
+  ),
 );

@@ -1,17 +1,24 @@
 import { useEffect, useState } from 'react';
-import { Link, Outlet } from 'react-router';
+import { Link, Outlet, useLocation } from 'react-router';
 import { setVolume } from '~/audio/engine';
 import { useSettings } from '~/shared/settings';
 import { Segmented, Stepper } from '~/shared/ui/ui';
 import styles from './shell.module.css';
 
-/** Una barra arriba con lo que vale para todo el afinador, y la página debajo. */
+/** Las herramientas, cada una por su lado. `match` dice qué rutas son de cada una. */
+const TOOLS = [
+  { to: '/', label: 'Afinador', match: (path: string) => path === '/' || path.startsWith('/afinador') },
+  { to: '/armonia', label: 'Armonía', match: (path: string) => path.startsWith('/armonia') },
+];
+
+/** Una barra arriba con las herramientas y lo que vale para todas, y la página debajo. */
 export default function AppShell() {
   const notation = useSettings((s) => s.notation);
   const a4 = useSettings((s) => s.a4);
   const volume = useSettings((s) => s.volume);
   const set = useSettings((s) => s.set);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const { pathname } = useLocation();
 
   useEffect(() => {
     document.documentElement.dataset.ready = 'true';
@@ -23,9 +30,18 @@ export default function AppShell() {
   return (
     <div className={styles.shell}>
       <header className={styles.topBar} data-open={settingsOpen}>
-        <Link to="/" className={styles.brand}>
-          Afinador
-        </Link>
+        <nav className={styles.tools} aria-label="Herramientas">
+          {TOOLS.map((tool) => (
+            <Link
+              key={tool.to}
+              to={tool.to}
+              className={styles.tool}
+              aria-current={tool.match(pathname) ? 'page' : undefined}
+            >
+              {tool.label}
+            </Link>
+          ))}
+        </nav>
         {/* Solo se ve en pantallas chicas: los ajustes se tocan una vez y no tienen por qué ocupar lugar. */}
         <button
           type="button"
@@ -34,7 +50,8 @@ export default function AppShell() {
           aria-controls="ajustes"
           onClick={() => setSettingsOpen((open) => !open)}
         >
-          Ajustes · La {a4} <span aria-hidden="true">{settingsOpen ? '↑' : '↓'}</span>
+          Ajustes<span className={styles.wide}> · La {a4}</span>{' '}
+          <span aria-hidden="true">{settingsOpen ? '↑' : '↓'}</span>
         </button>
         <div className={styles.settings} id="ajustes">
           <Segmented

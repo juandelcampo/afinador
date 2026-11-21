@@ -1,6 +1,9 @@
 # Afinador
 
-Afinador de guitarra con afinaciones alternativas: 147 afinaciones, afinador por micrófono, escuchador interactivo sobre un mástil y acordes que se pueden hacer con la mano en cada afinación.
+Herramientas para componer con guitarra, pensadas para quien toca de oído y quiere salir de lo de siempre. Cada herramienta se usa sola; la barra de arriba pasa de una a otra.
+
+- **Afinador**: 147 afinaciones, afinador por micrófono, escuchador interactivo sobre un mástil y acordes que se pueden hacer con la mano en cada afinación.
+- **Armonía** (`/armonia`): acordes por emoción para armar una vuelta con las figuras de tu afinación.
 
 Salió de [Scordatura](../Afinador%20Drake), donde era una de las herramientas. Acá vive solo.
 
@@ -12,6 +15,20 @@ Salió de [Scordatura](../Afinador%20Drake), donde era una de las herramientas. 
 | Escuchar      | Mástil interactivo: trastes, capo, rasgueo a mano, arpegios y rasgueos con patrón y tempo.                   |
 | Acordes       | Figuras de acordes comunes que se pueden hacer con la mano, con hasta cuatro dedos o cejilla.                |
 | Se escuchó en | Temas con esa afinación, capo para tocarlos y video de YouTube que se carga recién al abrirlo.               |
+
+### Armonía
+
+Sale de Mauro De María, _Composición integral_ (capítulos 1 a 8), sin pentagramas ni escritura a cuatro voces.
+
+| Parte      | Qué hace                                                                                                                                                                 |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Mundo      | Mayor, las tres menores (natural, armónica, bachiana) y los modos, con su carácter. En los modos, los grados característicos y el disminuido que tira hacia otra tónica. |
+| Acordes    | Cada grado con su emoción (ALEGRE ++, TRISTE −−, RARO) y su figura en la afinación elegida. Tocar lo hace sonar; el + lo suma a la vuelta.                               |
+| Más color  | Lo prestado de otras escalas, dominantes secundarias, ♭II napolitano y los cinco enlaces de cine desde el último acorde.                                                 |
+| Tu vuelta  | Séptimas, novenas y otros colores con su emoción, qué va en el bajo, notas comunes, cuerdas al aire que pueden sonar de pedal, y las ocho cadencias finales.             |
+| Sin centro | Los puntos cardinales: grupos de acordes sin tónica, con el paso de grupo por el mismo polo.                                                                             |
+
+La afinación, la tónica, la escala y la vuelta viven en la URL (`/armonia?afinacion=dadgad&v=D_G_A7`): se comparten con un link. El Afinador lleva a Armonía con su afinación desde Acordes.
 
 La barra de arriba tiene los nombres de las notas (E A D o Mi La Re) y la referencia del La. El volumen está en Escuchar, que es lo único que suena.
 
@@ -37,29 +54,30 @@ El micrófono solo funciona en `localhost` o por `https`, así que para usarlo d
 
 ```text
 src/
-  core/        notas, detección de altura (pitch.ts), síntesis de cuerda (pluck.ts), y afinaciones. TypeScript puro.
+  core/        notas, detección de altura (pitch.ts), síntesis de cuerda (pluck.ts), afinaciones y figuras (tuning.ts), y armonía (harmony.ts). TypeScript puro.
   data/        el catálogo de afinaciones (tunings.ts). Solo datos.
   audio/       AudioContext y mezcla, instrumento y micrófono. Sin React.
   shared/      preferencias, el hook del afinador (useTuner.ts) y componentes de interfaz.
-  shell/       la barra de arriba.
-  features/afinador/   la pantalla: lista, ficha, panel de afinar, mástil y escuchador.
+  shell/       la barra de arriba, con las herramientas.
+  features/    una carpeta por herramienta: afinador/ y armonia/.
 tests/         lógica y validación del catálogo (Vitest)
 e2e/           pruebas en Chrome real, con micrófono simulado (Playwright)
 ```
 
 ### Reglas
 
-ESLint hace cumplir las dos primeras.
+ESLint hace cumplir las tres primeras.
 
 1. **`core` y `data` no conocen React, el audio ni la interfaz.**
 2. **`audio` no depende de React.** La interfaz observa al audio, no al revés.
-3. **Dónde va el estado:** la URL dice qué afinación está abierta; Zustand guarda las preferencias en `localStorage` (`shared/settings.ts`), y se validan al leerlas.
-4. **Las páginas estáticas no conocen la URL.** Un componente que lee parámetros durante el render usa `useHydrated`.
-5. **El catálogo se valida con esquemas** en `tests/afinador.test.ts`.
+3. **Las herramientas no se importan entre sí.** Cada una se usa sola y se conectan por la URL. Una herramienta nueva va en `FEATURES` de `eslint.config.js`, en `routes.ts`, en el prerender de `react-router.config.ts` y en `TOOLS` de `shell/AppShell.tsx`.
+4. **Dónde va el estado:** la URL dice qué afinación está abierta y guarda la vuelta de Armonía; Zustand guarda las preferencias en `localStorage` (`shared/settings.ts`), y se validan al leerlas.
+5. **Las páginas estáticas no conocen la URL.** Un componente que lee parámetros durante el render usa `useHydrated`.
+6. **El catálogo se valida con esquemas** en `tests/afinador.test.ts`.
 
 ### Rutas
 
-`/` abre la afinación estándar. Cada afinación tiene su página en `/afinador/<id>`, generada como HTML estático para los buscadores. Se mantuvieron las URL de Scordatura para que sus links sigan abriendo.
+`/` abre el afinador con la afinación estándar, y `/armonia` la armonía. Cada afinación tiene su página en `/afinador/<id>`, generada como HTML estático para los buscadores. Se mantuvieron las URL de Scordatura para que sus links sigan abriendo.
 
 ### Agregar una afinación
 

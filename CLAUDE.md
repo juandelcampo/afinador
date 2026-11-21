@@ -14,6 +14,12 @@ Este proyecto se extrajo el 2026-11-09 de Scordatura (`../Afinador Drake`, commi
 
 Si una mejora del afinador también le sirve a Scordatura, hay que llevarla a mano: los dos proyectos ya no comparten código.
 
+## Hacia dónde va
+
+El proyecto pasa a ser un hub de herramientas para componer con guitarra, para gente con oído y poca teoría. Criterio (2026-11-21): cada herramienta se usa sola y sirve en treinta segundos; primero suena y después se explica; navegación plana con una barra arriba; las herramientas se conectan por la URL, sin estado compartido; se suma una nueva recién cuando la anterior está pulida. Lo de Scordatura que no cerró: la entrada cargada (la Consigna), las herramientas atadas a un proyecto, demasiadas cosas a medio hacer y los modales apilados. Las herramientas de allá se traen de a una y se rehacen con este criterio.
+
+Armonía sigue a De María, _Composición integral_ (el PDF está en `~/Escritorio/afinador refes/`). Juan no quiere pentagramas.
+
 ## Cómo le gusta trabajar a Juan
 
 - Se escribe en español rioplatense (vos), también los comentarios del código y los nombres de los tests.

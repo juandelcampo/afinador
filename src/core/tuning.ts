@@ -178,7 +178,6 @@ export function chordShapes(
 ): ChordShape[] {
   const open = notes.map(noteToMidi);
   const best = new Map<string, { frets: number[]; score: number; suffix: string; root: number }>();
-  const frets: number[] = [];
 
   // Los acordes de la tonalidad de la afinación van primero: mayor, o menor natural si al aire suena menor.
   const home = openChord(open);
@@ -198,6 +197,68 @@ export function chordShapes(
     return /^m(?!aj)/.test(suffix) === !major ? 0 : 1.5;
   };
 
+  walkShapes(open, maxFret, ({ frets, mask, bass, fingers, barre, muted, low, high }) => {
+    const chord = commonChord(mask, bass % 12);
+    if (!chord) return;
+    const score =
+      chord.weight * 2 +
+      keyPenalty(bass % 12, chord.suffix) +
+      handScore({ fingers, barre, muted, low, high });
+    const key = chord.suffix + '|' + (bass % 12);
+    const current = best.get(key);
+    if (!current || score < current.score) best.set(key, { frets: [...frets], score, ...chord, root: bass });
+  });
+
+  const openName = openChordName(notes, notation);
+  const shapes: ChordShape[] = [{ frets: open.map(() => 0), chord: openName, label: 'Al aire' }];
+  [...best.values()]
+    .map((shape) => ({ ...shape, chord: noteLabel(midiToNote(shape.root), notation) + shape.suffix }))
+    .filter((shape) => shape.chord !== openName)
+    .sort((a, b) => a.score - b.score)
+    .slice(0, limit - 1)
+    .forEach((shape) =>
+      shapes.push({ frets: shape.frets, chord: shape.chord, label: shapeLabel(shape.frets) }),
+    );
+  return shapes;
+}
+
+/** Lo que una figura le pide a la mano, ya medido. */
+interface HandStats {
+  fingers: number;
+  barre: number | null;
+  muted: number;
+  /** Traste pisado más bajo y más alto; Infinity y -Infinity si todo va al aire. */
+  low: number;
+  high: number;
+}
+
+/** Cuánto cuesta una figura: dedos, cuerdas apagadas, cejilla, posición y abertura. */
+function handScore({ fingers, barre, muted, low, high }: HandStats): number {
+  const position = low === Infinity ? 0 : low;
+  return (
+    fingers +
+    muted * 0.6 +
+    (barre === null ? 0 : 1.5) +
+    Math.max(0, position - 1) * 0.6 +
+    (high > low ? (high - low) * 0.5 : 0)
+  );
+}
+
+interface ShapeVisit extends HandStats {
+  /** Traste de cada cuerda; se reusa entre visitas, hay que copiarlo para guardarlo. */
+  frets: number[];
+  /** Notas que suenan, como máscara de 12 bits. */
+  mask: number;
+  /** MIDI de la nota más grave. */
+  bass: number;
+}
+
+/**
+ * Recorre todas las figuras que una mano puede hacer: hasta cuatro dedos (la cejilla cuenta como
+ * uno), a lo sumo cuatro trastes de abertura, y como mucho las dos cuerdas graves apagadas.
+ */
+function walkShapes(open: number[], maxFret: number, visit: (shape: ShapeVisit) => void): void {
+  const frets: number[] = [];
   const consider = () => {
     let mask = 0;
     let bass = Infinity;
@@ -220,22 +281,9 @@ export function chordShapes(
         if (fret > high) high = fret;
       }
     }
-    const chord = commonChord(mask, bass % 12);
-    if (!chord) return;
     const { fingers, barre } = pressed > 4 ? fingersFor(frets) : { fingers: pressed, barre: null };
     if (fingers > 4) return;
-    const position = low === Infinity ? 0 : low;
-    const score =
-      chord.weight * 2 +
-      keyPenalty(bass % 12, chord.suffix) +
-      fingers +
-      muted * 0.6 +
-      (barre === null ? 0 : 1.5) +
-      Math.max(0, position - 1) * 0.6 +
-      (high > low ? (high - low) * 0.5 : 0);
-    const key = chord.suffix + '|' + (bass % 12);
-    const current = best.get(key);
-    if (!current || score < current.score) best.set(key, { frets: [...frets], score, ...chord, root: bass });
+    visit({ frets, mask, bass, fingers, barre, muted, low, high });
   };
 
   // Cuerda por cuerda, de la 6.ª a la 1.ª, cortando apenas la abertura pasa de cuatro trastes.
@@ -252,18 +300,59 @@ export function chordShapes(
     }
   };
   walk(0, Infinity, -Infinity);
+}
 
-  const openName = openChordName(notes, notation);
-  const shapes: ChordShape[] = [{ frets: open.map(() => 0), chord: openName, label: 'Al aire' }];
-  [...best.values()]
-    .map((shape) => ({ ...shape, chord: noteLabel(midiToNote(shape.root), notation) + shape.suffix }))
-    .filter((shape) => shape.chord !== openName)
-    .sort((a, b) => a.score - b.score)
-    .slice(0, limit - 1)
-    .forEach((shape) =>
-      shapes.push({ frets: shape.frets, chord: shape.chord, label: shapeLabel(shape.frets) }),
-    );
-  return shapes;
+/** Una figura para un acorde puntual. */
+export interface Fingering {
+  frets: number[];
+  label: string;
+  /** Si le falta la quinta: en acordes de cuatro o más notas, la mano suele dejarla afuera. */
+  noFifth: boolean;
+}
+
+/** La mejor figura de cada combinación de notas y bajo, para una afinación. Se calcula una vez. */
+const fingeringIndexes = new Map<string, Map<number, { frets: number[]; score: number }>>();
+
+function fingeringIndex(open: number[], maxFret: number) {
+  const key = open.join(',') + '|' + maxFret;
+  let index = fingeringIndexes.get(key);
+  if (!index) {
+    const built = new Map<number, { frets: number[]; score: number }>();
+    walkShapes(open, maxFret, (shape) => {
+      const id = shape.mask * 12 + (shape.bass % 12);
+      const score = handScore(shape);
+      const current = built.get(id);
+      if (!current || score < current.score) built.set(id, { frets: [...shape.frets], score });
+    });
+    index = built;
+    fingeringIndexes.set(key, index);
+  }
+  return index;
+}
+
+/**
+ * La figura más fácil para un acorde (raíz y pasos en semitonos) con esta nota en el bajo, o null si
+ * la mano no llega. Si el acorde completo no entra y tiene quinta justa y al menos cuatro notas,
+ * prueba sin la quinta.
+ */
+export function fingeringFor(
+  notes: string[],
+  root: number,
+  steps: readonly number[],
+  bass: number = root,
+  { maxFret = 9 }: { maxFret?: number } = {},
+): Fingering | null {
+  const index = fingeringIndex(notes.map(noteToMidi), maxFret);
+  const toMask = (list: readonly number[]) =>
+    list.reduce((acc, step) => acc | (1 << ((root + step) % 12)), 0);
+  const bassClass = ((bass % 12) + 12) % 12;
+  const full = index.get(toMask(steps) * 12 + bassClass);
+  if (full) return { frets: full.frets, label: shapeLabel(full.frets), noFifth: false };
+  if (steps.length >= 4 && steps.includes(7) && (bassClass - root + 12) % 12 !== 7) {
+    const lean = index.get(toMask(steps.filter((step) => step !== 7)) * 12 + bassClass);
+    if (lean) return { frets: lean.frets, label: shapeLabel(lean.frets), noFifth: true };
+  }
+  return null;
 }
 
 /** La figura en cifrado de trastes, de la 6.ª a la 1.ª, con la cejilla si hace falta. */

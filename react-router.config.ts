@@ -6,5 +6,5 @@ import { TUNINGS } from './src/data/tunings';
 export default {
   appDirectory: 'src',
   ssr: false,
-  prerender: ['/', '/afinador', ...TUNINGS.map((tuning) => `/afinador/${tuning.id}`)],
+  prerender: ['/', '/afinador', '/armonia', ...TUNINGS.map((tuning) => `/afinador/${tuning.id}`)],
 } satisfies Config;

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent, type RefObject } from 'react';
-import { NavLink, useNavigate, useParams, type MetaFunction } from 'react-router';
+import { Link, NavLink, useNavigate, useParams, type MetaFunction } from 'react-router';
 import { midiToNote, noteLabel, noteToMidi } from '~/core/notes';
 import { changeSummary, openChordName, chordShapes, stringIntervals, tensionWarning } from '~/core/tuning';
 import { normalize, searchTunings } from '~/core/search';
@@ -522,7 +522,12 @@ function TuningPage({
         </Slab>
 
         <Slab>
-          <SlabHead number="03" title="Acordes" />
+          <SlabHead number="03" title="Acordes">
+            {/* Armonía es otra herramienta: se llega por la URL, con esta misma afinación. */}
+            <Link className={styles.bridge} to={`/armonia?afinacion=${tuning.id}`}>
+              Armar una vuelta →
+            </Link>
+          </SlabHead>
           <p className={styles.hint}>
             Figuras para la mano, cuerda por cuerda de la 6.ª a la 1.ª; × es cuerda apagada. Tocá una para
             escucharla en el mástil, con el patrón elegido en Escuchar.

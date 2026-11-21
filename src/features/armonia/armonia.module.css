@@ -1,0 +1,556 @@
+/* Armonía: explorar a la izquierda, la vuelta a la derecha. En pantallas angostas, todo en una columna
+   y la vuelta antes de los puntos cardinales. */
+.wrap {
+  container: content / inline-size;
+  min-width: 0;
+}
+.page {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.column {
+  display: contents;
+}
+.page .sinCentro {
+  order: 1;
+}
+@container content (min-width: 860px) {
+  .page {
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(340px, 5fr);
+    align-items: start;
+  }
+  .column {
+    container: main / inline-size;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .page .sinCentro {
+    order: 0;
+  }
+  .column + .column {
+    position: sticky;
+    top: var(--bar);
+    max-height: calc(100dvh - var(--bar));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-left: var(--rule);
+  }
+  .column + .column > section {
+    border-bottom: 0;
+  }
+}
+
+.hint {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Afinación y tónica */
+.setup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 12px;
+  margin-top: 12px;
+}
+.setup > .field:first-child {
+  flex: 3 1 240px;
+}
+.setup > .field {
+  flex: 1 1 110px;
+}
+.field {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  font: 600 12px/1.5 var(--ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.field select {
+  width: 100%;
+  min-height: var(--touch);
+  padding: 6px 8px;
+  border: var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  /* 16px evita que iOS acerque el zoom al elegir. */
+  font: 700 16px/1.2 var(--mono);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.field input[type='range'] {
+  width: 100%;
+  height: var(--touch);
+  margin: 0;
+  accent-color: var(--accent);
+}
+.bridge {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch);
+  font: 700 semi-expanded 13px/1.2 var(--ui);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  text-underline-offset: 3px;
+}
+
+/* 01 Mundo */
+.world {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+}
+.worldName {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  font: 900 expanded 20px/1.1 var(--heavy);
+  text-transform: uppercase;
+}
+.worldName small {
+  font: 600 13px/1.2 var(--ui);
+  letter-spacing: 0.05em;
+}
+.point {
+  padding: 3px 6px 2px;
+  border: 2px solid var(--ink);
+  font: 700 12px/1.2 var(--ui);
+  letter-spacing: 0.06em;
+}
+.point[data-point='con']::before {
+  content: '↑ ';
+}
+.point[data-point='sin']::before {
+  content: '∩ ';
+}
+.point[data-point='color']::before {
+  content: '◐ ';
+}
+.point[data-point='inestable']::before {
+  content: '⚡ ';
+}
+
+/* Tarjetas de acordes */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr));
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.card {
+  display: flex;
+  min-width: 0;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+}
+.listen {
+  display: grid;
+  flex: 1;
+  align-content: start;
+  gap: 3px;
+  min-width: 0;
+  padding: 6px 8px 8px;
+  border: 0;
+  background: none;
+  text-align: left;
+  transition:
+    background-color 120ms var(--ease),
+    color 120ms var(--ease);
+}
+.listen:hover {
+  background: var(--soft);
+}
+.listen:active {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.cardTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+}
+.degree {
+  font: 700 13px/1.3 var(--mono);
+}
+.chordName {
+  font: 900 semi-expanded 22px/1.05 var(--heavy);
+  overflow-wrap: anywhere;
+}
+.words {
+  font-size: 12px;
+  line-height: 1.35;
+}
+.tab {
+  margin-top: 2px;
+  font: 500 12px/1.3 var(--mono);
+}
+.tab[data-missing='true'] {
+  color: var(--muted);
+  white-space: normal;
+}
+.add {
+  flex: none;
+  width: var(--touch);
+  border: 0;
+  border-left: 2px solid var(--ink);
+  background: var(--paper);
+  font: 900 24px/1 var(--heavy);
+  transition:
+    background-color 120ms var(--ease),
+    color 120ms var(--ease);
+}
+.add:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+.add:active {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.star {
+  color: var(--accent);
+  font: 900 14px/1 var(--ui);
+  -webkit-text-stroke: 1px var(--ink);
+}
+.risk {
+  padding: 1px 4px;
+  background: var(--ink);
+  color: var(--paper);
+  font: 900 11px/1.3 var(--heavy);
+  letter-spacing: 0.04em;
+}
+
+/* ALEGRE ++, TRISTE −−, RARO −−−: el rótulo de la tabla. Alegre lleva el acento; raro, tinta llena. */
+.feeling {
+  justify-self: start;
+  padding: 1px 5px;
+  border: 2px solid var(--ink);
+  font: 800 11px/1.3 var(--ui);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.feeling[data-feeling='alegre'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+.feeling[data-feeling='raro'] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.group {
+  margin-top: 10px;
+  border-top: 2px solid var(--ink);
+}
+.group summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 4px;
+  min-height: var(--touch);
+  padding-top: 6px;
+  cursor: pointer;
+  font: 900 semi-expanded 15px/1.2 var(--heavy);
+  text-transform: uppercase;
+}
+.group summary::after {
+  content: '↓';
+  margin-left: auto;
+}
+.group[open] summary::after {
+  content: '↑';
+}
+.group summary span {
+  font: 600 13px/1.2 var(--ui);
+  text-transform: none;
+}
+.subhead {
+  font: 900 semi-expanded 15px/1.2 var(--heavy);
+  text-transform: uppercase;
+}
+.subhead {
+  margin-top: 20px;
+}
+
+/* 04 Tu vuelta */
+.chips {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.chips button {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  width: 100%;
+  min-height: 64px;
+  padding: 5px 7px 7px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  text-align: left;
+}
+.chips button:hover {
+  background: var(--soft);
+}
+.chips button[aria-pressed='true'] {
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: translate(-2px, -2px);
+}
+/* El acorde que está sonando. */
+.chips button[data-playing] {
+  background: var(--ink);
+  color: var(--paper);
+}
+.chips small {
+  font: 700 12px/1.3 var(--mono);
+}
+.chips strong {
+  font: 900 semi-expanded 18px/1.1 var(--heavy);
+  overflow-wrap: anywhere;
+}
+
+.editor {
+  margin-top: 12px;
+  padding: 10px;
+  border: var(--rule);
+}
+.editorHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.editorHead > strong {
+  font: 900 expanded 22px/1 var(--heavy);
+}
+.editorTools {
+  display: flex;
+  gap: 4px;
+}
+.label {
+  margin-top: 12px;
+  font: 600 12px/1.5 var(--ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.variants,
+.cadences {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  gap: 4px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.variants button,
+.cadences button,
+.basses button {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  width: 100%;
+  min-height: var(--touch);
+  padding: 5px 8px 6px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  text-align: left;
+}
+.variants button:hover,
+.cadences button:hover,
+.basses button:hover {
+  background: var(--soft);
+}
+.variants button[aria-pressed='true'],
+.basses button[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--paper);
+}
+.variants strong,
+.cadences strong,
+.basses strong {
+  font: 800 13px/1.25 var(--ui);
+  text-transform: uppercase;
+}
+.variants strong span,
+.cadences strong span {
+  font: 700 13px/1.25 var(--mono);
+  text-transform: none;
+}
+.variants small,
+.cadences small,
+.basses small {
+  font-size: 12px;
+  line-height: 1.35;
+}
+.basses {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 4px;
+}
+.basses button:disabled,
+.cadences button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.pedal {
+  margin-top: 10px;
+  padding: 7px 10px;
+  border-left: 6px solid var(--accent);
+  background: var(--soft);
+  font-size: 13px;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 12px;
+  margin-top: 14px;
+}
+.controls > * {
+  flex: 1 1 140px;
+  min-width: 0;
+}
+.controls > button:first-child {
+  flex-basis: 100%;
+}
+.controls [role='group'] {
+  display: flex;
+}
+.controls [role='group'] button {
+  flex: 1;
+  padding-inline: 6px;
+}
+
+/* 05 Sin centro */
+.compasses {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+.compass {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-areas:
+    'title n .'
+    'o . e'
+    '. s .';
+  gap: 4px;
+  padding: 8px;
+  border: 2px solid var(--ink);
+}
+.compasses[data-geometry='triangulo'] .compass {
+  grid-template-areas:
+    'title n .'
+    'o . e';
+}
+.compass h3 {
+  grid-area: title;
+  font: 800 12px/1.3 var(--ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.pole {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+}
+.pole[data-pole='N'] {
+  grid-area: n;
+}
+.pole[data-pole='E'] {
+  grid-area: e;
+}
+.pole[data-pole='S'] {
+  grid-area: s;
+}
+.pole[data-pole='O'] {
+  grid-area: o;
+}
+.pole > span {
+  font: 900 semi-expanded 17px/1.1 var(--heavy);
+}
+.pole > div {
+  display: flex;
+}
+.pole button {
+  min-width: var(--touch);
+  min-height: var(--touch);
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  font: 800 14px/1 var(--mono);
+}
+.pole button + button {
+  border-left: 0;
+}
+.pole button:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+.pole button:active {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* La barra de abajo: solo en el celular, donde la vuelta queda lejos. */
+.anchor {
+  display: block;
+  scroll-margin-top: 8px;
+}
+.dock {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  padding: 8px var(--gutter) max(8px, env(safe-area-inset-bottom));
+  border-top: var(--rule);
+  background: var(--paper);
+}
+.dockList {
+  display: grid;
+  flex: 1;
+  align-content: center;
+  min-width: 0;
+  min-height: var(--touch);
+  color: inherit;
+  text-decoration: none;
+}
+.dockList small {
+  font: 600 11px/1.3 var(--ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.dockList strong {
+  overflow: hidden;
+  font: 800 15px/1.3 var(--mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dock > button {
+  flex: none;
+  width: 64px;
+}
+@container content (min-width: 860px) {
+  .dock {
+    display: none;
+  }
+}

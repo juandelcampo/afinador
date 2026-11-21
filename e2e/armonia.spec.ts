@@ -1,0 +1,88 @@
+import { expect, test } from '@playwright/test';
+import { countSounds, goto, plucks, watchErrors } from './fixtures/helpers';
+
+test.describe('armonía', () => {
+  test.beforeEach(async ({ page }) => {
+    await countSounds(page);
+  });
+
+  test('se llega desde el afinador con la misma afinación y la tónica de sus cuerdas al aire', async ({
+    page,
+  }) => {
+    const errors = watchErrors(page);
+    await goto(page, '/afinador/dadgad');
+    await page.getByRole('link', { name: 'Armar una vuelta →' }).click();
+    await expect(page).toHaveURL(/\/armonia\?afinacion=dadgad/);
+    await expect(page.locator('#afinacion')).toHaveValue('dadgad');
+    // DADGAD al aire es un Dsus4: la tónica es Re.
+    await expect(page.locator('#tonica')).toHaveValue('2');
+    await expect(
+      page.getByRole('navigation', { name: 'Herramientas' }).getByRole('link', { name: 'Armonía' }),
+    ).toHaveAttribute('aria-current', 'page');
+    await page.getByRole('link', { name: /Afinar en/ }).click();
+    await expect(page).toHaveURL(/\/afinador\/dadgad$/);
+    expect(errors).toEqual([]);
+  });
+
+  test('los grados muestran su emoción y su figura, y suenan al tocarlos', async ({ page }) => {
+    const errors = watchErrors(page);
+    await goto(page, '/armonia?escala=mayor&tono=0');
+    const degrees = page.getByTestId('degrees');
+    await expect(degrees.getByRole('button', { name: 'Escuchar G7' })).toContainText('ALEGRE ++');
+    await expect(degrees.getByRole('button', { name: 'Escuchar C' })).toContainText('× 3 2 0 1 0');
+    await degrees.getByRole('button', { name: 'Escuchar C' }).click();
+    await expect.poll(() => plucks(page)).toBeGreaterThanOrEqual(5);
+
+    await page.getByRole('button', { name: 'Dórico' }).click();
+    await expect(page).toHaveURL(/escala=dorico/);
+    await expect(degrees.locator('text=★')).toHaveCount(2);
+    await expect(degrees.locator('text=OJO')).toHaveCount(1);
+    expect(errors).toEqual([]);
+  });
+
+  test('arma la vuelta, la edita, la toca y queda en la URL', async ({ page }) => {
+    const errors = watchErrors(page);
+    await goto(page, '/armonia?escala=mayor&tono=0');
+    await expect(page.getByTestId('vuelta-empty')).toBeVisible();
+    const degrees = page.getByTestId('degrees');
+    await degrees.getByRole('button', { name: 'Sumar C a la vuelta' }).click();
+    await degrees.getByRole('button', { name: 'Sumar Am a la vuelta' }).click();
+    await expect(page).toHaveURL(/v=C_Am/);
+
+    // El Am elegido: con séptima menor, y el bajo en la tercera.
+    const vuelta = page.getByTestId('vuelta');
+    await vuelta.getByRole('button', { name: /Am/ }).click();
+    const editor = page.getByTestId('chord-editor');
+    await editor.getByRole('button', { name: /\+7m/ }).click();
+    await editor.getByRole('button', { name: /^3\.ª/ }).click();
+    await expect(vuelta).toContainText('Am7/C');
+    await expect(page.getByTestId('common-tones')).toContainText('Con C comparte');
+
+    // Cerrar con la plagal suma F y C.
+    await page.getByRole('button', { name: /^Plagal/ }).click();
+    await expect(vuelta.getByRole('listitem')).toHaveCount(4);
+    await expect(page).toHaveURL(/v=C_Am7%2FC_F_C|v=C_Am7\/C_F_C/);
+
+    const before = await plucks(page);
+    await page.locator('#vuelta-toggle').click();
+    await expect(vuelta.locator('[data-playing]')).toHaveCount(1);
+    await page.waitForTimeout(1500);
+    await page.locator('#vuelta-toggle').click();
+    expect(await plucks(page)).toBeGreaterThan(before + 10);
+
+    // Recargar la deja igual: la vuelta vive en la URL.
+    await page.reload();
+    await expect(page.getByTestId('vuelta').getByRole('listitem')).toHaveCount(4);
+    expect(errors).toEqual([]);
+  });
+
+  test('los puntos cardinales suman acordes y avisan el paso por el mismo polo', async ({ page }) => {
+    await goto(page, '/armonia');
+    await page
+      .getByRole('region', { name: 'Grupo 2' })
+      .getByRole('button', { name: 'Sumar Cm a la vuelta' })
+      .click();
+    await expect(page.getByTestId('same-pole')).toContainText('polo N');
+    await expect(page.getByTestId('same-pole')).toContainText('B o Db');
+  });
+});
