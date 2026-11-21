@@ -6,7 +6,7 @@ export const meta: MetaFunction = () => [
   { title: 'Herramientas para componer con guitarra · Afinador' },
   {
     name: 'description',
-    content: `Afiná y escuchá ${TUNINGS.length} afinaciones, y armá vueltas de acordes por emoción con las figuras de tu afinación.`,
+    content: `Afiná y escuchá ${TUNINGS.length} afinaciones, armá vueltas de acordes por emoción y encontrá todas las formas de cada acorde en tu afinación.`,
   },
 ];
 
@@ -38,6 +38,16 @@ const TOOLS: Tool[] = [
       'Qué dice cada acorde: alegre, triste o raro',
       'Colores de cine, séptimas y cadencias para cerrar',
       'Cada acorde con su figura en tu afinación',
+    ],
+  },
+  {
+    to: '/inversiones',
+    name: 'Inversiones',
+    pitch: 'Todas las maneras de hacer un acorde en el mástil, según qué nota va en el bajo.',
+    things: [
+      'Fundamental, primera, segunda y tercera inversión',
+      'Cada figura dibujada, con qué nota del acorde es cada dedo',
+      'Las justas y las llenas, en tu afinación',
     ],
   },
 ];

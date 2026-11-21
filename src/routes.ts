@@ -8,5 +8,6 @@ export default [
     route('afinador', 'features/afinador/AfinadorRoute.tsx', { id: 'afinador-index' }),
     route('afinador/:tuningId', 'features/afinador/AfinadorRoute.tsx', { id: 'afinador-tuning' }),
     route('armonia', 'features/armonia/ArmoniaRoute.tsx'),
+    route('inversiones', 'features/inversiones/InversionesRoute.tsx'),
   ]),
 ] satisfies RouteConfig;

@@ -107,9 +107,11 @@
 
 /* En el celular la marca y el botón de ajustes comparten la fila: los dos un poco más chicos. */
 @media (max-width: 719px) {
+  /* Con tres herramientas la letra ancha no entra en 390 px: en el celular va normal. */
   .tool {
     padding-inline: 7px;
     font-size: 13px;
+    font-stretch: 100%;
   }
   .settingsToggle {
     padding-inline: 8px;

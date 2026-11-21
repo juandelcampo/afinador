@@ -9,6 +9,11 @@ import styles from './shell.module.css';
 const TOOLS = [
   { to: '/afinador', label: 'Afinador', match: (path: string) => path.startsWith('/afinador') },
   { to: '/armonia', label: 'Armonía', match: (path: string) => path.startsWith('/armonia') },
+  {
+    to: '/inversiones',
+    label: 'Inversiones',
+    match: (path: string) => path.startsWith('/inversiones'),
+  },
 ];
 
 /** Una barra arriba con las herramientas y lo que vale para todas, y la página debajo. */

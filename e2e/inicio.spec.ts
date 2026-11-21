@@ -18,5 +18,10 @@ test('la portada lleva a cada herramienta, y la marca vuelve a la portada', asyn
   await main.getByRole('link', { name: /Armonía/ }).click();
   await expect(page).toHaveURL(/\/armonia$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Armonía');
+
+  await tools.getByRole('link', { name: 'Inicio' }).click();
+  await main.getByRole('link', { name: /Inversiones/ }).click();
+  await expect(page).toHaveURL(/\/inversiones$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Inversiones');
   expect(errors).toEqual([]);
 });
