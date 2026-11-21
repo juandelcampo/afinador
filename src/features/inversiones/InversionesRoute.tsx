@@ -2,22 +2,16 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams, type MetaFunction } from 'react-router';
 import { getAudio } from '~/audio/engine';
 import { pluckString } from '~/audio/instrument';
-import { chordToken, parseChord, plainName, type Chord, type Suffix } from '~/core/harmony';
-import {
-  INVERSION_CHORDS,
-  inversionsOf,
-  tabOf,
-  toneName,
-  type InversionGroup,
-  type Voicing,
-} from '~/core/inversions';
+import { CHORD_STEPS, chordToken, parseChord, plainName, type Chord, type Suffix } from '~/core/harmony';
+import { INVERSION_CHORDS, inversionsOf, tabOf, type InversionGroup, type Voicing } from '~/core/inversions';
 import { noteLabel, noteToMidi } from '~/core/notes';
-import { MUTED, openChord } from '~/core/tuning';
+import { openChord } from '~/core/tuning';
 import { GROUPS, TUNINGS, type Tuning } from '~/data/tunings';
 import { Fader } from '~/shared/Fader';
 import { useSettings } from '~/shared/settings';
 import { useHydrated } from '~/shared/useHydrated';
-import { Button, PageTitle, Slab, SlabHead, Tabs } from '~/shared/ui/ui';
+import { Button, PageTitle, Slab } from '~/shared/ui/ui';
+import { Diapason } from './Diapason';
 import styles from './inversiones.module.css';
 
 export const meta: MetaFunction = () => [
@@ -31,9 +25,9 @@ export const meta: MetaFunction = () => [
 
 const DEFAULT_TUNING = 'estandar';
 const EMPTY = new URLSearchParams();
-/** Las figuras llenas que se ven antes de pedir el resto. */
-const FULL_PREVIEW = 6;
 const ORDINALS = ['Fundamental', '1.ª inversión', '2.ª inversión', '3.ª inversión', '4.ª inversión'];
+/** Cuánto tarda cada inversión en el recorrido, en segundos. */
+const TOUR_STEP = 1.4;
 
 const findTuning = (id: string | null) =>
   TUNINGS.find((item) => item.id === id) ?? TUNINGS.find((item) => item.id === DEFAULT_TUNING)!;
@@ -56,6 +50,18 @@ function readChord(text: string | null): Chord | null {
 const suffixLabel = (suffix: Suffix) =>
   INVERSION_CHORDS.find((item) => item.suffix === suffix)?.symbol ?? suffix;
 
+/** Las formas de una inversión, del aire hacia el cuerpo de la guitarra. */
+const shapesOf = (group: InversionGroup) =>
+  [...group.bare, ...group.full].sort(
+    (a, b) => a.position - b.position || a.top - b.top || a.effort - b.effort,
+  );
+
+/** La forma con la que arranca cada inversión: la llena más fácil, o la justa más fácil si no hay llenas. */
+function easiest(group: InversionGroup): Voicing | undefined {
+  const pool = group.full.length ? group.full : group.bare;
+  return [...pool].sort((a, b) => a.effort - b.effort)[0];
+}
+
 /** Un rasguido hacia abajo, de la cuerda más grave a la más aguda. */
 function strumVoicing(midis: Voicing['midis'], a4: number, when: number) {
   let position = 0;
@@ -66,127 +72,12 @@ function strumVoicing(midis: Voicing['midis'], a4: number, when: number) {
   });
 }
 
-const STRING_GAP = 14;
-const FRET_GAP = 18;
-const ROWS = 4;
-const LEFT = 18;
-const TOP = 18;
-
-/**
- * La figura dibujada como en los cancioneros: las cuerdas paradas (la 6.ª a la izquierda), los trastes
- * acostados, y en cada punto qué nota del acorde es. La del bajo va en naranja.
- */
-function ChordBox({ voicing, suffix }: { voicing: Voicing; suffix: Suffix }) {
-  const count = voicing.frets.length;
-  // Si la figura entra en los primeros trastes se dibuja desde la cejuela.
-  const first = voicing.top <= ROWS ? 1 : voicing.position;
-  const width = LEFT + (count - 1) * STRING_GAP + 12;
-  const height = TOP + ROWS * FRET_GAP + 6;
-  const x = (index: number) => LEFT + index * STRING_GAP;
-  const y = (fret: number) => TOP + (fret - first + 0.5) * FRET_GAP;
-  const bassString = voicing.midis.indexOf(
-    Math.min(...voicing.midis.filter((midi): midi is number => midi !== null)),
-  );
-  return (
-    <svg
-      className={styles.box}
-      viewBox={`0 0 ${width} ${height}`}
-      role="img"
-      aria-hidden="true"
-      focusable="false"
-    >
-      {first > 1 && (
-        <text className={styles.boxFret} x={LEFT - 8} y={y(first) + 3.5} textAnchor="end">
-          {first}
-        </text>
-      )}
-      {Array.from({ length: ROWS + 1 }, (_, row) => (
-        <line
-          key={`f${row}`}
-          className={row === 0 && first === 1 ? styles.boxNut : styles.boxLine}
-          x1={x(0)}
-          x2={x(count - 1)}
-          y1={TOP + row * FRET_GAP}
-          y2={TOP + row * FRET_GAP}
-        />
-      ))}
-      {voicing.frets.map((_, index) => (
-        <line
-          key={`s${index}`}
-          className={styles.boxLine}
-          x1={x(index)}
-          x2={x(index)}
-          y1={TOP}
-          y2={TOP + ROWS * FRET_GAP}
-        />
-      ))}
-      {voicing.frets.map((fret, index) => {
-        const step = voicing.steps[index];
-        const bass = index === bassString;
-        if (fret === MUTED) {
-          return (
-            <text key={index} className={styles.boxMuted} x={x(index)} y={TOP - 6} textAnchor="middle">
-              ×
-            </text>
-          );
-        }
-        const label = step === null || step === undefined ? '' : toneName(step, suffix);
-        const open = fret === 0;
-        const cy = open ? TOP - 9 : y(fret);
-        return (
-          <g key={index} data-bass={bass || undefined} data-open={open || undefined}>
-            <circle className={styles.boxDot} cx={x(index)} cy={cy} r={6.4} />
-            <text
-              className={styles.boxTone}
-              x={x(index)}
-              y={cy + 2.6}
-              textAnchor="middle"
-              textLength={label.length > 1 ? 9.5 : undefined}
-              lengthAdjust="spacingAndGlyphs"
-            >
-              {label}
-            </text>
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
-
-function VoicingCard({
-  voicing,
-  suffix,
-  name,
-  playing,
-  onPlay,
-}: {
-  voicing: Voicing;
-  suffix: Suffix;
-  name: string;
-  playing: boolean;
-  onPlay: () => void;
-}) {
-  const tab = tabOf(voicing.frets);
-  const extra = [voicing.barre !== null && `cejilla ${voicing.barre}`, voicing.noFifth && 'sin 5.ª'].filter(
-    Boolean,
-  );
-  return (
-    <li>
-      <button
-        type="button"
-        className={styles.card}
-        aria-label={`Escuchar ${name}: ${tab}`}
-        aria-pressed={playing}
-        onClick={onPlay}
-      >
-        <ChordBox voicing={voicing} suffix={suffix} />
-        <span className={styles.tab} data-long={tab.length > 13 || undefined}>
-          {tab}
-        </span>
-        {extra.length > 0 && <small className={styles.extra}>{extra.join(' · ')}</small>}
-      </button>
-    </li>
-  );
+interface View {
+  /** Para qué acorde y afinación vale: si cambian, se vuelve a la fundamental. */
+  key: string;
+  inversion: number;
+  /** La forma elegida (sus trastes), o null para la más fácil. */
+  frets: string | null;
 }
 
 export default function InversionesRoute() {
@@ -199,13 +90,30 @@ export default function InversionesRoute() {
 
   const tuning = findTuning(params.get('afinacion'));
   const chord = readChord(params.get('acorde')) ?? homeChord(tuning);
-  const [playing, setPlaying] = useState<string | null>(null);
-  const [opened, setOpened] = useState<Record<number, boolean>>({});
-
+  const open = useMemo(() => tuning.notes.map(noteToMidi), [tuning.notes]);
   const groups = useMemo(
-    () => inversionsOf(tuning.notes.map(noteToMidi), chord.root, chord.suffix),
-    [tuning.notes, chord.root, chord.suffix],
+    () => inversionsOf(open, chord.root, chord.suffix),
+    [open, chord.root, chord.suffix],
   );
+
+  const chordKey = `${tuning.id}|${chordToken(chord)}`;
+  const [view, setView] = useState<View>({ key: chordKey, inversion: 0, frets: null });
+  const current: View = view.key === chordKey ? view : { key: chordKey, inversion: 0, frets: null };
+  const group = groups[current.inversion] ?? groups[0]!;
+  const shapes = shapesOf(group);
+  const wanted = current.frets ?? easiest(group)?.frets.join();
+  const index = Math.max(
+    0,
+    shapes.findIndex((shape) => shape.frets.join() === wanted),
+  );
+  const voicing = shapes[index] ?? null;
+
+  const tourTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const stopTour = () => {
+    tourTimers.current.forEach(clearTimeout);
+    tourTimers.current = [];
+  };
+  useEffect(() => stopTour, []);
 
   // Dos toques seguidos no esperan a que la URL se actualice: cada cambio parte del último pedido.
   const pending = useRef<string | null>(null);
@@ -222,63 +130,80 @@ export default function InversionesRoute() {
       else next.set(param, value);
     }
     pending.current = next.toString();
-    setPlaying(null);
-    setOpened({});
+    stopTour();
     setSearchParams(next, { replace: true, preventScrollReset: true });
   };
   /** Cambia la nota o el tipo a partir del acorde pedido, no del que se ve. */
   const setChord = (change: Partial<Chord>) =>
     update((base) => {
-      const current = readChord(base.get('acorde')) ?? homeChord(findTuning(base.get('afinacion')));
-      return { acorde: chordToken({ ...current, ...change }) };
+      const before = readChord(base.get('acorde')) ?? homeChord(findTuning(base.get('afinacion')));
+      return { acorde: chordToken({ ...before, ...change }) };
     });
 
-  // Con el bemol de verdad: "Db" en mayúsculas se leería como dos letras.
+  // Con el bemol de verdad: en mayúsculas "Db" se leería como dos letras.
   const rootName = (pc: number) => plainName(pc, notation).replace(/b$/, '♭');
   const name = rootName(chord.root) + suffixLabel(chord.suffix);
-  const nameWithBass = (group: InversionGroup) =>
-    group.inversion === 0 ? name : `${name}/${rootName(chord.root + group.bass)}`;
+  const nameWithBass = (item: InversionGroup) =>
+    item.inversion === 0 ? name : `${name}/${rootName(chord.root + item.bass)}`;
 
-  const play = (voicing: Voicing) => {
+  const play = (shape: Voicing | null | undefined) => {
+    if (!shape) return;
     const { ctx } = getAudio();
-    strumVoicing(voicing.midis, a4, ctx.currentTime + 0.02);
-    setPlaying(voicing.frets.join());
+    strumVoicing(shape.midis, a4, ctx.currentTime + 0.02);
+  };
+  /** Elegir una forma la hace sonar: primero se escucha. */
+  const show = (inversion: number, shape: Voicing | undefined) => {
+    stopTour();
+    setView({ key: chordKey, inversion, frets: shape ? shape.frets.join() : null });
+    play(shape);
+  };
+  const step = (delta: number) => {
+    const next = shapes[index + delta];
+    if (next) show(current.inversion, next);
+  };
+  const pluck = (stringIndex: number) => {
+    const midi = voicing?.midis[stringIndex];
+    if (midi === null || midi === undefined) return;
+    pluckString(stringIndex, midi, { a4 });
   };
 
-  // Para comparar de oído: la primera justa de cada inversión, una detrás de otra.
-  const tour = groups.map((group) => group.bare[0] ?? group.full[0]).filter((item) => item !== undefined);
+  // Para comparar de oído: la forma más fácil de cada inversión, una detrás de otra, y el diapasón la sigue.
   const playTour = () => {
+    stopTour();
     const { ctx } = getAudio();
-    tour.forEach((voicing, index) => strumVoicing(voicing.midis, a4, ctx.currentTime + 0.04 + index * 1.4));
-    setPlaying(null);
+    const start = ctx.currentTime + 0.04;
+    groups.forEach((item, position) => {
+      const shape = easiest(item);
+      if (!shape) return;
+      strumVoicing(shape.midis, a4, start + position * TOUR_STEP);
+      tourTimers.current.push(
+        setTimeout(
+          () => setView({ key: chordKey, inversion: item.inversion, frets: shape.frets.join() }),
+          position * TOUR_STEP * 1000,
+        ),
+      );
+    });
   };
 
-  const chordTones = groups.map((group) => ({ tone: group.tone, note: rootName(chord.root + group.bass) }));
-
-  const cards = (list: Voicing[], group: InversionGroup) =>
-    list.map((voicing) => (
-      <VoicingCard
-        key={voicing.frets.join()}
-        voicing={voicing}
-        suffix={chord.suffix}
-        name={nameWithBass(group)}
-        playing={playing === voicing.frets.join()}
-        onPlay={() => play(voicing)}
-      />
-    ));
+  const details = voicing
+    ? [
+        `${voicing.strings} cuerdas`,
+        voicing.barre !== null && `cejilla en el ${voicing.barre}`,
+        voicing.noFifth && 'sin la 5.ª',
+      ].filter(Boolean)
+    : [];
 
   return (
     <div className={styles.page}>
       <Slab>
         <PageTitle eyebrow="Todas las formas de un acorde" title="Inversiones">
           <p>
-            Elegí un acorde y mirá todas las maneras de hacerlo en el mástil, agrupadas por la nota que queda
-            en el bajo. Tocá una figura para escucharla: el mismo acorde cambia de peso según qué nota va
-            abajo.
+            El mismo acorde cambia de peso según qué nota va en el bajo. Elegí uno y recorré sus formas en el
+            mástil.
           </p>
         </PageTitle>
         <div className={styles.setup}>
-          <label className={styles.field}>
+          <label className={styles.field} data-wide>
             <span>Afinación</span>
             <select
               id="afinacion"
@@ -287,14 +212,28 @@ export default function InversionesRoute() {
                 update({ afinacion: event.target.value === DEFAULT_TUNING ? null : event.target.value })
               }
             >
-              {GROUPS.map((group) => (
-                <optgroup key={group.id} label={group.name}>
-                  {TUNINGS.filter((item) => item.group === group.id).map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name} · {item.notes.map((note) => noteLabel(note, notation)).join(' ')}
+              {GROUPS.map((item) => (
+                <optgroup key={item.id} label={item.name}>
+                  {TUNINGS.filter((option) => option.group === item.id).map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.name} · {option.notes.map((note) => noteLabel(note, notation)).join(' ')}
                     </option>
                   ))}
                 </optgroup>
+              ))}
+            </select>
+          </label>
+          <label className={styles.field}>
+            <span>Tipo</span>
+            <select
+              id="tipo"
+              value={chord.suffix}
+              onChange={(event) => setChord({ suffix: event.target.value })}
+            >
+              {INVERSION_CHORDS.map((item) => (
+                <option key={item.suffix} value={item.suffix}>
+                  {item.label}
+                </option>
               ))}
             </select>
           </label>
@@ -302,96 +241,100 @@ export default function InversionesRoute() {
             Afinar en {tuning.name} →
           </Link>
         </div>
+        <div className={styles.roots} role="group" aria-label="Nota del acorde">
+          {Array.from({ length: 12 }, (_, pc) => (
+            <button
+              key={pc}
+              type="button"
+              aria-pressed={pc === chord.root}
+              onClick={() => setChord({ root: pc })}
+            >
+              {rootName(pc)}
+            </button>
+          ))}
+        </div>
       </Slab>
 
       <Slab>
-        <SlabHead number="01" title="Acorde" />
-        {/* Sin mayúsculas: en mayúsculas m7 se confunde con M7, que es otro acorde. */}
-        <div className={styles.pick}>
-          <Tabs
-            label="Nota del acorde"
-            value={String(chord.root)}
-            options={Array.from({ length: 12 }, (_, pc) => ({ value: String(pc), label: rootName(pc) }))}
-            onChange={(value) => setChord({ root: Number(value) })}
-          />
-          <Tabs
-            label="Tipo de acorde"
-            value={chord.suffix}
-            options={INVERSION_CHORDS.map((item) => ({ value: item.suffix, label: item.label }))}
-            onChange={(value) => setChord({ suffix: value })}
-          />
+        <div className={styles.inversions} role="group" aria-label="Qué va en el bajo">
+          {groups.map((item) => (
+            <button
+              key={item.bass}
+              type="button"
+              aria-pressed={item.inversion === group.inversion}
+              disabled={item.bare.length + item.full.length === 0}
+              onClick={() => show(item.inversion, easiest(item))}
+            >
+              <strong>{nameWithBass(item)}</strong>
+              <small>{ORDINALS[item.inversion]}</small>
+            </button>
+          ))}
         </div>
-        <div className={styles.summary}>
-          <p className={styles.name} data-testid="chord-name">
-            {name}
-          </p>
-          <ul className={styles.tones} aria-label="Notas del acorde">
-            {chordTones.map((item) => (
-              <li key={item.tone}>
-                <span>{item.tone}</span>
-                {item.note}
-              </li>
-            ))}
-          </ul>
-        </div>
+
+        <p className={styles.why}>
+          <strong>{group.inversion === 0 ? 'La raíz en el bajo.' : `La ${group.tone} en el bajo.`}</strong>{' '}
+          {group.why}
+        </p>
+
+        <Diapason
+          notes={tuning.notes}
+          open={open}
+          root={chord.root}
+          suffix={chord.suffix}
+          steps={CHORD_STEPS[chord.suffix]!}
+          voicing={voicing}
+          notation={notation}
+          onPluck={pluck}
+        />
+
+        {voicing ? (
+          <div className={styles.browse}>
+            <button
+              type="button"
+              className={styles.arrow}
+              aria-label="Forma anterior, más cerca de la cejuela"
+              disabled={index === 0}
+              onClick={() => step(-1)}
+            >
+              ◀
+            </button>
+            <button
+              type="button"
+              className={styles.current}
+              aria-label={`Escuchar ${nameWithBass(group)}: ${tabOf(voicing.frets)}`}
+              onClick={() => play(voicing)}
+            >
+              <span className={styles.counter} data-testid="shape-counter">
+                Forma {index + 1} de {shapes.length}
+              </span>
+              <strong className={styles.tab}>{tabOf(voicing.frets)}</strong>
+              <small>{details.join(' · ')}</small>
+            </button>
+            <button
+              type="button"
+              className={styles.arrow}
+              aria-label="Forma siguiente, más arriba en el mástil"
+              disabled={index === shapes.length - 1}
+              onClick={() => step(1)}
+            >
+              ▶
+            </button>
+          </div>
+        ) : (
+          <p className={styles.empty}>En esta afinación la mano no llega a ninguna forma de {name}.</p>
+        )}
+
         <div className={styles.actions}>
-          <Button variant="primary" onClick={playTour} disabled={!tour.length}>
+          <Button variant="primary" onClick={playTour}>
             ▶ Escuchar las inversiones
           </Button>
           <Fader compact />
         </div>
         <p className={styles.hint}>
-          Suena una de cada grupo, de la fundamental a la última. En los dibujos la 6.ª cuerda va a la
-          izquierda y la nota del bajo va en naranja; el número al costado es el traste donde empieza.
+          Lo tenue son las notas del acorde en todo el mástil; lo blanco, la forma elegida, con el bajo en
+          naranja. Tocá un punto para escuchar esa nota sola.
         </p>
       </Slab>
-
-      {groups.map((group, index) => {
-        const open = opened[group.bass] ?? false;
-        const full = open ? group.full : group.full.slice(0, FULL_PREVIEW);
-        const hidden = group.full.length - full.length;
-        const total = group.bare.length + group.full.length;
-        return (
-          <Slab key={group.bass} label={ORDINALS[group.inversion]}>
-            <SlabHead number={String(index + 2).padStart(2, '0')} title={ORDINALS[group.inversion]!}>
-              <span className={styles.count}>{total === 1 ? '1 forma' : `${total} formas`}</span>
-            </SlabHead>
-            <p className={styles.bassLine}>
-              <strong>{nameWithBass(group)}</strong>
-              {group.inversion === 0 ? ' · la raíz en el bajo' : ` · la ${group.tone} en el bajo`}
-            </p>
-            <p className={styles.hint}>{group.why}</p>
-            {total === 0 && <p className={styles.empty}>En esta afinación la mano no llega a ninguna.</p>}
-            {group.bare.length > 0 && (
-              <>
-                <h3 className={styles.kind}>Justas · cada nota una vez</h3>
-                <ul className={styles.cards} data-testid={`justas-${group.inversion}`}>
-                  {cards(group.bare, group)}
-                </ul>
-              </>
-            )}
-            {group.full.length > 0 && (
-              <>
-                <h3 className={styles.kind}>Llenas · con más cuerdas</h3>
-                <ul className={styles.cards} data-testid={`llenas-${group.inversion}`}>
-                  {cards(full, group)}
-                </ul>
-                {(hidden > 0 || open) && group.full.length > FULL_PREVIEW && (
-                  <div className={styles.more}>
-                    <Button
-                      variant="ghost"
-                      ariaExpanded={open}
-                      onClick={() => setOpened((current) => ({ ...current, [group.bass]: !open }))}
-                    >
-                      {open ? 'Ver menos' : `Ver las ${hidden} que faltan`}
-                    </Button>
-                  </div>
-                )}
-              </>
-            )}
-          </Slab>
-        );
-      })}
     </div>
   );
 }

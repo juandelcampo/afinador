@@ -34,14 +34,11 @@ La afinación, la tónica, la escala y la vuelta viven en la URL (`/armonia?afin
 
 ### Inversiones
 
-Elegís la nota y el tipo de acorde (mayor, menor, séptimas, disminuidos, aumentado, sus, sextas y add9) y aparece un bloque por cada nota que puede ir en el bajo: fundamental, 1.ª, 2.ª y 3.ª inversión, con lo que da cada una (lo de la raíz, la tercera y la quinta es de De María, como en Armonía). Cada figura va dibujada como en los cancioneros, con qué nota del acorde es cada dedo y la del bajo en naranja, y suena al tocarla.
+Elegís la nota y el tipo de acorde (mayor, menor, séptimas, disminuidos, aumentado, sus, sextas y add9) y un botón por cada nota que puede ir en el bajo: fundamental, 1.ª, 2.ª y 3.ª inversión, con lo que da cada una (lo de la raíz, la tercera y la quinta es de De María, como en Armonía).
 
-| Parte  | Qué hace                                                                                                            |
-| ------ | ------------------------------------------------------------------------------------------------------------------- |
-| Justas | Cada nota del acorde una sola vez, en cuerdas vecinas: la inversión tal cual. Van de la cejuela hacia arriba.       |
-| Llenas | Con más cuerdas y notas dobladas, de la más fácil a la más difícil. Se ven las seis primeras; el resto, al pedirlo. |
+Todo pasa en un diapasón, como el del Afinador: tenues, las notas del acorde en todo el mástil; encima, la forma elegida, con qué nota del acorde es cada dedo (R, 3, ♭7) y la del bajo en naranja. Con ◀ ▶ se recorren las formas de esa inversión del aire hacia el cuerpo; cada cambio suena, y tocar un punto hace sonar esa nota sola. En el celular el diapasón se desplaza de costado hasta la forma. "Escuchar las inversiones" toca una de cada una, y el diapasón las va siguiendo.
 
-Las figuras salen de recorrer el mástil hasta el traste 12 (`core/inversions.ts`): las cuerdas que suenan van de corrido, todas son notas del acorde, hasta cuatro dedos con la cejilla contando como uno y cuatro trastes de abertura. En los acordes de cuatro notas puede faltar la quinta. Una llena que es otra llena con alguna cuerda menos no se muestra. En afinaciones de solo cuartas y quintas, algunos acordes (el aumentado, el dim7) no entran en la mano, y la pantalla lo dice.
+Las figuras salen de recorrer el mástil hasta el traste 12 (`core/inversions.ts`): las cuerdas que suenan van de corrido, todas son notas del acorde, hasta cuatro dedos con la cejilla contando como uno y cuatro trastes de abertura. En los acordes de cuatro notas puede faltar la quinta. Entran las justas (cada nota una vez, en cuerdas vecinas) y las llenas (con notas dobladas); una llena que es otra con alguna cuerda menos no se muestra. En afinaciones de solo cuartas y quintas, algunos acordes (el aumentado, el dim7) no entran en la mano, y la pantalla lo dice.
 
 El acorde y la afinación van en la URL (`/inversiones?afinacion=dadgad&acorde=Gmaj7`). Armonía lleva acá desde el acorde elegido de la vuelta.
 

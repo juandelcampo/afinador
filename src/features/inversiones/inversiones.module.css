@@ -1,4 +1,4 @@
-/* Inversiones: el acorde arriba y un bloque por nota en el bajo, con las figuras dibujadas. */
+/* Inversiones: el acorde arriba y un solo diapasón con la forma elegida. */
 .page {
   container: content / inline-size;
   min-width: 0;
@@ -6,13 +6,13 @@
 
 .hint {
   max-width: 72ch;
-  margin-top: 6px;
+  margin-top: 10px;
   color: var(--muted);
   font-size: 12px;
   line-height: 1.5;
 }
 
-/* Afinación */
+/* Afinación y tipo */
 .setup {
   display: flex;
   flex-wrap: wrap;
@@ -22,12 +22,16 @@
 }
 .field {
   display: grid;
-  flex: 0 1 420px;
+  flex: 1 1 120px;
   gap: 3px;
   min-width: 0;
   font: 600 12px/1.5 var(--ui);
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+.field[data-wide] {
+  flex: 3 1 240px;
+  max-width: 420px;
 }
 .field select {
   width: 100%;
@@ -51,174 +55,292 @@
   text-underline-offset: 3px;
 }
 
-/* 01 Acorde */
-.pick {
+/* Las doce notas: una tira, en dos filas en el celular. */
+.roots {
   display: grid;
-  gap: 8px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  margin-top: 12px;
+  border: var(--rule);
 }
-.pick button {
-  font: 700 16px/1.2 var(--mono);
-  text-transform: none;
-}
-.summary {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 6px 16px;
-  margin-top: 14px;
-}
-.name {
-  font: 900 expanded clamp(30px, 6cqi, 48px)/1 var(--heavy);
-  letter-spacing: -0.02em;
-}
-.tones {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 0;
+.roots button {
+  min-height: var(--touch);
   padding: 0;
-  list-style: none;
-  font: 700 16px/1.2 var(--mono);
+  border: 0;
+  border-right: 2px solid var(--ink);
+  background: var(--paper);
+  font: 700 16px/1 var(--mono);
 }
-.tones li {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding-right: 6px;
-  border: 2px solid var(--ink);
+.roots button:nth-child(n + 7) {
+  border-top: 2px solid var(--ink);
 }
-.tones li span {
-  padding: 3px 6px;
+.roots button:nth-child(6n) {
+  border-right: 0;
+}
+@container content (min-width: 640px) {
+  .roots {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+  .roots button:nth-child(n + 7) {
+    border-top: 0;
+  }
+  .roots button:nth-child(6n) {
+    border-right: 2px solid var(--ink);
+  }
+  .roots button:last-child {
+    border-right: 0;
+  }
+}
+.roots button:hover {
+  background: var(--soft);
+}
+.roots button[aria-pressed='true'] {
   background: var(--ink);
   color: var(--paper);
 }
-.tones li:first-child span {
+
+/* Qué va en el bajo: un botón por inversión, con el nombre del acorde. */
+.inversions {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  border: var(--rule);
+}
+.inversions button {
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  min-width: 0;
+  min-height: 56px;
+  padding: 6px 4px;
+  border: 0;
+  background: var(--paper);
+  text-align: center;
+}
+.inversions button + button {
+  border-left: var(--rule);
+}
+.inversions button:hover:not(:disabled) {
+  background: var(--soft);
+}
+.inversions button[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--paper);
+}
+.inversions button:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+}
+.inversions strong {
+  font: 900 semi-expanded clamp(15px, 3.4cqi, 22px)/1.1 var(--heavy);
+  overflow-wrap: anywhere;
+}
+.inversions small {
+  font: 600 11px/1.2 var(--ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.why {
+  margin: 10px 0 12px;
+  font-size: 14px;
+}
+
+/* El diapasón, como el del Afinador: negro, cuerdas blancas y el naranja para el bajo. En el celular
+   se desplaza de costado. */
+.scroller {
+  overflow-x: auto;
+  border: var(--rule);
+  background: var(--neck);
+  overscroll-behavior-x: contain;
+}
+.neck {
+  min-width: 640px;
+  color: var(--neck-ink);
+}
+.string,
+.fretRow {
+  display: grid;
+  grid-template-columns: 44px repeat(15, minmax(0, 1fr));
+}
+.nut,
+.cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+}
+/* La cuerda pasa por el medio de cada casillero, más gruesa cuanto más grave. */
+.cell::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: var(--gauge, 1px);
+  background: var(--neck-ink);
+  opacity: 0.55;
+  transform: translateY(-50%);
+}
+.string:nth-child(2) {
+  --gauge: 1.3px;
+}
+.string:nth-child(3) {
+  --gauge: 1.7px;
+}
+.string:nth-child(4) {
+  --gauge: 2px;
+}
+.string:nth-child(5) {
+  --gauge: 2.4px;
+}
+.string:nth-child(6) {
+  --gauge: 2.8px;
+}
+.string[data-muted] .cell::before {
+  opacity: 0.18;
+}
+.cell {
+  border-right: 2px solid var(--neck-line);
+}
+.nut {
+  border-right: 7px solid var(--neck-ink);
+}
+.openName {
+  font: 700 13px/1 var(--mono);
+}
+.string[data-muted] .openName {
+  color: var(--accent);
+  font-size: 18px;
+}
+
+/* Las notas del acorde en todo el mástil, tenues. */
+.ghost {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--neck-line);
+  border-radius: 50%;
+  background: var(--neck);
+  color: #9a9a9a;
+  font: 600 10px/1 var(--mono);
+}
+.string[data-muted] .ghost {
+  opacity: 0.45;
+}
+/* La forma elegida. */
+.dot {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--neck-ink);
+  color: #000000;
+  font: 700 12px/1 var(--mono);
+}
+.dot[data-bass] {
   background: var(--accent);
   color: var(--on-accent);
+}
+.dot:hover {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.dot:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.fretRow {
+  border-top: 2px solid var(--neck-ink);
+}
+.fretRow span {
+  height: 24px;
+  font: 12px/22px var(--mono);
+  text-align: center;
+  color: #9a9a9a;
+}
+.fretRow span[data-inlay] {
+  color: var(--neck-ink);
+  font-weight: 700;
+}
+.fretRow span[data-inlay='2'] {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Recorrer las formas */
+.browse {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) 56px;
+  margin-top: 12px;
+  border: var(--rule);
+}
+.arrow {
+  padding: 0;
+  border: 0;
+  background: var(--paper);
+  font: 700 18px/1 var(--ui);
+}
+.arrow:first-child {
+  border-right: var(--rule);
+}
+.arrow:last-child {
+  border-left: var(--rule);
+}
+.arrow:hover:not(:disabled) {
+  background: var(--ink);
+  color: var(--paper);
+}
+.arrow:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+}
+.current {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 6px;
+  border: 0;
+  background: var(--paper);
+}
+.current:hover {
+  background: var(--soft);
+}
+.current:active {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.counter {
+  font: 600 11px/1.3 var(--ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.tab {
+  font: 700 18px/1.2 var(--mono);
+  white-space: nowrap;
+}
+.current small {
+  font: 500 12px/1.3 var(--mono);
+  color: var(--muted);
+}
+.current:active small {
+  color: inherit;
+}
+.empty {
+  margin-top: 12px;
+  font-weight: 700;
 }
 .actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px 16px;
-  margin-top: 14px;
-}
-
-/* Cada inversión */
-.count {
-  font: 700 13px/1.2 var(--mono);
-}
-.bassLine {
-  font: 700 15px/1.3 var(--mono);
-}
-.bassLine strong {
-  font: 900 semi-expanded 18px/1.2 var(--heavy);
-}
-.empty {
-  margin-top: 10px;
-  font-weight: 700;
-}
-.kind {
-  margin-top: 14px;
-  font: 600 12px/1.5 var(--ui);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-.cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
-  gap: 6px;
-  margin: 6px 0 0;
-  padding: 0;
-  list-style: none;
-}
-.card {
-  display: grid;
-  justify-items: center;
-  gap: 2px;
-  width: 100%;
-  height: 100%;
-  min-width: 0;
-  padding: 6px 4px 8px;
-  border: 2px solid var(--ink);
-  background: var(--paper);
-  transition:
-    background-color 120ms var(--ease),
-    color 120ms var(--ease);
-}
-.card:hover {
-  background: var(--soft);
-}
-.card[aria-pressed='true'] {
-  outline: 3px solid var(--accent);
-  outline-offset: -5px;
-}
-.card:active {
-  background: var(--accent);
-  color: var(--on-accent);
-}
-.tab {
-  font: 700 12px/1.3 var(--mono);
-  white-space: nowrap;
-}
-/* Con trastes de dos cifras la tablatura se alarga: se achica en vez de cortarse. */
-.tab[data-long] {
-  font-size: 10.5px;
-  letter-spacing: -0.04em;
-}
-.extra {
-  font: 500 11px/1.3 var(--mono);
-  color: var(--muted);
-}
-.card:active .extra {
-  color: inherit;
-}
-.more {
-  margin-top: 8px;
-}
-
-/* El dibujo de la figura */
-.box {
-  display: block;
-  width: 100%;
-  max-width: 120px;
-  height: auto;
-  overflow: visible;
-}
-.boxLine {
-  stroke: currentColor;
-  stroke-width: 1.2;
-}
-.boxNut {
-  stroke: currentColor;
-  stroke-width: 4;
-}
-.boxFret {
-  fill: currentColor;
-  font: 700 10px var(--mono);
-}
-.boxMuted {
-  fill: currentColor;
-  font: 700 11px var(--mono);
-}
-.boxDot {
-  fill: var(--ink);
-  stroke: var(--ink);
-  stroke-width: 1.4;
-}
-.boxTone {
-  fill: var(--paper);
-  font: 700 8px var(--mono);
-}
-[data-open] > .boxDot {
-  fill: var(--paper);
-}
-[data-open] > .boxTone {
-  fill: var(--ink);
-}
-[data-bass] > .boxDot {
-  fill: var(--accent);
-}
-[data-bass] > .boxTone {
-  fill: var(--on-accent);
+  margin-top: 16px;
 }

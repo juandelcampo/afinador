@@ -46,8 +46,8 @@ const TOOLS: Tool[] = [
     pitch: 'Todas las maneras de hacer un acorde en el mástil, según qué nota va en el bajo.',
     things: [
       'Fundamental, primera, segunda y tercera inversión',
-      'Cada figura dibujada, con qué nota del acorde es cada dedo',
-      'Las justas y las llenas, en tu afinación',
+      'Cada forma en el diapasón, con qué nota del acorde es cada dedo',
+      'Todas las del mástil, en tu afinación',
     ],
   },
 ];
