@@ -5,6 +5,7 @@ Herramientas para componer con guitarra, pensadas para quien toca de oído y qui
 - **Afinador**: 147 afinaciones, afinador por micrófono, escuchador interactivo sobre un mástil y acordes que se pueden hacer con la mano en cada afinación.
 - **Armonía** (`/armonia`): acordes por emoción para armar una vuelta con las figuras de tu afinación.
 - **Inversiones** (`/inversiones`): todas las maneras de hacer un acorde en el mástil, agrupadas por la nota que va en el bajo.
+- **¿Qué acorde?** (`/acorde`): ponés los dedos en el diapasón y te dice qué acorde suena.
 
 Salió de [Scordatura](../Afinador%20Drake), donde era una de las herramientas. Acá vive solo.
 
@@ -42,7 +43,15 @@ También se puede armar una forma propia: tocar una nota tenue pone un dedo ahí
 
 Las figuras salen de recorrer el mástil hasta el traste 12 (`core/inversions.ts`): las cuerdas que suenan van de corrido, todas son notas del acorde, hasta cuatro dedos con la cejilla contando como uno y cuatro trastes de abertura. En los acordes de cuatro notas puede faltar la quinta. Entran las justas (cada nota una vez, en cuerdas vecinas) y las llenas (con notas dobladas); una llena que es otra con alguna cuerda menos no se muestra. En afinaciones de solo cuartas y quintas, algunos acordes (el aumentado, el dim7) no entran en la mano, y la pantalla lo dice.
 
-El acorde, la afinación y la forma propia van en la URL (`/inversiones?afinacion=dadgad&acorde=Gmaj7`). Armonía lleva acá desde el acorde elegido de la vuelta.
+El acorde, la afinación y la forma propia van en la URL (`/inversiones?afinacion=dadgad&acorde=Gmaj7`). Armonía lleva acá desde el acorde elegido de la vuelta, y ¿Qué acorde? desde la forma que armaste.
+
+### ¿Qué acorde?
+
+Para cuando ponés los dedos de oído, te gusta cómo suena y no sabés qué es. Arranca con todas las cuerdas al aire (en la estándar, un Em11). Tocar un casillero pone el dedo ahí y lo hace sonar; tocar el dedo lo saca y la cuerda vuelve al aire; tocar el nombre de la cuerda la apaga (×) o la vuelve a prender. Es el mismo diapasón de Inversiones, sin notas tenues: se puede tocar en cualquier lado.
+
+Arriba del diapasón, el nombre grande (tocarlo hace sonar la forma, rasgueada o arpegiada), el tipo en palabras y la tab. Cada dedo pasa a decir qué es en el acorde (R, 3, ♭7, 9). Debajo: las notas que suenan de grave a agudo, qué va en el bajo (con lo de De María, como en Inversiones), qué falta si falta la quinta y otras maneras de leer las mismas notas (C6 también es Am7/C). Con una nota, dos notas o un cúmulo que no es ningún acorde común, lo dice así, sin inventar nombres.
+
+El nombre sale de `core/identify.ts`: se prueba cada nota que suena como raíz contra los acordes de `CHORD_STEPS`, con la quinta (y en los de oncena, la novena) opcional. Gana la lectura con la raíz en el bajo, después la que no omite notas y después la más común. La afinación y la forma van en la URL (`/acorde?afinacion=dadgad&forma=0-0-0-2-0-0`); si el acorde es de los que abre Inversiones, un link lleva ahí con la misma forma.
 
 La barra de arriba tiene los nombres de las notas (E A D o Mi La Re) y la referencia del La. El volumen está en Escuchar, que es lo único que suena.
 
@@ -73,7 +82,7 @@ src/
   audio/       AudioContext y mezcla, instrumento (muestras de guitarra en samples.ts) y micrófono. Sin React.
   shared/      preferencias, el hook del afinador (useTuner.ts) y componentes de interfaz.
   shell/       la barra de arriba, con las herramientas.
-  features/    una carpeta por pantalla: inicio/ (la portada), afinador/, armonia/ e inversiones/.
+  features/    una carpeta por pantalla: inicio/ (la portada), afinador/, armonia/, inversiones/ y acorde/.
 tests/         lógica y validación del catálogo (Vitest)
 e2e/           pruebas en Chrome real, con micrófono simulado (Playwright)
 ```
@@ -91,7 +100,7 @@ ESLint hace cumplir las tres primeras.
 
 ### Rutas
 
-`/` es la portada, `/afinador` abre la afinación estándar y `/armonia` la armonía, `/inversiones` las inversiones. Cada afinación tiene su página en `/afinador/<id>`, generada como HTML estático para los buscadores. Se mantuvieron las URL de Scordatura para que sus links sigan abriendo.
+`/` es la portada, `/afinador` abre la afinación estándar y `/armonia` la armonía, `/inversiones` las inversiones, `/acorde` ¿Qué acorde?. Cada afinación tiene su página en `/afinador/<id>`, generada como HTML estático para los buscadores. Se mantuvieron las URL de Scordatura para que sus links sigan abriendo.
 
 ### Agregar una afinación
 

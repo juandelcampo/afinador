@@ -50,6 +50,16 @@ const TOOLS: Tool[] = [
       'Todas las del mástil, en tu afinación',
     ],
   },
+  {
+    to: '/acorde',
+    name: '¿Qué acorde?',
+    pitch: 'Poné los dedos donde te suena lindo y te dice cómo se llama ese acorde.',
+    things: [
+      'Cualquier forma, con las cuerdas al aire o apagadas',
+      'Sus notas, qué va en el bajo y otras maneras de leerlo',
+      'En tu afinación, y de ahí a todas sus formas',
+    ],
+  },
 ];
 
 /** La portada: las herramientas, cada una por su lado, para elegir por dónde empezar. */

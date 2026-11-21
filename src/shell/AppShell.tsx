@@ -14,6 +14,7 @@ const TOOLS = [
     label: 'Inversiones',
     match: (path: string) => path.startsWith('/inversiones'),
   },
+  { to: '/acorde', label: '¿Qué acorde?', match: (path: string) => path.startsWith('/acorde') },
 ];
 
 /** Una barra arriba con las herramientas y lo que vale para todas, y la página debajo. */

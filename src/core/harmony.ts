@@ -32,6 +32,13 @@ export const CHORD_STEPS: Record<string, readonly number[]> = {
   m6: [0, 3, 7, 9],
   'm(b6)': [0, 3, 7, 8],
   '(b3)': [0, 3, 4, 7],
+  // Los que aparecen al poner los dedos sin pensar, para nombrarlos en ¿Qué acorde?.
+  maj9: [0, 4, 7, 11, 14],
+  m9: [0, 3, 7, 10, 14],
+  add11: [0, 4, 7, 17],
+  m11: [0, 3, 7, 10, 14, 17],
+  '69': [0, 4, 7, 9, 14],
+  '7b5': [0, 4, 6, 10],
 };
 
 export type Suffix = keyof typeof CHORD_STEPS;
@@ -68,10 +75,19 @@ const DEGREE_SUFFIX: Record<string, string> = {
   m6: 'm6',
   'm(b6)': 'm(♭6)',
   '(b3)': '(♭3)',
+  maj9: 'maj9',
+  m9: 'm9',
+  add11: 'add11',
+  m11: 'm11',
+  '69': '6/9',
+  '7b5': '7♭5',
 };
 
 /** Cómo se escribe el sufijo en el nombre del acorde. */
 const NAME_SUFFIX: Record<string, string> = { ...DEGREE_SUFFIX, aug: 'aug', dim7: 'dim7' };
+
+/** Cómo se escribe el sufijo al lado de la nota: m7♭5, 6/9, aug. */
+export const suffixSymbol = (suffix: Suffix) => NAME_SUFFIX[suffix] ?? suffix;
 
 const mod12 = (value: number) => ((value % 12) + 12) % 12;
 

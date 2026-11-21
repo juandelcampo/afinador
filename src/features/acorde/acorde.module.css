@@ -1,0 +1,74 @@
+/* ¿Qué acorde?: el nombre grande arriba del diapasón, así se ve cambiar mientras se ponen los dedos. */
+.result {
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border: var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
+}
+.result:hover {
+  background: var(--soft);
+}
+.result:active {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.name {
+  font: 900 semi-expanded clamp(32px, 9cqi, 56px)/1 var(--heavy);
+  overflow-wrap: anywhere;
+}
+.words {
+  font: 600 13px/1.35 var(--ui);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.tab {
+  font: 700 15px/1.2 var(--mono);
+  color: var(--muted);
+}
+.result:active .tab {
+  color: inherit;
+}
+
+/* Lo que se explica después de escucharlo. */
+.facts {
+  display: grid;
+  margin: 16px 0 0;
+  padding: 0;
+  border: var(--rule);
+  list-style: none;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.facts li {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 10px;
+  padding: 8px 12px;
+}
+.facts li + li {
+  border-top: 2px solid var(--ink);
+}
+.facts li > span:first-child {
+  font: 700 11px/1.9 var(--ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.heard {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font: 700 15px/1.4 var(--mono);
+}
+.heard small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.next {
+  margin-top: 12px;
+}

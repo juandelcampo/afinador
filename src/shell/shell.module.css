@@ -107,11 +107,35 @@
 
 /* En el celular la marca y el botón de ajustes comparten la fila: los dos un poco más chicos. */
 @media (max-width: 719px) {
-  /* Con tres herramientas la letra ancha no entra en 390 px: en el celular va normal. */
+  /* Cuatro herramientas no entran en una fila de 390 px: van de a dos, al lado de la marca, y con la
+     letra normal en lugar de la ancha. */
+  .tools {
+    display: grid;
+    flex: 1 1 0;
+    grid-template-columns: var(--touch) repeat(2, minmax(0, 1fr));
+    min-width: 0;
+  }
+  /* La marca ocupa las dos filas, con el dibujo en el medio. */
+  .home {
+    grid-row: span 2;
+    min-height: 0;
+    background-position:
+      24px calc(50% - 5px),
+      center;
+    background-size:
+      9px 10px,
+      100% 44px;
+  }
   .tool {
     padding-inline: 7px;
     font-size: 13px;
     font-stretch: 100%;
+  }
+  .tool:nth-child(n + 4) {
+    border-top: var(--rule);
+  }
+  .tool:nth-child(4) {
+    border-left: 0;
   }
   .settingsToggle {
     padding-inline: 8px;
