@@ -3,7 +3,7 @@ import { Link, useSearchParams, type MetaFunction } from 'react-router';
 import { drone } from '~/audio/drone';
 import { getAudio } from '~/audio/engine';
 import { pluckString, stopInstrument } from '~/audio/instrument';
-import { pitchName, POINT_LABEL } from '~/core/harmony';
+import { pitchName } from '~/core/harmony';
 import { noteToMidi } from '~/core/notes';
 import {
   ALL_SCALES,
@@ -25,9 +25,8 @@ import { Diapason } from '~/shared/Diapason';
 import { Fader } from '~/shared/Fader';
 import { useSettings } from '~/shared/settings';
 import { TuneLink, TuningField } from '~/shared/TuningField';
-import { Button, Field, PageTitle, Segmented, Slab, SlabHead, Tabs } from '~/shared/ui/ui';
+import { Button, Field, PageTitle, Segmented, Slab } from '~/shared/ui/ui';
 import ui from '~/shared/ui/ui.module.css';
-import { Sheet } from '~/shared/ui/Sheet';
 import { useHydrated } from '~/shared/useHydrated';
 import styles from './escalas.module.css';
 
@@ -42,6 +41,7 @@ export const meta: MetaFunction = () => [
 
 const DEFAULT_TUNING = 'estandar';
 const EMPTY = new URLSearchParams();
+/** Las familias en el desplegable de la escala, como los grupos del de la afinación. */
 const FAMILIES: ScaleFamily[] = ['tonal', 'modo', 'pentatonica', 'exotica', 'jazz', 'simetrica'];
 /** Segundos entre nota y nota al escuchar la escala. */
 const NOTE_GAP = 0.3;
@@ -78,10 +78,6 @@ export default function EscalasRoute() {
   const [view, setView] = useState({ key: viewKey, position: -1 });
   const positionIndex = view.key === viewKey ? Math.min(view.position, positions.length - 1) : -1;
   const position = positionIndex >= 0 ? positions[positionIndex]! : null;
-  /** La familia que se está mirando: arranca en la de la escala elegida y vuelve a ella al elegir otra. */
-  const [browsing, setBrowsing] = useState({ key: scale.id, family: scale.family });
-  const family = browsing.key === scale.id ? browsing.family : scale.family;
-  const [pickerOpen, setPickerOpen] = useState(false);
   const [labels, setLabels] = useState<'grados' | 'notas'>('grados');
   const [droneOn, setDroneOn] = useState(false);
   /** La nota que está sonando en el recorrido, para iluminarla. */
@@ -199,98 +195,60 @@ export default function EscalasRoute() {
     escala: scale.id,
   })}`;
 
-  // Casi cuarenta escalas no entran a la vista: primero la familia y debajo solo las suyas.
-  const picker = (
-    <div className={styles.picker}>
-      <Field as="div" label="Familia">
-        <Tabs
-          label="Familia"
-          value={family}
-          options={FAMILIES.map((item) => ({ value: item, label: FAMILY_NAMES[item] }))}
-          onChange={(value) => setBrowsing({ key: scale.id, family: value })}
-        />
-      </Field>
-      <Field as="div" label={FAMILY_NAMES[family]}>
-        <Tabs
-          label={`Escala · ${FAMILY_NAMES[family]}`}
-          value={scale.id}
-          options={ALL_SCALES.filter((item) => item.family === family).map((item) => ({
-            value: item.id,
-            label: item.name,
-          }))}
-          onChange={(value) => {
-            setPickerOpen(false);
-            update({ escala: value });
-          }}
-        />
-      </Field>
-    </div>
-  );
+  /** La tónica como se escribe en esta escala: C#, Db. */
+  const tonicName = (pc: number) => pitchName(spellScaleNote(pc, pc, scale), notation).replace(/b$/, '♭');
 
   return (
     <div className={`${styles.page} ${ui.frame}`}>
       <Slab>
-        <div className={styles.top}>
-          <PageTitle eyebrow="Todas las notas en el mástil" title="Escalas">
-            <p>Elegí una escala y mirá dónde cae cada nota en tu afinación. Prendé el drone y tocá encima.</p>
-          </PageTitle>
-          <div className={ui.setup}>
-            <TuningField
-              tuning={tuning}
-              // La tónica vuelve a la que mejor cae sobre las cuerdas al aire de la nueva afinación.
-              onChange={(id) => update({ afinacion: id === DEFAULT_TUNING ? null : id, tono: null })}
-            />
-            <Field label="Tónica">
-              <select id="tonica" value={tonic} onChange={(event) => update({ tono: event.target.value })}>
-                {Array.from({ length: 12 }, (_, pc) => (
-                  <option key={pc} value={pc}>
-                    {pitchName(spellScaleNote(pc, pc, scale), notation)}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <div className={styles.bridges}>
-              <TuneLink tuning={tuning} />
-              {scale.inArmonia && (
-                <Link className={ui.bridge} to={armoniaLink}>
-                  Sus acordes en Armonía →
-                </Link>
-              )}
-            </div>
-          </div>
+        <PageTitle eyebrow="Todas las notas en el mástil" title="Escalas">
+          <p>Elegí una escala y mirá dónde cae cada nota en tu afinación. Prendé el drone y tocá encima.</p>
+        </PageTitle>
+        <div className={ui.setup}>
+          <TuningField
+            tuning={tuning}
+            // La tónica vuelve a la que mejor cae sobre las cuerdas al aire de la nueva afinación.
+            onChange={(id) => update({ afinacion: id === DEFAULT_TUNING ? null : id, tono: null })}
+          />
+          <Field label="Escala">
+            <select id="escala" value={scale.id} onChange={(event) => update({ escala: event.target.value })}>
+              {FAMILIES.map((family) => (
+                <optgroup key={family} label={FAMILY_NAMES[family]}>
+                  {ALL_SCALES.filter((item) => item.family === family).map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </Field>
+          <TuneLink tuning={tuning} />
+          {scale.inArmonia && (
+            <Link className={ui.bridge} to={armoniaLink}>
+              Sus acordes en Armonía →
+            </Link>
+          )}
         </div>
       </Slab>
 
-      <div className={styles.body}>
-        {/* El mástil primero en el celular; en pantalla ancha queda a la derecha y las escalas a la izquierda. */}
-        <Slab className={styles.main}>
-          <div className={styles.world}>
-            <div className={styles.worldHead}>
-              <p className={styles.worldName}>
-                {name(tonic)} {scale.name.toLowerCase()}
-                {scale.alias && <small> · {scale.alias.toLowerCase()}</small>}
-                {scale.point && (
-                  <span className={styles.point} data-point={scale.point}>
-                    {POINT_LABEL[scale.point]}
-                  </span>
-                )}
-              </p>
-              {/* En el celular las escalas van en una hoja: a la vista quedan la elegida y el diapasón. */}
-              <span className={styles.change}>
-                <Button variant="ghost" ariaExpanded={pickerOpen} onClick={() => setPickerOpen(true)}>
-                  Cambiar
-                </Button>
-              </span>
-            </div>
-            <p>{scale.character}</p>
+      <Slab>
+        {/* Lo que elige la escala ocupa lo mismo que el acorde en Inversiones: el diapasón queda en el
+            mismo lugar en las tres. */}
+        <div className={styles.lead}>
+          <div className={styles.roots} role="group" aria-label="Tónica">
+            {Array.from({ length: 12 }, (_, pc) => (
+              <button
+                key={pc}
+                type="button"
+                aria-pressed={pc === tonic}
+                onClick={() => update({ tono: String(pc) })}
+              >
+                {tonicName(pc)}
+              </button>
+            ))}
           </div>
-
-          <div
-            className={styles.notes}
-            role="group"
-            aria-label="Notas de la escala"
-            style={{ ['--count' as string]: scale.steps.length }}
-          >
+          <div className={styles.notes} role="group" aria-label="Notas de la escala">
             {scale.steps.map((item, index) => (
               <button
                 key={item}
@@ -306,125 +264,113 @@ export default function EscalasRoute() {
               </button>
             ))}
           </div>
+        </div>
 
-          <Diapason
-            notes={tuning.notes}
-            voicing={null}
-            notation={notation}
-            listen
-            focus={position?.from ?? 0}
-            toneAt={(stringIndex, fret) => {
-              const item = stepAt(stringIndex, fret);
-              return labels === 'grados' ? degreeName(item, scale.steps) : name(tonic + item);
-            }}
-            canPlace={inScale}
-            mark={(stringIndex, fret) => {
-              const item = stepAt(stringIndex, fret);
-              return {
-                tonic: item === 0,
-                color: color.steps.includes(item),
-                dim: position !== null && (fret < position.from || fret > position.to),
-                lit: lit?.stringIndex === stringIndex && lit.fret === fret,
-              };
-            }}
-            onToggle={(stringIndex, fret) => pluckString(stringIndex, open[stringIndex]! + fret, { a4 })}
-          />
+        <Diapason
+          notes={tuning.notes}
+          voicing={null}
+          notation={notation}
+          listen
+          focus={position?.from ?? 0}
+          toneAt={(stringIndex, fret) => {
+            const item = stepAt(stringIndex, fret);
+            return labels === 'grados' ? degreeName(item, scale.steps) : name(tonic + item);
+          }}
+          canPlace={inScale}
+          mark={(stringIndex, fret) => {
+            const item = stepAt(stringIndex, fret);
+            return {
+              tonic: item === 0,
+              color: color.steps.includes(item),
+              dim: position !== null && (fret < position.from || fret > position.to),
+              lit: lit?.stringIndex === stringIndex && lit.fret === fret,
+            };
+          }}
+          onToggle={(stringIndex, fret) => pluckString(stringIndex, open[stringIndex]! + fret, { a4 })}
+        />
 
-          {/* Las posiciones y lo que suena, en una sola fila: así el mástil entra sin bajar. */}
-          <div className={styles.play}>
-            <div className={styles.browse}>
-              <button
-                type="button"
-                className={styles.arrow}
-                aria-label="Posición anterior, más cerca de la cejuela"
-                disabled={positions.length === 0}
-                onClick={() => step(-1)}
-              >
-                ◀
-              </button>
-              <button
-                type="button"
-                className={styles.current}
-                aria-label={
-                  position
-                    ? `Escuchar la posición ${positionIndex + 1}, trastes ${position.from} a ${position.to}`
-                    : 'Escuchar la escala en la primera posición'
-                }
-                onClick={playRun}
-              >
-                <span className={styles.counter} data-testid="position-counter">
-                  {position ? `Posición ${positionIndex + 1} de ${positions.length}` : 'Todo el mástil'}
-                </span>
-                <strong className={styles.frets}>
-                  {position
-                    ? position.from === 0
-                      ? `Del aire al ${position.to}`
-                      : `Trastes ${position.from} al ${position.to}`
-                    : `${positions.length} posiciones`}
-                </strong>
-              </button>
-              <button
-                type="button"
-                className={styles.arrow}
-                aria-label="Posición siguiente, más arriba en el mástil"
-                disabled={positions.length === 0}
-                onClick={() => step(1)}
-              >
-                ▶
-              </button>
-            </div>
-            <Button variant="primary" on={playing} onClick={playRun}>
-              {playing ? '■ Parar' : '▶ Escuchar'}
-            </Button>
-            <Button
-              variant="ghost"
-              on={droneOn}
-              ariaPressed={droneOn}
-              onClick={() => setDroneOn((on) => !on)}
+        {/* Las posiciones y lo que suena en una sola fila: así entra todo sin bajar. */}
+        <div className={styles.play}>
+          <div className={styles.browse}>
+            <button
+              type="button"
+              className={styles.arrow}
+              aria-label="Posición anterior, más cerca de la cejuela"
+              disabled={positions.length === 0}
+              onClick={() => step(-1)}
             >
-              {droneOn ? `■ Drone en ${name(tonic)}` : `▶ Drone en ${name(tonic)}`}
-            </Button>
+              ◀
+            </button>
+            <button
+              type="button"
+              className={styles.current}
+              aria-label={
+                position
+                  ? `Escuchar la posición ${positionIndex + 1}, trastes ${position.from} a ${position.to}`
+                  : 'Escuchar la escala en la primera posición'
+              }
+              onClick={playRun}
+            >
+              <span className={styles.counter} data-testid="position-counter">
+                {position ? `Posición ${positionIndex + 1} de ${positions.length}` : 'Todo el mástil'}
+              </span>
+              <strong className={styles.frets}>
+                {position
+                  ? position.from === 0
+                    ? `Del aire al ${position.to}`
+                    : `Trastes ${position.from} al ${position.to}`
+                  : `${positions.length} posiciones`}
+              </strong>
+            </button>
+            <button
+              type="button"
+              className={styles.arrow}
+              aria-label="Posición siguiente, más arriba en el mástil"
+              disabled={positions.length === 0}
+              onClick={() => step(1)}
+            >
+              ▶
+            </button>
           </div>
-        </Slab>
+          <Button variant="primary" on={playing} onClick={playRun}>
+            {playing ? '■ Parar' : '▶ Escuchar'}
+          </Button>
+          <Button variant="ghost" on={droneOn} ariaPressed={droneOn} onClick={() => setDroneOn((on) => !on)}>
+            {droneOn ? `■ Drone en ${name(tonic)}` : `▶ Drone en ${name(tonic)}`}
+          </Button>
+          <Segmented
+            label="Qué dice cada nota"
+            value={labels}
+            options={[
+              { value: 'grados', label: '1 ♭3 5' },
+              { value: 'notas', label: 'Notas' },
+            ]}
+            onChange={setLabels}
+          />
+          <Fader />
+        </div>
 
-        <Slab className={styles.side}>
-          <div className={styles.inlinePicker}>
-            <SlabHead title="Escala" />
-            {picker}
-          </div>
-          <p className={ui.hint}>
-            {color.reference === null
-              ? 'No tiene tercera: no es mayor ni menor.'
-              : color.steps.length === 0
-                ? `No tiene notas de afuera de ${REFERENCE_NAME[color.reference]}.`
-                : `Con ★, y con aro blanco en el mástil, lo que la distingue de ${REFERENCE_NAME[color.reference]}.`}{' '}
-            En naranja, la tónica.
-          </p>
-          <div className={styles.links}>
-            {color.reference && color.steps.length > 0 && (
-              <Button variant="ghost" onClick={compare}>
-                ▶ Comparar con {REFERENCE_NAME[color.reference]}
-              </Button>
-            )}
-          </div>
-          <div className={ui.actions}>
-            <Segmented
-              label="Qué dice cada nota"
-              value={labels}
-              options={[
-                { value: 'grados', label: '1 ♭3 5' },
-                { value: 'notas', label: 'Notas' },
-              ]}
-              onChange={setLabels}
-            />
-            <Fader />
-          </div>
-        </Slab>
-      </div>
-
-      <Sheet open={pickerOpen} title="Elegir escala" onClose={() => setPickerOpen(false)}>
-        {picker}
-      </Sheet>
+        <p className={styles.why}>
+          <strong>
+            {name(tonic)} {scale.name.toLowerCase()}
+            {scale.alias && ` (${scale.alias.toLowerCase()})`}.
+          </strong>{' '}
+          {scale.character}{' '}
+          {color.reference === null
+            ? 'Sin tercera: no es mayor ni menor.'
+            : color.steps.length === 0
+              ? `No tiene notas de afuera de ${REFERENCE_NAME[color.reference]}.`
+              : `Con ★ y aro blanco, lo que la distingue de ${REFERENCE_NAME[color.reference]}.`}
+          {color.reference && color.steps.length > 0 && (
+            <>
+              {' '}
+              <button type="button" className={styles.compare} onClick={compare}>
+                ▶ Comparar
+              </button>
+            </>
+          )}
+        </p>
+      </Slab>
     </div>
   );
 }

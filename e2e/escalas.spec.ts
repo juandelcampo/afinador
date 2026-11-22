@@ -18,12 +18,8 @@ test.describe('escalas', () => {
     await expect(notes.getByRole('button')).toHaveCount(7);
 
     // Dos cambios seguidos: el segundo no pisa al primero.
-    await page.getByRole('group', { name: 'Familia' }).getByRole('button', { name: 'Pentatónicas' }).click();
-    await page
-      .getByRole('group', { name: 'Escala · Pentatónicas' })
-      .getByRole('button', { name: 'Blues', exact: true })
-      .click();
-    await page.locator('#tonica').selectOption('9');
+    await page.locator('#escala').selectOption('blues');
+    await page.getByRole('group', { name: 'Tónica' }).getByRole('button', { name: 'A', exact: true }).click();
     await expect(page).toHaveURL(/escala=blues/);
     await expect(page).toHaveURL(/tono=9/);
     await expect(notes.getByRole('button')).toHaveText([/^A1/, /^C♭3/, /^D4/, /^E♭♭5/, /^E5/, /^G♭7/]);
@@ -65,7 +61,7 @@ test.describe('escalas', () => {
     await expect(page.getByRole('button', { name: '■ Drone en D' })).toHaveAttribute('aria-pressed', 'true');
     await expect.poll(() => clicks(page)).toBeGreaterThan(0);
 
-    await page.getByRole('button', { name: '▶ Comparar con la mayor' }).click();
+    await page.getByRole('button', { name: '▶ Comparar' }).click();
 
     await page.getByRole('link', { name: 'Sus acordes en Armonía →' }).click();
     await expect(page).toHaveURL(/\/armonia\?afinacion=dadgad&tono=2&escala=mixolidio$/);
