@@ -1061,7 +1061,7 @@
       'notes wheel';
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-rows: auto auto 1fr;
-    column-gap: 32px;
+    column-gap: 56px;
   }
   .worldGrid > .world {
     grid-area: world;
@@ -1084,9 +1084,9 @@
     grid-area: wheel;
     /* Sin esto la caja se estira al alto de la columna y el medio de la rueda se corre. */
     align-self: start;
-    /* Lo que entra en la pantalla debajo de las pestañas de Mundo, entre 340 y 560 px. */
-    width: clamp(340px, calc(100dvh - 400px), 560px);
-    margin: 4px 0 0;
+    /* Lo que entra en la pantalla debajo de las pestañas de Mundo, con aire alrededor: entre 300 y 470 px. */
+    width: clamp(300px, calc(100dvh - 470px), 470px);
+    margin: 16px 24px 16px 0;
   }
   .circleToggle {
     display: none;
@@ -1094,6 +1094,13 @@
 }
 
 /* El círculo de quintas: la rueda ocupa el ancho que haya, hasta 420 px, y el acorde tocado va al medio. */
+/* Un color por cercanía: cálido es de la casa, frío es lejos. Con letra negra en los dos temas. */
+.wheel,
+.legend {
+  --near-0: #ffd23f;
+  --near-1: #8fd694;
+  --near-2: #8ec5ff;
+}
 .wheel {
   position: relative;
   width: min(100%, 420px);
@@ -1125,19 +1132,19 @@
   fill: var(--accent);
 }
 .cell[data-state='world'] path {
-  fill: color-mix(in srgb, var(--accent) 60%, var(--paper));
+  fill: var(--near-0);
 }
 .cell[data-state='near'] path {
-  fill: color-mix(in srgb, var(--accent) 36%, var(--paper));
+  fill: var(--near-1);
 }
 .cell[data-state='far'] path {
-  fill: color-mix(in srgb, var(--accent) 18%, var(--paper));
+  fill: var(--near-2);
 }
 .cell[data-state='tonic'] text,
 .cell[data-state='world'] text,
 .cell[data-state='near'] text,
 .cell[data-state='far'] text {
-  fill: var(--ink);
+  fill: #000;
   font-weight: 900;
 }
 .cell[data-state='picked'] path {
@@ -1147,11 +1154,9 @@
   fill: var(--paper);
   font-weight: 900;
 }
-.cell[data-state='away']:hover path {
-  fill: var(--soft);
-}
-.cell:is([data-state='world'], [data-state='near'], [data-state='far']):hover path {
-  fill: var(--accent);
+/* Al pasar el mouse, la casilla se oscurece un poco sin cambiar de color: el color dice la cercanía. */
+.cell:hover path {
+  filter: brightness(0.88);
 }
 
 /* La leyenda usa los mismos tonos que la rueda. */
@@ -1180,13 +1185,13 @@
   background: var(--accent);
 }
 .legend li[data-state='world']::before {
-  background: color-mix(in srgb, var(--accent) 60%, var(--paper));
+  background: var(--near-0);
 }
 .legend li[data-state='near']::before {
-  background: color-mix(in srgb, var(--accent) 36%, var(--paper));
+  background: var(--near-1);
 }
 .legend li[data-state='far']::before {
-  background: color-mix(in srgb, var(--accent) 18%, var(--paper));
+  background: var(--near-2);
 }
 .cell:focus-visible path {
   stroke: var(--accent);
