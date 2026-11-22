@@ -1,33 +1,64 @@
-/* Ritmo: arriba lo que suena (tocar, tempo, la figura) y abajo lo que se arma. */
+/* Ritmo: la figura a la izquierda y todo lo que se toca a la derecha. En pantalla ancha entra sin bajar;
+   la batería, que no tiene figura, usa el ancho entero. */
 .page {
   min-width: 0;
   container: ritmo / inline-size;
+}
+.board {
+  display: grid;
+  gap: 16px 28px;
+  margin-top: 8px;
+}
+.figure {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+}
+.controls {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-width: 0;
+}
+@container ritmo (min-width: 860px) {
+  .board:not([data-drum]) {
+    grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+  }
+  .wheel {
+    width: min(100%, 320px);
+  }
+  /* La figura acompaña mientras se arma el ritmo. */
+  .figure {
+    position: sticky;
+    top: calc(var(--bar) + 12px);
+  }
 }
 
 /* --- Tocar, tempo y marcar --- */
 .transport {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 12px;
-  margin-top: 10px;
+  gap: 10px 12px;
 }
 .tempo {
   display: grid;
   grid-column: 1 / -1;
   grid-row: 2;
-  gap: 4px;
   min-width: 0;
 }
 .tempoHead {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: 8px;
+  gap: 4px 8px;
   font: 600 12px/1.5 var(--ui);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 .tempoHead output {
-  font: 900 expanded 40px/1 var(--heavy);
+  font: 900 expanded 32px/1 var(--heavy);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
 }
@@ -38,9 +69,13 @@
   accent-color: var(--accent);
 }
 .tempoNudge {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+.tempoNudge > button {
+  min-width: 44px;
+  padding-inline: 6px;
 }
 /* Marcar: un parche grande para pegarle con el mouse. */
 .tap {
@@ -77,9 +112,9 @@
     color: var(--on-accent);
   }
 }
-@container ritmo (min-width: 720px) {
+@container ritmo (min-width: 560px) {
   .transport {
-    grid-template-columns: 180px minmax(0, 1fr) 180px;
+    grid-template-columns: 160px minmax(0, 1fr) 160px;
     align-items: stretch;
   }
   .tempo {
@@ -92,45 +127,55 @@
   }
 }
 
-.view {
-  display: grid;
-  justify-items: center;
-  gap: 10px;
-  margin-top: 16px;
-}
 .sound {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
   gap: 8px 16px;
-  margin-top: 14px;
 }
-.sound > * {
+.sound > label {
   flex: 1 1 150px;
-  max-width: 260px;
+  max-width: 220px;
+}
+.sound > button {
+  margin-left: auto;
 }
 
-/* --- La rueda: el ciclo como un reloj, los golpes como una figura --- */
+/* --- La figura: líneas finas sobre el papel, como un dibujo a mano alzada con regla --- */
+/* En el celular, chica: que "Tocar" quede a mano. Al lado de los controles, más grande. */
 .wheel {
   display: block;
-  width: min(100%, 340px);
+  width: min(100%, 220px);
   margin-inline: auto;
   overflow: visible;
 }
 .shape {
-  fill: var(--soft);
+  fill: none;
   stroke: var(--ink);
-  stroke-width: 2.5;
+  stroke-width: 1.4;
   stroke-linejoin: round;
 }
-.shape[data-lane='1'] {
+.shape[data-lane='1'],
+.star[data-lane='1'] {
+  stroke-width: 1;
+  stroke-dasharray: 2.5 2;
+}
+/* La estrella va adentro del polígono parejo, que queda apenas marcado. */
+.outline {
   fill: none;
-  stroke-dasharray: 4 3;
+  stroke: var(--ink);
+  stroke-width: 0.6;
+}
+.star {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.4;
+  stroke-linejoin: round;
 }
 .vertex {
   fill: var(--ink);
   stroke: var(--paper);
-  stroke-width: 1;
+  stroke-width: 0.8;
 }
 .vertex[data-level='rest'] {
   fill: var(--muted);
@@ -139,87 +184,28 @@
 .vertex[data-active] {
   fill: var(--accent);
   stroke: var(--ink);
-  stroke-width: 1.5;
+  stroke-width: 0.8;
 }
-/* La estrella: el polígono parejo, tenue, y la estrella encima con el trazo de la figura. */
-.outline {
-  fill: var(--soft);
-  stroke: var(--ink);
-  stroke-width: 1;
-}
-.star {
-  fill: none;
-  stroke: var(--ink);
-  stroke-width: 2.5;
-  stroke-linejoin: round;
-}
-.star[data-lane='1'] {
-  stroke-dasharray: 4 3;
-}
-/* Cuántos golpes: el número en el medio de la figura. */
+/* Cuántos golpes, en el medio: un borde del color del papel lo despega de las líneas que lo cruzan. */
 .count {
   fill: var(--ink);
-  /* Un borde del color del papel: se lee aunque lo crucen las líneas de la estrella. */
   stroke: var(--paper);
-  stroke-width: 5px;
+  stroke-width: 3px;
   stroke-linejoin: round;
   paint-order: stroke;
-  font: 900 expanded 16px/1 var(--heavy);
+  font: 900 expanded 11px/1 var(--heavy);
 }
 /* El pulso: viaja por los lados; quieto, no se ve. */
 .traveler {
   fill: var(--accent);
   stroke: var(--ink);
-  stroke-width: 1.5;
+  stroke-width: 0.8;
 }
 .traveler:not([data-running]) {
   opacity: 0;
 }
 
-/* --- La grilla de un compás --- */
-.grid {
-  display: grid;
-  gap: 8px;
-}
-.lane {
-  display: grid;
-  /* Con muchas casillas, en pantallas chicas pasan a varias filas sin desbordar. */
-  grid-template-columns: repeat(auto-fit, minmax(min(26px, 100%), 1fr));
-  border-top: var(--rule);
-  border-left: var(--rule);
-}
-@container ritmo (min-width: 480px) {
-  .lane {
-    grid-template-columns: repeat(var(--cells), minmax(0, 1fr));
-  }
-}
-.cell {
-  display: block;
-  height: 64px;
-  border-right: var(--rule);
-  border-bottom: var(--rule);
-  background: var(--paper);
-}
-.cell[data-level='rest'] {
-  background: repeating-linear-gradient(135deg, var(--soft) 0 4px, var(--paper) 4px 8px);
-}
-.cell[data-level='0'] {
-  background: linear-gradient(to top, var(--ink) 25%, var(--paper) 25%);
-}
-.cell[data-level='1'] {
-  background: linear-gradient(to top, var(--ink) 60%, var(--paper) 60%);
-}
-.cell[data-level='2'] {
-  background: var(--ink);
-}
-.cell[data-active] {
-  background: var(--accent);
-}
-
 /* --- Armar --- */
-.editorWrap {
-  margin-top: 14px;
-}
 .editor {
   display: grid;
   gap: 12px;
@@ -257,17 +243,11 @@
   font-size: 12px;
   font-weight: 700;
 }
-.rule {
-  max-width: 62ch;
-  margin: 16px 0 12px;
-  font-size: 14px;
-  line-height: 1.5;
-}
 
 /* --- Caja de ritmos --- */
 .drums {
   display: grid;
-  gap: 14px;
+  gap: 10px;
 }
 .toolbar {
   display: flex;
@@ -289,7 +269,7 @@
 }
 .tracks {
   display: grid;
-  gap: 10px;
+  gap: 4px;
 }
 .track {
   display: grid;
@@ -386,4 +366,33 @@
 }
 .step[aria-pressed='true'][data-now] {
   background: var(--accent);
+}
+
+/* --- Mutante: los compases que van rotando, con el que suena marcado --- */
+.rotation {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  text-align: center;
+}
+.rotation ol {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rotation li {
+  padding: 4px 8px;
+  border: 2px solid var(--ink);
+  font: 700 13px/1.2 var(--mono);
+}
+.rotation li[data-now] {
+  background: var(--ink);
+  color: var(--paper);
+}
+.rotation p {
+  margin: 0;
 }

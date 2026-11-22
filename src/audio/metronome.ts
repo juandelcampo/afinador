@@ -45,7 +45,7 @@ let position = 0;
 let cycleStart = 0;
 /** Cuándo suena el primer golpe: antes no hay aguja que mover. */
 let firstStart = 0;
-let queued: Array<{ time: number; lane: number; cell: number; cycle: Cycle }> = [];
+let queued: Array<{ time: number; lane: number; cell: number; cycle: Cycle; index: number }> = [];
 
 function sortHits(hits: Hit[]): Hit[] {
   return [...hits].sort((a, b) => a.at - b.at);
@@ -74,7 +74,7 @@ function schedule() {
     if (time > ctx.currentTime + LOOKAHEAD_SECONDS) return;
     if (hit.voice) playDrum(ctx, out, hit.voice, time, hit.gain ?? 1);
     else if (hit.lane >= 0) playClick(ctx, out, sound, hit.level, hit.lane, time);
-    queued.push({ time, lane: hit.lane, cell: hit.cell, cycle });
+    queued.push({ time, lane: hit.lane, cell: hit.cell, cycle, index: cycleIndex });
     if (queued.length > VISUAL_HISTORY) queued = queued.slice(-VISUAL_HISTORY);
     position += 1;
   }
@@ -169,8 +169,16 @@ export const metronome = {
     return elapsed < 0 ? elapsed + 1 : elapsed % 1;
   },
 
-  /** Lo que está sonando ahora: el ciclo, la casilla activa de cada carril y el paso general. */
-  playhead(): { cycle: Cycle; cells: Array<number | null>; step: number | null } | null {
+  /**
+   * Lo que está sonando ahora: el ciclo, en qué vuelta va (el mutante cambia de compás según la vuelta), la
+   * casilla activa de cada carril y el paso general.
+   */
+  playhead(): {
+    cycle: Cycle;
+    index: number;
+    cells: Array<number | null>;
+    step: number | null;
+  } | null {
     if (!state.running) return null;
     const now = getAudio().ctx.currentTime;
     let current: typeof queued = [];
@@ -182,6 +190,11 @@ export const metronome = {
       for (let i = current.length - 1; i >= 0; i--) if (current[i]!.lane === lane) return current[i]!.cell;
       return null;
     };
-    return { cycle: last.cycle, cells: last.cycle.lanes.map((_, lane) => lastOf(lane)), step: lastOf(-1) };
+    return {
+      cycle: last.cycle,
+      index: last.index,
+      cells: last.cycle.lanes.map((_, lane) => lastOf(lane)),
+      step: lastOf(-1),
+    };
   },
 };

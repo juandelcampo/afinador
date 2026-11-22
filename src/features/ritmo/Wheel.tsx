@@ -6,7 +6,7 @@
 import { useEffect, useRef } from 'react';
 import { metronome } from '~/audio/metronome';
 import { figureVertices, onCircle, starLoops, travel, type FigureKind, type Point } from '~/core/figure';
-import { cycleFor, type Cycle, type RhythmConfig } from '~/core/rhythm';
+import type { Cycle } from '~/core/rhythm';
 import styles from './ritmo.module.css';
 
 const RADIUS = 46;
@@ -43,9 +43,9 @@ function lanesOf(cycle: Cycle, kind: FigureKind): Lane[] {
   });
 }
 
-export function Wheel({ config, kind }: { config: RhythmConfig; kind: FigureKind }) {
+export function Wheel({ cycle, kind }: { cycle: Cycle; kind: FigureKind }) {
   const svg = useRef<SVGSVGElement>(null);
-  const lanes = lanesOf(cycleFor(config, 0), kind);
+  const lanes = lanesOf(cycle, kind);
   // El cuadro a cuadro lee la figura de este render sin volver a montarse.
   const current = useRef(lanes);
   useEffect(() => {
@@ -141,7 +141,7 @@ export function Wheel({ config, kind }: { config: RhythmConfig; kind: FigureKind
             data-lane={index}
             cx={round(x)}
             cy={round(y)}
-            r={1.6}
+            r={1.1}
           />
         )),
       )}
@@ -156,7 +156,7 @@ export function Wheel({ config, kind }: { config: RhythmConfig; kind: FigureKind
           };
           // La segunda línea de una polirritmia va con cuadrados, para distinguirla sin otro color.
           if (index === 1) {
-            const size = level === 2 ? 9 : level === 1 ? 8 : 6;
+            const size = level === 2 ? 6 : level === 1 ? 5 : 4;
             return (
               <rect
                 key={`${index}:${cell}`}
@@ -169,7 +169,7 @@ export function Wheel({ config, kind }: { config: RhythmConfig; kind: FigureKind
             );
           }
           // Tres tamaños: el primer golpe del ciclo, el que abre cada grupo (2+2+3) y el resto.
-          const size = level === 2 ? 5.5 : level === 1 ? 4.5 : 3.2;
+          const size = level === 2 ? 3.6 : level === 1 ? 3 : 2.3;
           return <circle key={`${index}:${cell}`} {...props} cx={round(x)} cy={round(y)} r={size} />;
         }),
       )}
@@ -180,13 +180,13 @@ export function Wheel({ config, kind }: { config: RhythmConfig; kind: FigureKind
             key={index}
             className={styles.traveler}
             data-traveler={index}
-            x={-3.2}
-            y={-3.2}
-            width={6.4}
-            height={6.4}
+            x={-2.6}
+            y={-2.6}
+            width={5.2}
+            height={5.2}
           />
         ) : (
-          <circle key={index} className={styles.traveler} data-traveler={index} r={3.2} />
+          <circle key={index} className={styles.traveler} data-traveler={index} r={2.6} />
         ),
       )}
     </svg>

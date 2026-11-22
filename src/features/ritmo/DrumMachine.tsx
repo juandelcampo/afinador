@@ -1,5 +1,5 @@
 // Caja de ritmos: una fila de casillas por sonido. Se edita mientras suena, y se pinta arrastrando.
-import { useEffect, useRef, type CSSProperties, type PointerEvent } from 'react';
+import { useEffect, useRef, type CSSProperties, type PointerEvent, type ReactNode } from 'react';
 import { metronome } from '~/audio/metronome';
 import { DRUMS, DRUM_STEPS, randomDrumPattern, rowLength, SWING, type DrumConfig } from '~/core/rhythm';
 import { DRUM_PRESETS } from '~/data/drums';
@@ -13,11 +13,13 @@ interface DrumMachineProps {
   /** Un cambio que pisa el patrón entero (otro de partida, inventar, borrar): se puede volver. */
   onReplace: (config: DrumConfig) => void;
   onUndo?: () => void;
+  /** Lo que va al final de la barra: el volumen, así la batería entra sin bajar. */
+  extra?: ReactNode;
 }
 
 const samePattern = (a: DrumConfig, b: DrumConfig) => JSON.stringify(a.tracks) === JSON.stringify(b.tracks);
 
-export function DrumMachine({ config, onChange, onReplace, onUndo }: DrumMachineProps) {
+export function DrumMachine({ config, onChange, onReplace, onUndo, extra }: DrumMachineProps) {
   const grid = useRef<HTMLDivElement>(null);
 
   // Marca la columna que suena leyendo el reloj cuadro a cuadro, sin renders.
@@ -186,6 +188,7 @@ export function DrumMachine({ config, onChange, onReplace, onUndo }: DrumMachine
             onChange={(event) => onChange({ ...config, swing: Number(event.target.value) })}
           />
         </Field>
+        {extra}
       </div>
 
       <div

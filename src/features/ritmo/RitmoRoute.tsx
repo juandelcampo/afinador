@@ -15,6 +15,7 @@ import {
   rhythmFromParams,
   rhythmToDrums,
   rhythmToParams,
+  type Cycle,
   type DrumConfig,
   type DrumId,
   type Meter,
@@ -26,7 +27,6 @@ import { useSettings } from '~/shared/settings';
 import { Button, Field, PageTitle, Segmented, Slab, Stepper, Tabs } from '~/shared/ui/ui';
 import ui from '~/shared/ui/ui.module.css';
 import { DrumMachine } from './DrumMachine';
-import { RhythmGrid } from './RhythmGrid';
 import { TapTempo } from './TapTempo';
 import { Wheel } from './Wheel';
 import styles from './ritmo.module.css';
@@ -314,6 +314,64 @@ function Editor({ config, onChange }: { config: RhythmConfig; onChange: (config:
   }
 }
 
+/** Cómo se nombra un compás: 4/4, o 7/8 2+2+3 si los grupos no son parejos. */
+function meterLabel(meter: Meter) {
+  const total = meter.groups.reduce((sum, group) => sum + group, 0);
+  const even = meter.groups.every((group) => group === meter.groups[0]);
+  return `${total}/${meter.denom}${even ? '' : ` ${meter.groups.join('+')}`}`;
+}
+
+/** Los compases que van rotando, con el que suena marcado, cuántos lleva y cuál viene. */
+function Rotation({
+  config,
+  index,
+}: {
+  config: Extract<RhythmConfig, { mode: 'mutante' }>;
+  index: number | null;
+}) {
+  const { meters, barsEach } = config;
+  const position = index === null ? null : Math.floor(index / barsEach) % meters.length;
+  const bar = index === null ? null : (index % barsEach) + 1;
+  const next = position === null ? null : meters[(position + 1) % meters.length]!;
+  return (
+    <div className={styles.rotation} data-testid="rotation">
+      <ol>
+        {meters.map((meter, at) => (
+          <li key={`${at}-${meterLabel(meter)}`} data-now={at === position || undefined}>
+            {meterLabel(meter)}
+          </li>
+        ))}
+      </ol>
+      <p className={ui.hint} aria-live="polite">
+        {position === null || bar === null || next === null
+          ? `Tocá y la figura va cambiando: cada compás suena ${barsEach === 1 ? 'una vez' : `${barsEach} veces`} y pasa al siguiente.`
+          : `Compás ${bar} de ${barsEach} · después, ${meterLabel(next)}`}
+      </p>
+    </div>
+  );
+}
+
+/** Lo que está sonando: el ciclo y en qué vuelta va. Cambia una vez por vuelta, no en cada cuadro. */
+function usePlaying(config: RhythmConfig) {
+  const [now, setNow] = useState<{ config: RhythmConfig; cycle: Cycle; index: number } | null>(null);
+  useEffect(() => {
+    let frame = 0;
+    let last: number | null = null;
+    const tick = () => {
+      const head = metronome.playhead();
+      const index = head?.index ?? null;
+      if (index !== last) {
+        last = index;
+        setNow(head ? { config, cycle: head.cycle, index: head.index } : null);
+      }
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [config]);
+  return now && now.config === config ? now : null;
+}
+
 export default function RitmoRoute() {
   const { running, config } = useSyncExternalStore(
     metronome.subscribe,
@@ -366,136 +424,140 @@ export default function RitmoRoute() {
 
   const { name, rule } = describeRhythm(config);
   // El compás, el euclidiano y la polirritmia se dibujan como figura; el mutante cambia de compás y va en grilla.
-  const fewHits = cycleFor(config, 0)
-    .lanes.map((_, lane) => cycleFor(config, 0).hits.filter((hit) => hit.lane === lane).length)
+  // Lo que se dibuja: en el mutante, el compás que está sonando; en los demás, el ritmo tal cual.
+  const playing = usePlaying(config);
+  const shown = config.mode === 'mutante' && playing ? playing.cycle : cycleFor(config, 0);
+  const fewHits = shown.lanes
+    .map((_, lane) => shown.hits.filter((hit) => hit.lane === lane).length)
     .every((count) => count < 5);
-  const geometric = config.mode === 'meter' || config.mode === 'euclid' || config.mode === 'poly';
+  const drum = config.mode === 'drum';
 
   return (
     <div className={`${styles.page} ${ui.frame}`}>
       <Slab>
-        <PageTitle eyebrow="Ritmo" title={name} />
+        <PageTitle eyebrow="Ritmo" title={name}>
+          <p data-testid="rhythm-rule">{rule}</p>
+        </PageTitle>
 
-        <div className={styles.transport}>
-          <Button
-            variant="primary"
-            on={running}
-            onClick={() => (running ? metronome.stop() : metronome.start())}
-            id="metro-toggle"
-          >
-            {running ? '■ Parar' : '▶ Tocar'}
-          </Button>
-          <div className={styles.tempo}>
-            <div className={styles.tempoHead}>
-              <span>Tempo</span>
-              <output data-testid="bpm">{config.bpm}</output>
-              <span>ppm</span>
-            </div>
-            <input
-              type="range"
-              min={LIMITS.bpm[0]}
-              max={LIMITS.bpm[1]}
-              value={config.bpm}
-              aria-label="Tempo, en pulsos por minuto"
-              onChange={(event) => setBpm(Number(event.target.value))}
-            />
-            <div className={styles.tempoNudge}>
-              <Button variant="mini" ariaLabel="Tempo a la mitad" onClick={() => setBpm(config.bpm / 2)}>
-                ÷2
-              </Button>
-              <Button variant="mini" ariaLabel="Bajar un pulso" onClick={() => setBpm(config.bpm - 1)}>
-                −1
-              </Button>
-              <Button variant="mini" ariaLabel="Subir un pulso" onClick={() => setBpm(config.bpm + 1)}>
-                +1
-              </Button>
-              <Button variant="mini" ariaLabel="Tempo al doble" onClick={() => setBpm(config.bpm * 2)}>
-                ×2
-              </Button>
-            </div>
-          </div>
-          <TapTempo onTempo={setBpm} />
-        </div>
+        {/* En pantalla ancha, la figura a la izquierda y todo lo que se toca a la derecha: entra sin bajar. */}
+        <div className={styles.board} data-drum={drum || undefined}>
+          {!drum && (
+            <section className={styles.figure} aria-label="Figura del ritmo">
+              <Segmented
+                label="Figura del ritmo"
+                value={figure}
+                options={[
+                  { value: 'poligono', label: 'Polígono' },
+                  { value: 'estrella', label: 'Estrella' },
+                ]}
+                onChange={(value) => set({ rhythmFigure: value })}
+              />
+              <Wheel cycle={shown} kind={figure} />
+              {config.mode === 'mutante' && <Rotation config={config} index={playing?.index ?? null} />}
+              {figure === 'estrella' && fewHits && (
+                <p className={ui.hint}>Con menos de cinco golpes no hay estrella: queda el polígono.</p>
+              )}
+            </section>
+          )}
 
-        {config.mode !== 'drum' && (
-          <div className={styles.view}>
-            {geometric ? (
-              <>
-                <Segmented
-                  label="Figura del ritmo"
-                  value={figure}
-                  options={[
-                    { value: 'poligono', label: 'Polígono' },
-                    { value: 'estrella', label: 'Estrella' },
-                  ]}
-                  onChange={(value) => set({ rhythmFigure: value })}
+          <div className={styles.controls}>
+            <div className={styles.transport}>
+              <Button
+                variant="primary"
+                on={running}
+                onClick={() => (running ? metronome.stop() : metronome.start())}
+                id="metro-toggle"
+              >
+                {running ? '■ Parar' : '▶ Tocar'}
+              </Button>
+              <div className={styles.tempo}>
+                <div className={styles.tempoHead}>
+                  <span>Tempo</span>
+                  <output data-testid="bpm">{config.bpm}</output>
+                  <span>ppm</span>
+                  <div className={styles.tempoNudge}>
+                    <Button
+                      variant="mini"
+                      ariaLabel="Tempo a la mitad"
+                      onClick={() => setBpm(config.bpm / 2)}
+                    >
+                      ÷2
+                    </Button>
+                    <Button variant="mini" ariaLabel="Bajar un pulso" onClick={() => setBpm(config.bpm - 1)}>
+                      −1
+                    </Button>
+                    <Button variant="mini" ariaLabel="Subir un pulso" onClick={() => setBpm(config.bpm + 1)}>
+                      +1
+                    </Button>
+                    <Button variant="mini" ariaLabel="Tempo al doble" onClick={() => setBpm(config.bpm * 2)}>
+                      ×2
+                    </Button>
+                  </div>
+                </div>
+                <input
+                  type="range"
+                  min={LIMITS.bpm[0]}
+                  max={LIMITS.bpm[1]}
+                  value={config.bpm}
+                  aria-label="Tempo, en pulsos por minuto"
+                  onChange={(event) => setBpm(Number(event.target.value))}
                 />
-                <Wheel config={config} kind={figure} />
-                {figure === 'estrella' && fewHits && (
-                  <p className={ui.hint}>Con menos de cinco golpes no hay estrella: queda el polígono.</p>
-                )}
-              </>
+              </div>
+              <TapTempo onTempo={setBpm} />
+            </div>
+
+            <Tabs<Mode>
+              label="Tipo de ritmo"
+              value={config.mode}
+              options={MODES}
+              onChange={(mode) => {
+                if (mode === config.mode) return;
+                apply({ ...(metronome.lastOfMode(mode) ?? DEFAULTS[mode](config.bpm)), bpm: config.bpm });
+              }}
+            />
+            {drum ? (
+              <DrumMachine
+                config={config}
+                onChange={apply}
+                onReplace={replaceDrums}
+                onUndo={undo.length > 0 ? goBack : undefined}
+                extra={<Fader />}
+              />
             ) : (
-              <RhythmGrid config={config} />
+              <Editor config={config} onChange={apply} />
+            )}
+            {!drum && (
+              <div className={styles.sound}>
+                {/* La batería y la polirritmia eligen el instrumento en cada línea. */}
+                {config.mode !== 'poly' && (
+                  <Field label="Sonido">
+                    <select
+                      value={clickSound}
+                      data-testid="click-sound"
+                      onChange={(event) => set({ clickSound: event.target.value as ClickSound })}
+                    >
+                      {CLICK_SOUNDS.map((sound) => (
+                        <option key={sound.id} value={sound.id}>
+                          {sound.name}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                )}
+                <Fader />
+                <Button
+                  id="to-drums"
+                  onClick={() => {
+                    setUndo([]);
+                    apply(rhythmToDrums(config));
+                  }}
+                >
+                  Pasar a la batería →
+                </Button>
+              </div>
             )}
           </div>
-        )}
-
-        <div className={styles.sound}>
-          {/* La batería y la polirritmia eligen el instrumento en cada línea. */}
-          {config.mode !== 'drum' && config.mode !== 'poly' && (
-            <Field label="Sonido">
-              <select
-                value={clickSound}
-                data-testid="click-sound"
-                onChange={(event) => set({ clickSound: event.target.value as ClickSound })}
-              >
-                {CLICK_SOUNDS.map((sound) => (
-                  <option key={sound.id} value={sound.id}>
-                    {sound.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
-          )}
-          <Fader />
         </div>
-      </Slab>
-
-      <Slab label="Armar el ritmo">
-        <Tabs<Mode>
-          label="Tipo de ritmo"
-          value={config.mode}
-          options={MODES}
-          onChange={(mode) => {
-            if (mode === config.mode) return;
-            apply({ ...(metronome.lastOfMode(mode) ?? DEFAULTS[mode](config.bpm)), bpm: config.bpm });
-          }}
-        />
-        <div className={styles.editorWrap}>
-          {config.mode === 'drum' ? (
-            <DrumMachine
-              config={config}
-              onChange={apply}
-              onReplace={replaceDrums}
-              onUndo={undo.length > 0 ? goBack : undefined}
-            />
-          ) : (
-            <Editor config={config} onChange={apply} />
-          )}
-        </div>
-        <p className={styles.rule}>{rule}</p>
-        {config.mode !== 'drum' && (
-          <Button
-            id="to-drums"
-            onClick={() => {
-              setUndo([]);
-              apply(rhythmToDrums(config));
-            }}
-          >
-            Pasar a la batería →
-          </Button>
-        )}
       </Slab>
     </div>
   );

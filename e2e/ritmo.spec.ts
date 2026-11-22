@@ -129,6 +129,27 @@ test.describe('ritmo', () => {
     expect(errors).toEqual([]);
   });
 
+  test('el mutante cambia de figura cuando cambia el compás, y dice cuál viene', async ({ page }) => {
+    const errors = watchErrors(page);
+    await goto(page, '/ritmo');
+    await page.getByRole('group', { name: 'Tipo de ritmo' }).getByRole('button', { name: 'Mutante' }).click();
+    const wheel = page.getByTestId('wheel');
+    const rotation = page.getByTestId('rotation');
+    // Quieto se ve el primero de la rotación: 4/4, cuatro golpes.
+    await expect(wheel.locator('text')).toHaveText('4');
+    await expect(rotation).toContainText('Tocá y la figura va cambiando');
+
+    // Al doble de tempo, dos compases de 4/4 duran 2,4 segundos.
+    await page.getByRole('button', { name: 'Tempo al doble' }).click();
+    await page.locator('#metro-toggle').click();
+    await expect(rotation).toContainText('después, 7/8 2+2+3');
+    await expect(rotation.locator('li[data-now]')).toHaveText('4/4');
+    await expect(wheel.locator('text')).toHaveText('7', { timeout: 6000 });
+    await expect(rotation.locator('li[data-now]')).toHaveText('7/8 2+2+3');
+    await expect(rotation).toContainText('después, 4/4');
+    expect(errors).toEqual([]);
+  });
+
   test('la caja de ritmos: partida, pintar, callar, correr, swing y volver', async ({ page }) => {
     const errors = watchErrors(page);
     await goto(page, '/ritmo');
