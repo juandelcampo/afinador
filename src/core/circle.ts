@@ -58,3 +58,14 @@ export function fifthMoves(vuelta: readonly Chord[]): { fifths: number; total: n
   });
   return { fifths, total: vuelta.length };
 }
+
+/** El tono del naranja de la tónica en el círculo cromático. */
+export const TONIC_HUE = 18;
+
+/**
+ * El color de una casilla, como el círculo de quintas puesto sobre el cromático: la tónica es naranja y cada
+ * quinta gira 30°. Hacia los sostenidos va al amarillo y al verde, hacia los bemoles al rojo y al violeta;
+ * el tritono, enfrente, cae en el complementario. El relativo menor lleva el tono de su mayor.
+ */
+export const fifthHue = (place: CirclePlace, tonic: CirclePlace) =>
+  (TONIC_HUE + 30 * mod12(place.index - tonic.index)) % 360;

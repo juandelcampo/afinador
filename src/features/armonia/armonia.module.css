@@ -1094,13 +1094,6 @@
 }
 
 /* El círculo de quintas: la rueda ocupa el ancho que haya, hasta 420 px, y el acorde tocado va al medio. */
-/* Un color por cercanía: cálido es de la casa, frío es lejos. Con letra negra en los dos temas. */
-.wheel,
-.legend {
-  --near-0: #ffd23f;
-  --near-1: #8fd694;
-  --near-2: #8ec5ff;
-}
 .wheel {
   position: relative;
   width: min(100%, 420px);
@@ -1122,29 +1115,31 @@
   stroke-width: 2;
 }
 .cell text {
-  fill: var(--muted);
+  fill: #000;
   font-family: var(--heavy);
   font-weight: 700;
   text-anchor: middle;
   pointer-events: none;
 }
+/* El color sale del círculo cromático (--hue lo pone cada casilla): afuera más fuerte, adentro más claro,
+   y lo que no es del mundo, lavado. Letra negra en los dos temas. */
+.cell path {
+  fill: hsl(var(--hue) 70% 86%);
+}
+.cell[data-ring='inner'] path {
+  fill: hsl(var(--hue) 70% 91%);
+}
+.cell[data-state='world'] path {
+  fill: hsl(var(--hue) 92% 62%);
+}
+.cell[data-state='world'][data-ring='inner'] path {
+  fill: hsl(var(--hue) 92% 72%);
+}
 .cell[data-state='tonic'] path {
   fill: var(--accent);
 }
-.cell[data-state='world'] path {
-  fill: var(--near-0);
-}
-.cell[data-state='near'] path {
-  fill: var(--near-1);
-}
-.cell[data-state='far'] path {
-  fill: var(--near-2);
-}
-.cell[data-state='tonic'] text,
 .cell[data-state='world'] text,
-.cell[data-state='near'] text,
-.cell[data-state='far'] text {
-  fill: #000;
+.cell[data-state='tonic'] text {
   font-weight: 900;
 }
 .cell[data-state='picked'] path {
@@ -1159,39 +1154,32 @@
   filter: brightness(0.88);
 }
 
-/* La leyenda usa los mismos tonos que la rueda. */
+/* La leyenda: la rueda desenrollada, de los bemoles a los sostenidos, con la tónica marcada. */
 .legend {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px 14px;
-  margin: 10px 0 0;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font: 900 16px/1 var(--heavy);
+}
+.legend ol {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  width: min(100%, 360px);
+  height: 18px;
+  margin: 0;
   padding: 0;
+  border: 2px solid var(--ink);
   list-style: none;
-  font: 600 12px/1.2 var(--mono);
 }
 .legend li {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  background: hsl(var(--hue) 92% 62%);
 }
-.legend li::before {
-  content: '';
-  width: 14px;
-  height: 14px;
-  border: 2px solid var(--ink);
-  background: var(--paper);
-}
-.legend li[data-state='tonic']::before {
+.legend li[data-tonic] {
   background: var(--accent);
-}
-.legend li[data-state='world']::before {
-  background: var(--near-0);
-}
-.legend li[data-state='near']::before {
-  background: var(--near-1);
-}
-.legend li[data-state='far']::before {
-  background: var(--near-2);
+  outline: 2px solid var(--ink);
+  outline-offset: 0;
+  z-index: 1;
 }
 .cell:focus-visible path {
   stroke: var(--accent);

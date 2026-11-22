@@ -214,14 +214,14 @@ test.describe('armonía', () => {
     // Cada casilla se escribe en su tono: el relativo de E es C#m, no D♭m.
     await expect(circle.getByRole('button', { name: 'Escuchar C#m' })).toBeVisible();
     await expect(page.getByTestId('circulo-vuelta')).toContainText('3 de 4');
-    // El color dice cuánto tiene que ver con el mundo: D trae una nota de afuera, E♭ dos.
-    await expect(circle.getByRole('button', { name: 'Escuchar D', exact: true })).toHaveAttribute(
+    // El color gira con las quintas desde el naranja de la tónica: D está dos quintas para los sostenidos.
+    await expect(circle.getByRole('button', { name: 'Escuchar C', exact: true })).toHaveAttribute(
       'data-state',
-      'near',
+      'tonic',
     );
-    await expect(circle.getByRole('button', { name: 'Escuchar Eb', exact: true })).toHaveAttribute(
-      'data-state',
-      'far',
+    await expect(circle.getByRole('button', { name: 'Escuchar D', exact: true })).toHaveAttribute(
+      'data-hue',
+      '78',
     );
 
     const before = await plucks(page);

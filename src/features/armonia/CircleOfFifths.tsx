@@ -1,5 +1,14 @@
-import type { KeyboardEvent } from 'react';
-import { circleChord, fifthMoves, notesOutside, vueltaMarks, type Ring } from '~/core/circle';
+import type { CSSProperties, KeyboardEvent } from 'react';
+import {
+  circleChord,
+  circlePlace,
+  fifthHue,
+  fifthMoves,
+  notesOutside,
+  TONIC_HUE,
+  vueltaMarks,
+  type Ring,
+} from '~/core/circle';
 import { chordColor, degreeLabel, type Chord, type Key } from '~/core/harmony';
 import { Button } from '~/shared/ui/ui';
 import styles from './armonia.module.css';
@@ -28,15 +37,11 @@ const xy = (radius: number, index: number) => {
   return { x: Number(x), y: Number(y) };
 };
 
-/** Cuánto tiene que ver cada casilla con el mundo, por las notas que trae de afuera: cuanto más, más clara. */
-const DISTANCE = ['world', 'near', 'far', 'away'] as const;
-const LEGEND = [
-  { state: 'tonic', label: 'El I' },
-  { state: 'world', label: 'Tu mundo' },
-  { state: 'near', label: '1 nota de afuera' },
-  { state: 'far', label: '2 de afuera' },
-  { state: 'away', label: 'Nada que ver' },
-] as const;
+/** La tira de la leyenda: de cinco quintas para el lado de los bemoles a seis para el de los sostenidos. */
+const STRIP = Array.from({ length: 12 }, (_, index) => index - 5);
+
+/** El tono va en una variable de CSS: el claro y el oscuro de cada anillo los pone la hoja de estilos. */
+const hueStyle = (hue: number) => ({ '--hue': hue }) as CSSProperties;
 
 const sameColorChord = (a: Chord, b: Chord) =>
   a.root === b.root && chordColor(a.suffix) === chordColor(b.suffix);
@@ -64,6 +69,7 @@ export function CircleWheel({
 }: CircleProps & { onPick: (chord: Chord) => void; onAdd: (chord: Chord) => void }) {
   const marks = vueltaMarks(vuelta);
   const outside = picked ? notesOutside(picked, keyOf) : 0;
+  const tonicPlace = circlePlace(worldTonic) ?? { index: 0, ring: 'outer' as const };
   return (
     <div className={styles.wheel} data-testid="circulo">
       <svg viewBox="0 0 400 400" role="group" aria-label="Círculo de quintas">
@@ -73,12 +79,16 @@ export function CircleWheel({
           const label = xy(ring.label, place.index);
           const mark = xy(ring.mark, place.index);
           const order = marks.get(`${place.ring}-${place.index}`);
+          const hue = fifthHue(place, tonicPlace);
+          // El color dice dónde está en la rueda; el mundo va más saturado y con letra más gruesa.
           const state =
             picked && sameColorChord(picked, chord)
               ? 'picked'
               : sameColorChord(worldTonic, chord)
                 ? 'tonic'
-                : DISTANCE[Math.min(notesOutside(chord, keyOf), 3)]!;
+                : notesOutside(chord, keyOf) === 0
+                  ? 'world'
+                  : 'away';
           const onKeyDown = (event: KeyboardEvent) => {
             if (event.key !== 'Enter' && event.key !== ' ') return;
             event.preventDefault();
@@ -93,6 +103,9 @@ export function CircleWheel({
               aria-pressed={state === 'picked'}
               className={styles.cell}
               data-state={state}
+              data-ring={place.ring}
+              data-hue={hue}
+              style={hueStyle(hue)}
               onClick={() => onPick(chord)}
               onKeyDown={onKeyDown}
             >
@@ -154,17 +167,23 @@ export function CircleNotes({
   return (
     <div className={styles.circleNotes}>
       <p className={styles.hint}>
-        Afuera los mayores, adentro sus relativos menores. Cada paso alrededor es una quinta: los vecinos
-        comparten todas las notas menos una. El color dice cuánto tiene que ver cada uno con tu mundo; los
-        números, dónde cae tu vuelta.
+        Afuera los mayores, adentro sus relativos menores. Cada paso alrededor es una quinta, y cada quinta
+        gira el color: tu tónica es naranja, los vecinos tienen colores vecinos y lo de enfrente, el
+        complementario. Lo de tu mundo va más fuerte; los números son tu vuelta.
       </p>
-      <ul className={styles.legend} aria-label="Colores de la rueda">
-        {LEGEND.map((item) => (
-          <li key={item.state} data-state={item.state}>
-            {item.label}
-          </li>
-        ))}
-      </ul>
+      <div className={styles.legend} aria-hidden="true">
+        <span>♭</span>
+        <ol>
+          {STRIP.map((step) => (
+            <li
+              key={step}
+              data-tonic={step === 0 || undefined}
+              style={hueStyle((TONIC_HUE + 30 * step + 360) % 360)}
+            />
+          ))}
+        </ol>
+        <span>♯</span>
+      </div>
       {picked && (
         <div className={styles.wheelInfo} data-testid="circulo-info">
           <p>

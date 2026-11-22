@@ -1,6 +1,15 @@
 // El círculo de quintas: dónde cae cada acorde, qué es del mundo y cómo gira la vuelta.
 import { describe, expect, it } from 'vitest';
-import { CIRCLE, circleChord, circlePlace, fifthMoves, notesOutside, vueltaMarks } from '~/core/circle';
+import {
+  CIRCLE,
+  circleChord,
+  circlePlace,
+  fifthHue,
+  fifthMoves,
+  notesOutside,
+  TONIC_HUE,
+  vueltaMarks,
+} from '~/core/circle';
 import { findScale, type Chord, type Key } from '~/core/harmony';
 
 const C_MAYOR: Key = { tonic: 0, scale: findScale('mayor')! };
@@ -32,5 +41,19 @@ describe('círculo de quintas', () => {
     expect(vueltaMarks(vuelta).get('outer-1')).toEqual([3]);
     // Am Dm G C Am, y de vuelta al Am: tres caídas de quinta, C → Am y Am → Am no.
     expect(fifthMoves(vuelta)).toEqual({ fifths: 3, total: 5 });
+  });
+
+  it('el color gira con las quintas: la tónica naranja, el tritono en el complementario', () => {
+    const c = circlePlace(chord(0))!;
+    expect(fifthHue(c, c)).toBe(TONIC_HUE);
+    // G, una quinta para los sostenidos: 30° más.
+    expect(fifthHue(circlePlace(chord(7))!, c)).toBe(TONIC_HUE + 30);
+    // F, una para los bemoles: 30° menos, dando la vuelta.
+    expect(fifthHue(circlePlace(chord(5))!, c)).toBe(TONIC_HUE + 330);
+    expect(fifthHue(circlePlace(chord(6))!, c)).toBe(TONIC_HUE + 180);
+    // El relativo lleva el tono de su mayor; en un mundo menor, la tónica es la casilla de adentro.
+    expect(fifthHue(circlePlace(chord(9, 'm'))!, c)).toBe(TONIC_HUE);
+    const cm = circlePlace(chord(0, 'm'))!;
+    expect(fifthHue(circlePlace(chord(3))!, cm)).toBe(TONIC_HUE);
   });
 });
