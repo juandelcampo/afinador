@@ -6,13 +6,9 @@ test.describe('armonía', () => {
     await countSounds(page);
   });
 
-  test('se llega desde el afinador con la misma afinación y la tónica de sus cuerdas al aire', async ({
-    page,
-  }) => {
+  test('se abre con la afinación de la URL y la tónica de sus cuerdas al aire', async ({ page }) => {
     const errors = watchErrors(page);
-    await goto(page, '/afinador/dadgad');
-    await page.getByRole('link', { name: 'Armar una vuelta →' }).click();
-    await expect(page).toHaveURL(/\/armonia\?afinacion=dadgad/);
+    await goto(page, '/armonia?afinacion=dadgad');
     await expect(page.locator('#afinacion')).toHaveValue('dadgad');
     // DADGAD al aire es un Dsus4: la tónica es Re.
     await expect(page.locator('#tonica')).toHaveValue('2');

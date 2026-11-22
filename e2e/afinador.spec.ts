@@ -2,8 +2,9 @@ import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { countSounds, goto, plucks, waitForApp, watchErrors } from './fixtures/helpers';
 
-// En pantalla ancha el centro arranca en Afinar y las columnas de los costados, cerradas.
-const tocar = (page: Page) => page.getByRole('tab', { name: 'Tocar' }).click();
+// En pantalla ancha el centro arranca en Afinar y las columnas de los costados, cerradas. Lo que se
+// toca (acordes, mástil y patrones) está en la pestaña Acordes.
+const tocar = (page: Page) => page.getByRole('tab', { name: 'Acordes' }).click();
 const lista = (page: Page) => page.getByRole('button', { name: 'Abrir la lista de afinaciones' }).click();
 const temas = (page: Page) =>
   page.getByRole('button', { name: 'Abrir los temas y las afinaciones cercanas' }).click();
@@ -150,8 +151,8 @@ test.describe('escuchador', () => {
     await goto(page, '/afinador/dgddad');
     await temas(page);
     await page.getByRole('button', { name: /capo en el traste 3/ }).click();
-    // Poner el capo de un tema lleva a Tocar.
-    await expect(page.getByRole('tab', { name: 'Tocar' })).toHaveAttribute('aria-selected', 'true');
+    // Poner el capo de un tema lleva a Acordes.
+    await expect(page.getByRole('tab', { name: 'Acordes' })).toHaveAttribute('aria-selected', 'true');
     await expect(page.getByTestId('capo-value')).toHaveText('Traste 3');
     await page.waitForTimeout(400);
     expect(await plucks(page)).toBeGreaterThan(0);
@@ -311,12 +312,12 @@ test.describe('celular', () => {
     await page.getByRole('button', { name: 'Cómo es DADGAD' }).click();
     await expect(page.getByTestId('fact-chord')).toHaveText('Dsus4');
 
-    await secciones.getByRole('button', { name: 'Tocar' }).click();
+    await secciones.getByRole('button', { name: 'Acordes' }).click();
     await expect(page.getByTestId('strum-zone')).toBeVisible();
     await expect(page.locator('#mic-toggle')).toBeHidden();
-    // Entran nueve acordes; el resto está en Acordes.
+    // Entran nueve acordes; el resto está en Figuras.
     await page.getByRole('button', { name: /^Ver los otros \d+ acordes$/ }).click();
-    await expect(secciones.getByRole('button', { name: 'Acordes' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(secciones.getByRole('button', { name: 'Figuras' })).toHaveAttribute('aria-pressed', 'true');
     await page
       .getByRole('group', { name: 'Filtrar acordes' })
       .getByRole('button', { name: 'Menores' })
@@ -330,9 +331,9 @@ test.describe('celular', () => {
     expect(errors).toEqual([]);
   });
 
-  test('el nombre de la afinación abre la lista, y elegir la cierra', async ({ page }) => {
+  test('la lista se abre desde la ficha, y elegir la cierra', async ({ page }) => {
     await goto(page, '/afinador/dadgad');
-    await page.getByRole('heading', { level: 1 }).getByRole('button').click();
+    await page.getByRole('button', { name: /^Elegir entre \d+ afinaciones/ }).click();
     await expect(page.getByPlaceholder('BUSCAR')).toBeVisible();
     await page.getByRole('button', { name: /^Drop/ }).click();
     await page.locator('[data-id="dropd"]').click();

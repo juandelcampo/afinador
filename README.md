@@ -9,16 +9,16 @@ Herramientas para componer con guitarra, pensadas para quien toca de oído y qui
 
 Salió de [Scordatura](../Afinador%20Drake), donde era una de las herramientas. Acá vive solo.
 
-En el celular es una tarea por pantalla, con cuatro pestañas abajo (Afinar, Tocar, Acordes, Temas); el nombre de la afinación abre la lista. Desde 900 px son tres columnas: la lista a la izquierda y los temas a la derecha, las dos plegadas al entrar, y en el centro la ficha con Afinar o Tocar.
+En el celular es una tarea por pantalla, con cuatro pestañas abajo (Afinar, Acordes, Figuras, Temas) y la lista se abre desde la ficha. Desde 900 px son tres columnas: la lista a la izquierda y los temas a la derecha, las dos plegadas al entrar, y en el centro la ficha con Afinar o Acordes; Acordes entra sin scrollear.
 
-| Parte   | Qué hace                                                                                                                                 |
-| ------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Lista   | Las 147 afinaciones en secciones que arrancan cerradas, con búsqueda por nombre, notas, artista o canción. Elegir una la hace sonar.     |
-| Ficha   | Acorde al aire, intervalos entre cuerdas, cuántas cuerdas cambian, aviso si alguna queda muy tensa o floja y el link a Armonía.          |
-| Afinar  | Micrófono, cuerda por cuerda o automático, con aguja en cents. Tocar una cuerda la hace sonar.                                           |
-| Tocar   | Los acordes que entran en la mano y el mástil interactivo: trastes, capo, rasgueo a mano, arpegios y rasgueos con patrón y tempo.        |
-| Acordes | Las figuras dibujadas como en un cancionero, con filtro por mayores, menores y otros (en pantallas anchas van dentro de Tocar).          |
-| Temas   | Dónde se escuchó, con capo para tocarlos y video de YouTube que se carga recién al abrirlo, y las afinaciones a una cuerda de distancia. |
+| Parte   | Qué hace                                                                                                                                       |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lista   | Las 147 afinaciones en secciones que arrancan cerradas, con búsqueda por nombre, notas, artista o canción. Elegir una la hace sonar.           |
+| Ficha   | Acorde al aire, intervalos entre cuerdas, cuántas cuerdas cambian y aviso si alguna queda muy tensa o floja.                                   |
+| Afinar  | Micrófono, cuerda por cuerda o automático, con aguja en cents. Tocar una cuerda la hace sonar.                                                 |
+| Acordes | Los acordes que entran en la mano y el mástil interactivo: trastes, capo, rasgueo a mano, arpegios y rasgueos con patrón y tempo.              |
+| Figuras | Las figuras dibujadas como en un cancionero, con filtro por mayores, menores y otros (en pantallas anchas los acordes están todos en Acordes). |
+| Temas   | Dónde se escuchó, con capo para tocarlos y video de YouTube que se carga recién al abrirlo, y las afinaciones a una cuerda de distancia.       |
 
 ### Armonía
 
@@ -33,7 +33,7 @@ Sale de Mauro De María, _Composición integral_ (capítulos 1 a 8), sin pentagr
 | Tu vuelta     | Séptimas, novenas y otros colores con su emoción, qué va en el bajo, notas comunes, cuerdas al aire que pueden sonar de pedal, cambiar un acorde por otro de su misma función (tónica, subdominante o dominante, con el sustituto tritonal sobre el V7), por su relativo o al revés, qué notas se apoyan, tensan o chocan al cantar encima, reordenar la vuelta arrastrando, estirarla, el bajo que baja con inversiones y las ocho cadencias finales. |
 | Sin centro    | Los puntos cardinales: grupos de acordes sin tónica, con el paso de grupo por el mismo polo.                                                                                                                                                                                                                                                                                                                                                           |
 
-La afinación, la tónica, la escala y la vuelta viven en la URL (`/armonia?afinacion=dadgad&v=D_G_A7`): se comparten con un link. El Afinador lleva a Armonía con su afinación desde la ficha.
+La afinación, la tónica, la escala y la vuelta viven en la URL (`/armonia?afinacion=dadgad&v=D_G_A7`): se comparten con un link.
 
 ### Inversiones
 

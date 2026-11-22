@@ -151,8 +151,8 @@
 
 @container main (min-width: 900px) {
   .page {
-    /* Las filas del mástil crecen con el alto de la ventana: 44 px con 800 de alto, hasta 52. */
-    --row: clamp(var(--touch), calc((100dvh - var(--bar)) * 0.11 - 44px), 52px);
+    /* Las filas del mástil se ajustan al alto de la ventana para que Acordes entre sin scrollear. */
+    --row: clamp(34px, calc((100dvh - var(--bar)) * 0.11 - 50px), 52px);
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
     height: calc(100dvh - var(--bar));
@@ -1121,6 +1121,8 @@
 }
 .videoBar {
   display: flex;
+  min-height: 36px;
+  padding-block: 6px;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
@@ -1169,17 +1171,6 @@
   }
 }
 
-/* El link a otra herramienta, en la cabecera de Acordes. */
-.bridge {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--touch);
-  font: 700 semi-expanded 13px/1.2 var(--ui);
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  text-underline-offset: 3px;
-}
-
 /* La ficha: el nombre es el botón para cambiar de afinación. */
 .heroHead {
   display: flex;
@@ -1196,31 +1187,26 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.heroTitle button {
+.heroTitle h1 {
+  font: 900 expanded clamp(30px, 7cqi, 48px)/1 var(--heavy);
+  letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
+}
+/* En el celular la lista se abre desde la ficha. */
+.catalogToggle {
   display: flex;
-  align-items: center;
   justify-content: space-between;
   gap: 10px;
   width: 100%;
-  min-height: 56px;
-  padding: 6px 12px;
-  border: var(--rule);
-  background: var(--paper);
-  color: var(--ink);
-  box-shadow: var(--lift) var(--lift) 0 var(--ink);
-  font: 900 expanded clamp(26px, 7cqi, 44px)/1 var(--heavy);
-  letter-spacing: -0.03em;
-  overflow-wrap: anywhere;
+  min-height: var(--touch);
+  margin-top: 12px;
+  padding: 8px 12px;
+  border: 0;
+  background: var(--ink);
+  color: var(--paper);
+  font: 900 semi-expanded 14px/1.2 var(--heavy);
   text-align: left;
-  cursor: pointer;
-}
-.heroTitle button::after {
-  content: '▾';
-  flex: none;
-  font-size: 0.6em;
-}
-.heroTitle button:hover {
-  background: var(--soft);
+  text-transform: uppercase;
 }
 .heroTools {
   display: flex;
@@ -1268,11 +1254,7 @@
   .heroTools .infoToggle {
     display: none;
   }
-  .heroTitle button {
-    width: auto;
-    max-width: 100%;
-    gap: 24px;
-  }
+
   .heroInfo,
   .heroInfo[data-open='true'] {
     display: block;
@@ -1284,7 +1266,7 @@
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 4px;
-  margin-top: 10px;
+  margin: 10px 0 14px;
 }
 .chips button {
   display: grid;
@@ -1340,7 +1322,7 @@
 }
 @container main (min-width: 900px) {
   .chips {
-    grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
   }
   .chips small {
     display: block;
@@ -1348,24 +1330,13 @@
   .chips > button:nth-child(n + 10):not(.more) {
     display: grid;
   }
-  .chips:not([data-more]) > button:nth-child(n + 16):not(.more) {
-    display: none;
-  }
 }
 
-.neckFoot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 6px;
-}
-.neckFoot .hint {
-  margin: 0;
-}
-.neckFoot button {
-  flex: none;
-  white-space: nowrap;
+.neckHint {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
 }
 .filters button {
   font-size: 12px;
@@ -1373,9 +1344,13 @@
 }
 .playRow {
   display: flex;
+  flex-wrap: wrap;
   align-items: stretch;
   gap: 8px;
   margin-top: 12px;
+}
+.playRow > [role='group'] {
+  flex: 1 1 auto;
 }
 .playButton {
   flex: none;
@@ -1397,8 +1372,100 @@
   box-shadow: none;
 }
 .patterns {
-  flex: 1;
+  flex: 1 1 100%;
   min-width: 0;
+}
+@container main (min-width: 900px) {
+  .playRow > [role='group'] {
+    flex: none;
+  }
+  .patterns {
+    flex-basis: 0;
+  }
+}
+/* El volumen en el color de acento, como todo lo que suena. */
+.headTools input[type='range'],
+.volume input[type='range'] {
+  accent-color: var(--accent);
+}
+.stripRow .strip {
+  margin-top: 12px;
+}
+.controls > button {
+  flex: 0 0 auto;
+  align-self: flex-end;
+  min-height: var(--touch);
+}
+.volume {
+  flex: 1 1 120px;
+}
+.volume input {
+  width: 100%;
+}
+/* En pantalla ancha todo entra sin scrollear: la tira y los controles en una fila. */
+@container main (min-width: 900px) {
+  .stripRow {
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+    margin-top: 10px;
+  }
+  .stripRow .strip {
+    flex: 1 1 260px;
+    min-width: 0;
+    margin: 0;
+  }
+  .stripRow .controls {
+    flex: 0 1 auto;
+    flex-wrap: nowrap;
+    margin: 0;
+  }
+  .stripRow .controls > .field {
+    flex: 0 0 auto;
+  }
+  .stripRow .controls > .field input[type='range'] {
+    width: 130px;
+  }
+  .stripRow .controls > div.field {
+    flex: 0 0 auto;
+  }
+  .stripRow .controls > .volume {
+    flex: 0 0 110px;
+  }
+  .play {
+    padding-top: 10px;
+  }
+  .play .chips {
+    margin-top: 0;
+  }
+  /* La ficha en dos filas: el nombre, y debajo la descripción con los datos al lado. */
+  .heroInfo,
+  .heroInfo[data-open='true'] {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 20px;
+    margin-top: 8px;
+  }
+  .heroInfo .desc {
+    flex: 1 1 320px;
+    margin: 0;
+    font-size: 13px;
+  }
+  .heroInfo .facts {
+    flex: none;
+    margin: 0;
+  }
+  .heroInfo .warning {
+    flex: 1 0 100%;
+    margin: 0;
+  }
+  .hero {
+    padding-block: 10px 12px;
+  }
+  .heroTitle h1 {
+    font-size: clamp(28px, 4cqi, 40px);
+  }
 }
 .patterns [role='group'] {
   height: 100%;
