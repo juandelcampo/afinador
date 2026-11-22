@@ -669,15 +669,23 @@ export default function ArmoniaRoute() {
           <Slab className={styles.vueltaSlab}>
             <span id="vuelta" className={styles.anchor} />
             <SlabHead title="Tu vuelta">
-              <Fader compact />
-              <Button
-                variant="mini"
-                ariaPressed={wide}
-                onClick={() => setWide(!wide)}
-                title="Que la vuelta ocupe el medio"
-              >
-                {wide ? 'Achicar' : 'Agrandar'}
-              </Button>
+              <div className={styles.vueltaTools}>
+                <Fader compact />
+                {/* La flecha estira la vuelta hacia el medio y la vuelve a su lugar; en el celular, abre para abajo. */}
+                <Button
+                  variant="mini"
+                  ariaPressed={wide}
+                  ariaLabel={wide ? 'Achicar la vuelta' : 'Agrandar la vuelta'}
+                  title={
+                    wide ? 'Volver la vuelta a su lugar' : 'Estirar la vuelta: cada acorde con su figura'
+                  }
+                  onClick={() => setWide(!wide)}
+                >
+                  <span className={styles.widen} aria-hidden="true">
+                    {wide ? '→' : '←'}
+                  </span>
+                </Button>
+              </div>
             </SlabHead>
             {vuelta.length === 0 ? (
               <div className={styles.empty} data-testid="vuelta-empty">
