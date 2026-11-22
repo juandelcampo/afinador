@@ -15,6 +15,8 @@ import {
   feelingOf,
   feelingTag,
   findScale,
+  functionOf,
+  functionSubstitutes,
   parseChord,
   pedalStrings,
   samePole,
@@ -222,5 +224,41 @@ describe('figuras para cualquier acorde', () => {
         }
       }
     }
+  });
+});
+
+describe('sustitución por función', () => {
+  const sub = (chord: Chord, k: Key) =>
+    functionSubstitutes(chord, k).map((item) => `${item.label} ${chordName(item.chord, k, 'letters')}`);
+
+  it('dice qué papel cumple cada grado', () => {
+    const c = key(0, 'mayor');
+    expect(scaleDegrees(c).map((item) => functionOf(item.chord, c)?.id)).toEqual([
+      'tonica',
+      'subdominante',
+      'tonica',
+      'subdominante',
+      'dominante',
+      'tonica',
+      'dominante',
+    ]);
+    expect(functionOf({ root: 8, suffix: '' }, c)).toBeNull();
+  });
+
+  it('cambia un acorde por los de su mismo papel, con séptima si la tiene', () => {
+    const c = key(0, 'mayor');
+    expect(sub({ root: 0, suffix: '' }, c)).toEqual(['VIm Am', 'IIIm Em']);
+    expect(sub({ root: 5, suffix: 'maj7' }, c)).toEqual(['IIm7 Dm7']);
+    expect(sub({ root: 7, suffix: '' }, c)).toEqual(['VIIdim Bdim']);
+  });
+
+  it('sobre el V7 suma el sustituto tritonal', () => {
+    const c = key(0, 'mayor');
+    expect(sub({ root: 7, suffix: '7' }, c)).toEqual(['VIIm7♭5 Bm7♭5', '♭II7 tritonal Db7']);
+  });
+
+  it('sin sensible, la dominante no tiene punta', () => {
+    expect(functionOf({ root: 4, suffix: 'm' }, key(9, 'natural'))?.why).toMatch(/sin sensible/);
+    expect(functionOf({ root: 4, suffix: '7' }, key(9, 'armonica'))?.why).toMatch(/volver al I/);
   });
 });

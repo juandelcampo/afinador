@@ -598,6 +598,84 @@ export function cinemaLinks(from: Chord): ColorChord[] {
   return links;
 }
 
+// ---------------------------------------------------------------- funciones
+
+export type HarmonicFunction = 'tonica' | 'subdominante' | 'dominante';
+
+export interface FunctionInfo {
+  id: HarmonicFunction;
+  label: string;
+  why: string;
+}
+
+/**
+ * Los grados de cada función, como en la armonía clásica: la tónica es el I y los que comparten dos
+ * notas con él; la dominante, los que tienen la sensible (la "punta" de De María, p. 28).
+ */
+const FUNCTION_DEGREES: Record<HarmonicFunction, readonly number[]> = {
+  tonica: [0, 5, 2],
+  subdominante: [3, 1],
+  dominante: [4, 6],
+};
+
+/** El papel de un acorde en la tonalidad según su raíz, o null si la raíz no es de la escala. */
+export function functionOf(chord: Chord, key: Key): FunctionInfo | null {
+  const degree = key.scale.steps.indexOf(mod12(chord.root - key.tonic));
+  if (degree < 0) return null;
+  const id = (Object.keys(FUNCTION_DEGREES) as HarmonicFunction[]).find((item) =>
+    FUNCTION_DEGREES[item].includes(degree),
+  )!;
+  if (id === 'tonica') return { id, label: 'Tónica', why: 'la casa: reposa' };
+  if (id === 'subdominante') return { id, label: 'Subdominante', why: 'se aleja de la casa sin apuro' };
+  // Sin sensible (el dórico, la menor natural) la dominante no tiene punta: tira poco hacia el I.
+  return key.scale.steps.includes(11)
+    ? { id, label: 'Dominante', why: 'tensión que pide volver al I' }
+    : { id, label: 'Dominante', why: 'sin sensible en este mundo: tira poco hacia el I' };
+}
+
+const hasSeventh = (suffix: Suffix) =>
+  suffix === 'dim7' || CHORD_STEPS[suffix]!.some((step) => step === 10 || step === 11);
+
+/**
+ * Los acordes de la escala que cumplen el mismo papel: cambian el color sin cambiar hacia dónde va la
+ * vuelta. Llevan séptima si el acorde la tiene. Sobre un V7, también el sustituto tritonal.
+ */
+export function functionSubstitutes(chord: Chord, key: Key): ColorChord[] {
+  const role = functionOf(chord, key);
+  if (!role) return [];
+  const degree = key.scale.steps.indexOf(mod12(chord.root - key.tonic));
+  const seventh = hasSeventh(chord.suffix);
+  const result: ColorChord[] = FUNCTION_DEGREES[role.id]
+    .filter((item) => item !== degree)
+    .map((item) => {
+      const next = degreeChord(key, item, seventh);
+      const shared = commonTones(chord, next).length;
+      const feeling = key.scale.feelings?.[item];
+      const sharedText =
+        shared === 0
+          ? 'No comparten notas.'
+          : shared === 1
+            ? 'Comparten una nota.'
+            : `Comparten ${shared} notas.`;
+      // El III lleva la sensible: hace de tónica, pero reposa menos.
+      const extra =
+        role.id === 'tonica' && item === 2 && key.scale.steps.includes(11)
+          ? ' Lleva la sensible: reposa menos.'
+          : '';
+      const words = feeling ? ` ${feeling.words.slice(0, 2).join(', ')}.` : '';
+      return { chord: next, label: degreeLabel(next, key), why: sharedText + extra + words };
+    });
+  if (role.id === 'dominante' && degree === 4 && ['7', '9', '7b9'].includes(chord.suffix)) {
+    const tritone: Chord = { root: mod12(key.tonic + 1), suffix: '7' };
+    result.push({
+      chord: tritone,
+      label: `${degreeLabel(tritone, key)} tritonal`,
+      why: 'Comparte el tritono del V7 y el bajo baja de a semitono al I. Suena a jazz.',
+    });
+  }
+  return result;
+}
+
 // ---------------------------------------------------------------- variantes de un acorde
 
 export interface Variant {

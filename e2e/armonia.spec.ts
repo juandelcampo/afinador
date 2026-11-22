@@ -114,7 +114,7 @@ test.describe('armonía', () => {
     await transforms.getByRole('button', { name: /^Bajo que baja/ }).click();
     await expect(page.getByTestId('vuelta')).toContainText('F/A');
 
-    // El editor cambia un acorde por su relativo y dice qué notas se apoyan al cantar.
+    // El editor cambia un acorde por otro de su misma función (acá, su relativo) y dice qué notas se apoyan al cantar.
     const vuelta = page.getByTestId('vuelta');
     await vuelta.getByRole('listitem').last().getByRole('button').first().click();
     const editor = page.getByTestId('chord-editor');
@@ -122,7 +122,8 @@ test.describe('armonía', () => {
     await expect(page.getByTestId('sing-over')).toContainText('Se apoyan');
     await editor.getByRole('button', { name: 'Cambiar', exact: true }).click();
     await expect(page.getByTestId('editor-moves')).toContainText('I → VI');
-    await editor.getByRole('button', { name: /^Relativo/ }).click();
+    await expect(page.getByTestId('same-function')).toContainText('IIIm');
+    await editor.getByRole('button', { name: /relativo/ }).click();
     await expect(vuelta.getByRole('listitem').last()).toContainText('Am');
     await page.getByRole('button', { name: 'Cerrar', exact: true }).click();
 

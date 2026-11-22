@@ -17,11 +17,14 @@ import {
   feelingOf,
   feelingTag,
   findScale,
+  functionOf,
+  functionSubstitutes,
   parseChord,
   pedalStrings,
   pitchName,
   plainName,
   POINT_LABEL,
+  sameChord,
   samePole,
   SCALES,
   scaleDegrees,
@@ -330,6 +333,9 @@ export default function ArmoniaRoute() {
   );
   const active = selected !== null && selected < vuelta.length ? selected : null;
   const activeChord = active === null ? null : vuelta[active]!;
+  const activeRole = activeChord && functionOf(activeChord, key);
+  const activeSubstitutes = activeChord ? functionSubstitutes(activeChord, key) : [];
+  const activeRelative = activeChord && relativeOf(activeChord);
   const pole = last && !last.bass ? samePole(last.root) : null;
   const mode: VueltaMode = chordColor(degrees[0]!.chord.suffix) === 'minor' ? 'menor' : 'mayor';
   const starter = (degreesOf: readonly string[], vueltaMode: VueltaMode) =>
@@ -965,12 +971,44 @@ export default function ArmoniaRoute() {
             )}
             {editorTab === 'cambiar' && (
               <>
+                {activeRole && (
+                  <>
+                    <p className={styles.label}>
+                      Misma función: {name(activeChord)} hace de {activeRole.label.toLowerCase()}
+                    </p>
+                    <p className={styles.hint}>
+                      {activeRole.label}: {activeRole.why}. Cambialo por otro del mismo papel y la vuelta
+                      sigue yendo al mismo lado, con otro color.
+                    </p>
+                    <ul className={styles.variants} data-testid="same-function">
+                      {activeSubstitutes.map((item) => (
+                        <Option
+                          key={chordToken(item.chord)}
+                          title={
+                            activeRelative && sameChord(item.chord, activeRelative)
+                              ? `${item.label} · relativo`
+                              : item.label
+                          }
+                          detail={name(item.chord)}
+                          why={item.why}
+                          onApply={() => replaceAt(active, item.chord)}
+                          onPreview={() => previewInPlace(active, item.chord)}
+                        />
+                      ))}
+                    </ul>
+                  </>
+                )}
+                <p className={styles.label}>Misma raíz u otro clima</p>
                 <ul className={styles.variants}>
                   {[
                     {
                       id: 'relativo',
                       label: 'Relativo',
-                      chord: relativeOf(activeChord),
+                      chord: activeSubstitutes.some(
+                        (item) => activeRelative && sameChord(item.chord, activeRelative),
+                      )
+                        ? null
+                        : activeRelative,
                       why: 'Comparten dos notas: el cambio es suave y cambia el clima.',
                     },
                     {
