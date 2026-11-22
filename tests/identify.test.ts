@@ -1,7 +1,7 @@
 // ¿Qué acorde?: ponerle nombre a una forma cualquiera.
 import { describe, expect, it } from 'vitest';
 import { chordToken } from '~/core/harmony';
-import { identifyChord } from '~/core/identify';
+import { clusterSense, identifyChord } from '~/core/identify';
 import { bassReading, parseFrets } from '~/core/inversions';
 import { noteToMidi } from '~/core/notes';
 import { MUTED } from '~/core/tuning';
@@ -13,9 +13,12 @@ const standard = STANDARD.map(noteToMidi);
 function read(tab: string, open = standard) {
   const frets = parseFrets(tab, open.length, 15)!;
   const midis = frets.map((fret, index) => (fret === MUTED ? null : open[index]! + fret));
-  return identifyChord(midis).map((reading) =>
-    chordToken({ root: reading.root, suffix: reading.suffix, bass: reading.bass }),
-  );
+  return identifyChord(midis).map((reading) => {
+    const token = chordToken({ root: reading.root, suffix: reading.suffix });
+    const extras = reading.extras.length ? `(${reading.extras.map((extra) => extra.label).join(',')})` : '';
+    const bass = reading.bass === reading.root ? '' : `/${chordToken({ root: reading.bass, suffix: '' })}`;
+    return token + extras + bass;
+  });
 }
 
 describe('identifyChord', () => {
@@ -52,14 +55,32 @@ describe('identifyChord', () => {
     expect(first).toMatchObject({ root: 7, suffix: '7', omitted: [7] });
   });
 
-  it('dos notas a una quinta son un acorde de quinta; una sola nota o un cúmulo no tienen nombre', () => {
+  it('lo que no calza justo se lee como un acorde con tensiones encima', () => {
+    // La, Re#, Sol, Do y Mi: un Am7 con la ♯11.
+    expect(read('x-0-1-0-1-0')[0]).toBe('Am7(♯11)');
+    // Mi, Si, Sol# y Fa: un Mi mayor con la ♭9.
+    expect(read('0-2-2-1-0-1')[0]).toBe('E(♭9)');
+    // Si calza justo, no se repite como tensión: Dm6 no es también Dm(6).
+    expect(read('x-x-0-2-0-1')).not.toContain('Dm(6)');
+  });
+
+  it('dos notas a una tercera o una sexta dicen el acorde que insinúan; a una quinta, un acorde de quinta', () => {
+    expect(read('0-x-x-0-x-x')[0]).toBe('Em');
+    // Mi abajo y Do arriba: un Do con la tercera en el bajo.
+    expect(read('0-3-x-x-x-x')[0]).toBe('C/E');
     expect(read('x-x-0-2-x-x')[0]).toBe('D5');
+  });
+
+  it('una sola nota no es un acorde; las notas pegadas son un tritono, un choque o un racimo', () => {
     expect(read('x-x-0-x-x-x')).toEqual([]);
     expect(read('x-x-x-x-x-x')).toEqual([]);
+    const midis = (...names: string[]) => names.map(noteToMidi);
+    expect(clusterSense(midis('D3', 'G#3'))?.kind).toBe('Tritono');
+    expect(clusterSense(midis('D3', 'D#4'))?.kind).toBe('Choque de semitono');
     // Do, Do#, Re y Re#: un racimo cromático.
-    expect(identifyChord([noteToMidi('C3'), noteToMidi('C#3'), noteToMidi('D3'), noteToMidi('D#3')])).toEqual(
-      [],
-    );
+    const cluster = midis('C3', 'C#3', 'D3', 'D#3');
+    expect(identifyChord(cluster)).toEqual([]);
+    expect(clusterSense(cluster)?.kind).toBe('Racimo');
   });
 
   it('en DADGAD al aire suena un Dsus4', () => {

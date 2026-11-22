@@ -61,4 +61,19 @@ test.describe('¿Qué acorde?', () => {
     await expect(page).not.toHaveURL(/forma=/);
     await expect(name).toContainText('Em11');
   });
+
+  test('lo que no calza justo tiene igual un nombre: un acorde con tensiones, o qué son las notas', async ({
+    page,
+  }) => {
+    await goto(page, '/acorde?forma=x-0-1-0-1-0');
+    const name = page.getByTestId('acorde-nombre');
+    await expect(name.locator('strong')).toHaveText('Am7(♯11)');
+    await expect(page.getByTestId('acorde-color')).toContainText('La ♯11 brilla y flota');
+    // Sin tensiones no hay link a Inversiones: ahí no se abre ese acorde.
+    await expect(page.getByRole('link', { name: /en Inversiones/ })).toHaveCount(0);
+
+    await goto(page, '/acorde?forma=x-x-0-1-x-x');
+    await expect(name.locator('strong')).toHaveText('Tritono');
+    await expect(name).not.toContainText('Sin nombre');
+  });
 });

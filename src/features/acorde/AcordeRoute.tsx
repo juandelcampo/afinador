@@ -5,7 +5,7 @@ import { Link, useSearchParams, type MetaFunction } from 'react-router';
 import { getAudio } from '~/audio/engine';
 import { pluckString, strumShape } from '~/audio/instrument';
 import { CHORD_STEPS, chordToken, plainName, suffixSymbol } from '~/core/harmony';
-import { CHORD_WORDS, identifyChord, type ChordReading } from '~/core/identify';
+import { CHORD_WORDS, clusterSense, identifyChord, type ChordReading } from '~/core/identify';
 import { bassReading, encodeFrets, INVERSION_CHORDS, parseFrets, tabOf, toneName } from '~/core/inversions';
 import { intervalName, noteLabel, noteToMidi } from '~/core/notes';
 import { MUTED } from '~/core/tuning';
@@ -43,10 +43,12 @@ const mod12 = (value: number) => ((value % 12) + 12) % 12;
 const findTuning = (id: string | null) =>
   TUNINGS.find((item) => item.id === id) ?? TUNINGS.find((item) => item.id === DEFAULT_TUNING)!;
 
-/** El paso de cada nota del acorde, si `pc` es una de ellas. */
-const stepIn = (reading: ChordReading, pc: number) => {
+/** Qué es `pc` en esa lectura: R, 3, ♭7 si es del acorde, ♯11 si es una tensión, o null. */
+const roleOf = (reading: ChordReading, pc: number) => {
   const step = mod12(pc - reading.root);
-  return CHORD_STEPS[reading.suffix]!.some((item) => mod12(item) === step) ? step : null;
+  if (CHORD_STEPS[reading.suffix]!.some((item) => mod12(item) === step))
+    return toneName(step, reading.suffix);
+  return reading.extras.find((extra) => extra.step === step)?.label ?? null;
 };
 
 export default function AcordeRoute() {
@@ -70,22 +72,25 @@ export default function AcordeRoute() {
 
   const readings = identifyChord(midis);
   const reading = readings[0] ?? null;
-  // Las otras lecturas, sin repetir el mismo nombre con otro orden.
+  // Las otras lecturas que calzan justo, una por raíz: las que agregan tensiones con otro bajo confunden.
   const others = readings
     .slice(1)
+    .filter((item) => !item.extras.length)
     .filter((item, index, list) => list.findIndex((other) => other.root === item.root) === index)
     .slice(0, 2);
 
   // Con el bemol de verdad: en mayúsculas "Db" se leería como dos letras.
   const pcName = (pc: number) => plainName(mod12(pc), notation).replace(/b$/, '♭');
   const nameOf = (item: ChordReading) =>
-    pcName(item.root) + suffixSymbol(item.suffix) + (item.bass === item.root ? '' : `/${pcName(item.bass)}`);
+    pcName(item.root) +
+    suffixSymbol(item.suffix) +
+    (item.extras.length ? `(${item.extras.map((extra) => extra.label).join(',')})` : '') +
+    (item.bass === item.root ? '' : `/${pcName(item.bass)}`);
 
   /** Qué dice cada dedo: su función si el acorde tiene nombre, si no el nombre de la nota. */
   const toneAt = (stringIndex: number, fret: number) => {
     const pc = open[stringIndex]! + fret;
-    const step = reading ? stepIn(reading, pc) : null;
-    return step === null ? pcName(pc) : toneName(step, reading!.suffix);
+    return (reading && roleOf(reading, pc)) ?? pcName(pc);
   };
 
   // Dos toques seguidos no esperan a que la URL se actualice: cada cambio parte del último pedido.
@@ -140,34 +145,31 @@ export default function AcordeRoute() {
   } else if (distinct.length === 1) {
     title = pcName(bassPc);
     words = 'Una sola nota: todavía no es un acorde.';
+  } else if (reading && distinct.length === 2 && reading.suffix !== '5') {
+    // Dos notas a una tercera o una sexta: el oído completa el acorde.
+    title = nameOf(reading);
+    words = `Dos notas que ya dicen ${reading.suffix === 'm' ? 'menor' : 'mayor'}: la quinta la pone el oído`;
   } else if (reading) {
     title = nameOf(reading);
-    words = CHORD_WORDS[reading.suffix] ?? '';
-  } else if (distinct.length === 2) {
-    const other = distinct.find((pc) => pc !== bassPc)!;
-    title = `${pcName(bassPc)} + ${pcName(other)}`;
-    words = `Dos notas, a una ${intervalName(0, mod12(other - bassPc))}: le falta una para ser un acorde.`;
+    words =
+      (CHORD_WORDS[reading.suffix] ?? '') +
+      (reading.extras.length ? `, con ${reading.extras.map((extra) => extra.label).join(' y ')} encima` : '');
   } else {
-    title = 'Sin nombre';
-    words = 'Un cúmulo: no es ninguno de los acordes comunes. Si te gusta cómo suena, vale igual.';
+    const sense = clusterSense(midis)!;
+    title = distinct.length === 2 ? sense.kind : `${sense.kind} sobre ${pcName(bassPc)}`;
+    words = sense.words;
   }
 
   const bass = reading ? bassReading(reading.suffix, mod12(reading.bass - reading.root)) : null;
+  // Si el bajo es una tensión, no es una inversión: el color va abajo.
+  const bassExtra = reading?.extras.find((extra) => extra.step === mod12(reading.bass - reading.root));
   // Las notas que suenan, de la más grave a la más aguda, sin repetir.
   const heard = [...new Set([...sounding].sort((a, b) => a - b).map(mod12))].map((pc) => {
-    const step = reading ? stepIn(reading, pc) : null;
-    return {
-      pc,
-      role:
-        step !== null
-          ? toneName(step, reading!.suffix)
-          : pc === bassPc
-            ? 'bajo'
-            : intervalName(0, mod12(pc - bassPc)),
-    };
+    const role = reading ? roleOf(reading, pc) : null;
+    return { pc, role: role ?? (pc === bassPc ? 'bajo' : intervalName(0, mod12(pc - bassPc))) };
   });
   const inversionsLink =
-    reading && INVERSION_CHORDS.some((item) => item.suffix === reading.suffix)
+    reading && !reading.extras.length && INVERSION_CHORDS.some((item) => item.suffix === reading.suffix)
       ? `/inversiones?${new URLSearchParams({
           ...(tuning.id === DEFAULT_TUNING ? {} : { afinacion: tuning.id }),
           acorde: chordToken({ root: reading.root, suffix: reading.suffix }),
@@ -256,7 +258,29 @@ export default function AcordeRoute() {
                 ))}
               </span>
             </li>
-            {reading && bass && (
+            {reading && reading.extras.length > 0 && (
+              <li data-testid="acorde-color">
+                <span>Color</span>
+                <span>
+                  {reading.extras.map((extra, index) => (
+                    <span key={extra.step}>
+                      {index > 0 && ' '}
+                      <strong>La {extra.label}</strong> {extra.words}.
+                    </span>
+                  ))}
+                </span>
+              </li>
+            )}
+            {reading && bass && bassExtra && (
+              <li>
+                <span>Bajo</span>
+                <span>
+                  <strong>La {bassExtra.label} en el bajo.</strong> El color va abajo: el acorde no termina de
+                  apoyarse y queda flotando.
+                </span>
+              </li>
+            )}
+            {reading && bass && !bassExtra && (
               <li>
                 <span>Bajo</span>
                 <span>
