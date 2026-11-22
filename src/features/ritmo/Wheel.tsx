@@ -1,37 +1,58 @@
-// La rueda: el ciclo dibujado como un reloj. Cada golpe es un vértice, y los golpes de una línea
-// forman una figura: tres en ocho es un triángulo torcido, cuatro en ocho un cuadrado. En una
-// polirritmia se ven las dos figuras encimadas, y solo se tocan arriba, donde empieza el ciclo.
+// La figura del ritmo: cada golpe es un vértice y el pulso viaja por los lados, llegando a cada vértice
+// cuando suena. Como polígono, cada golpe va donde cae en el ciclo (cuatro parejos son un cuadrado, el
+// tresillo un triángulo torcido); como estrella, los golpes se unen salteando puntas, dentro del polígono
+// parejo. Los silencios quedan marcados sobre los lados: el pulso pasa por ellos a su tiempo. En una
+// polirritmia se ven las dos figuras encimadas, la segunda con cuadrados.
 import { useEffect, useRef } from 'react';
 import { metronome } from '~/audio/metronome';
+import { figureVertices, onCircle, starLoops, travel, type FigureKind, type Point } from '~/core/figure';
 import { cycleFor, type Cycle, type RhythmConfig } from '~/core/rhythm';
 import styles from './ritmo.module.css';
 
 const RADIUS = 46;
 
-/** El punto del círculo que corresponde a un lugar del ciclo: el 0 arriba, y gira como el reloj. */
-function point(at: number, radius = RADIUS): [number, number] {
-  const angle = at * 2 * Math.PI - Math.PI / 2;
-  return [Math.cos(angle) * radius, Math.sin(angle) * radius];
-}
-
 const round = (value: number) => Math.round(value * 100) / 100;
+const pointsOf = (list: readonly Point[]) => list.map(([x, y]) => `${round(x)},${round(y)}`).join(' ');
 
-/** Las casillas de cada línea, con dónde caen y si suenan. */
-function lanesOf(cycle: Cycle) {
-  return cycle.lanes.map((count, lane) =>
-    Array.from({ length: count }, (_, cell) => {
-      const hit = cycle.hits.find((item) => item.lane === lane && item.cell === cell);
-      return { cell, at: hit?.at ?? cell / count, hit };
-    }),
-  );
+interface Lane {
+  /** Cuándo suena cada golpe, de 0 a 1, en orden. */
+  times: number[];
+  vertices: Point[];
+  hits: Array<{ cell: number; level: number }>;
+  /** Las casillas que no suenan, con dónde caen sobre la figura. */
+  rests: Array<{ cell: number; at: Point }>;
+  /** Cuántas casillas tiene el carril. */
+  cells: number;
 }
 
-export function Wheel({ config }: { config: RhythmConfig }) {
-  const svg = useRef<SVGSVGElement>(null);
-  const cycle = cycleFor(config, 0);
-  const lanes = lanesOf(cycle);
+function lanesOf(cycle: Cycle, kind: FigureKind): Lane[] {
+  return cycle.lanes.map((count, lane) => {
+    const hits = cycle.hits.filter((hit) => hit.lane === lane).sort((a, b) => a.at - b.at);
+    const times = hits.map((hit) => hit.at);
+    const vertices = figureVertices(times, kind, RADIUS);
+    const rests = Array.from({ length: count }, (_, cell) => cell)
+      .filter((cell) => !hits.some((hit) => hit.cell === cell))
+      .map((cell) => ({ cell, at: travel(times, vertices, cell / count) }));
+    return {
+      times,
+      vertices,
+      hits: hits.map((hit) => ({ cell: hit.cell, level: hit.level })),
+      rests,
+      cells: count,
+    };
+  });
+}
 
-  // La aguja y el golpe que suena se mueven leyendo el reloj cuadro a cuadro, sin renders.
+export function Wheel({ config, kind }: { config: RhythmConfig; kind: FigureKind }) {
+  const svg = useRef<SVGSVGElement>(null);
+  const lanes = lanesOf(cycleFor(config, 0), kind);
+  // El cuadro a cuadro lee la figura de este render sin volver a montarse.
+  const current = useRef(lanes);
+  useEffect(() => {
+    current.current = lanes;
+  });
+
+  // El pulso y el golpe que suena se mueven leyendo el reloj cuadro a cuadro, sin renders.
   useEffect(() => {
     let frame = 0;
     let previous = '';
@@ -39,9 +60,13 @@ export function Wheel({ config }: { config: RhythmConfig }) {
       const root = svg.current;
       if (root) {
         const progress = metronome.progress();
-        const hand = root.querySelector('[data-hand]');
-        hand?.setAttribute('transform', `rotate(${round((progress ?? 0) * 360)})`);
-        hand?.toggleAttribute('data-running', progress !== null);
+        current.current.forEach((lane, index) => {
+          const node = root.querySelector(`[data-traveler="${index}"]`);
+          if (!node) return;
+          const [x, y] = travel(lane.times, lane.vertices, progress ?? 0);
+          node.setAttribute('transform', `translate(${round(x)} ${round(y)})`);
+          node.toggleAttribute('data-running', progress !== null);
+        });
         const cells = metronome.playhead()?.cells ?? [];
         const key = cells.join();
         if (key !== previous) {
@@ -59,49 +84,82 @@ export function Wheel({ config }: { config: RhythmConfig }) {
     return () => cancelAnimationFrame(frame);
   }, []);
 
+  const counts = lanes.map((lane) => lane.times.length);
+
   return (
     <svg
       ref={svg}
       className={styles.wheel}
       viewBox="-60 -60 120 120"
       role="img"
-      aria-label={`Rueda del ritmo: ${lanes
-        .map((cells) => `${cells.filter((item) => item.hit).length} golpes en ${cells.length}`)
+      aria-label={`Figura del ritmo: ${lanes
+        .map((lane) => `${lane.times.length} golpes en ${lane.cells}`)
         .join(' y ')}`}
       data-testid="wheel"
+      data-figure={kind}
     >
-      <circle className={styles.ring} r={RADIUS} />
-      {lanes.map((cells, lane) => {
-        const vertices = cells.filter((item) => item.hit).map((item) => point(item.at));
-        if (vertices.length < 2) return null;
+      {lanes.map((lane, index) => {
+        const count = lane.times.length;
+        if (count < 2) return null;
+        const star = kind === 'estrella' && count >= 5;
+        if (!star) {
+          return (
+            <polygon
+              key={index}
+              className={styles.shape}
+              data-lane={index}
+              points={pointsOf(lane.vertices)}
+            />
+          );
+        }
+        // La estrella va adentro del polígono parejo, como en un dado.
+        const corners = Array.from({ length: count }, (_, place) => onCircle(place / count, RADIUS));
         return (
-          <polygon
-            key={lane}
-            className={styles.shape}
-            data-lane={lane}
-            points={vertices.map(([x, y]) => `${round(x)},${round(y)}`).join(' ')}
-          />
+          <g key={index} data-lane={index}>
+            <polygon className={styles.outline} data-lane={index} points={pointsOf(corners)} />
+            {starLoops(count).map((loop) => (
+              <polygon
+                key={loop.join()}
+                className={styles.star}
+                data-lane={index}
+                points={pointsOf(loop.map((place) => corners[place]!))}
+              />
+            ))}
+          </g>
         );
       })}
-      <g data-hand className={styles.hand}>
-        <line x1={0} y1={0} x2={0} y2={-RADIUS - 6} />
-      </g>
-      {lanes.map((cells, lane) =>
-        cells.map(({ cell, at, hit }) => {
-          const [x, y] = point(at);
-          const key = `${lane}:${cell}`;
+      <text className={styles.count} textAnchor="middle" dominantBaseline="central">
+        {counts.join(':')}
+      </text>
+      {lanes.map((lane, index) =>
+        lane.rests.map(({ cell, at: [x, y] }) => (
+          <circle
+            key={`${index}:${cell}`}
+            className={styles.vertex}
+            data-cell={`${index}:${cell}`}
+            data-level="rest"
+            data-lane={index}
+            cx={round(x)}
+            cy={round(y)}
+            r={1.6}
+          />
+        )),
+      )}
+      {lanes.map((lane, index) =>
+        lane.hits.map(({ cell, level }, order) => {
+          const [x, y] = lane.vertices[order]!;
           const props = {
-            'data-cell': `${lane}:${cell}`,
-            'data-level': hit ? hit.level : 'rest',
-            'data-lane': lane,
+            'data-cell': `${index}:${cell}`,
+            'data-level': level,
+            'data-lane': index,
             className: styles.vertex,
           };
           // La segunda línea de una polirritmia va con cuadrados, para distinguirla sin otro color.
-          if (lane === 1) {
-            const size = hit?.level === 2 ? 9 : 7;
+          if (index === 1) {
+            const size = level === 2 ? 9 : level === 1 ? 8 : 6;
             return (
               <rect
-                key={key}
+                key={`${index}:${cell}`}
                 {...props}
                 x={round(x - size / 2)}
                 y={round(y - size / 2)}
@@ -110,11 +168,27 @@ export function Wheel({ config }: { config: RhythmConfig }) {
               />
             );
           }
-          const size = !hit ? 2.4 : hit.level === 2 ? 5.5 : 4;
-          return <circle key={key} {...props} cx={round(x)} cy={round(y)} r={size} />;
+          // Tres tamaños: el primer golpe del ciclo, el que abre cada grupo (2+2+3) y el resto.
+          const size = level === 2 ? 5.5 : level === 1 ? 4.5 : 3.2;
+          return <circle key={`${index}:${cell}`} {...props} cx={round(x)} cy={round(y)} r={size} />;
         }),
       )}
-      <circle className={styles.hub} r={3} />
+      {/* El pulso: viaja por los lados y llega a cada vértice cuando suena. */}
+      {lanes.map((lane, index) =>
+        index === 1 ? (
+          <rect
+            key={index}
+            className={styles.traveler}
+            data-traveler={index}
+            x={-3.2}
+            y={-3.2}
+            width={6.4}
+            height={6.4}
+          />
+        ) : (
+          <circle key={index} className={styles.traveler} data-traveler={index} r={3.2} />
+        ),
+      )}
     </svg>
   );
 }

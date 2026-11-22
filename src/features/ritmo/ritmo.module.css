@@ -93,6 +93,9 @@
 }
 
 .view {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
   margin-top: 16px;
 }
 .sound {
@@ -114,11 +117,6 @@
   margin-inline: auto;
   overflow: visible;
 }
-.ring {
-  fill: none;
-  stroke: var(--ink);
-  stroke-width: 1;
-}
 .shape {
   fill: var(--soft);
   stroke: var(--ink);
@@ -135,24 +133,47 @@
   stroke-width: 1;
 }
 .vertex[data-level='rest'] {
-  fill: var(--paper);
-  stroke: var(--ink);
+  fill: var(--muted);
+  stroke: none;
 }
 .vertex[data-active] {
   fill: var(--accent);
   stroke: var(--ink);
   stroke-width: 1.5;
 }
-.hand line {
-  stroke: var(--accent);
-  stroke-width: 2;
-  stroke-linecap: round;
+/* La estrella: el polígono parejo, tenue, y la estrella encima con el trazo de la figura. */
+.outline {
+  fill: var(--soft);
+  stroke: var(--ink);
+  stroke-width: 1;
 }
-.hand:not([data-running]) {
-  opacity: 0;
+.star {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
 }
-.hub {
+.star[data-lane='1'] {
+  stroke-dasharray: 4 3;
+}
+/* Cuántos golpes: el número en el medio de la figura. */
+.count {
   fill: var(--ink);
+  /* Un borde del color del papel: se lee aunque lo crucen las líneas de la estrella. */
+  stroke: var(--paper);
+  stroke-width: 5px;
+  stroke-linejoin: round;
+  paint-order: stroke;
+  font: 900 expanded 16px/1 var(--heavy);
+}
+/* El pulso: viaja por los lados; quieto, no se ve. */
+.traveler {
+  fill: var(--accent);
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+.traveler:not([data-running]) {
+  opacity: 0;
 }
 
 /* --- La grilla de un compás --- */

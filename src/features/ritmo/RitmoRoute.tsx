@@ -6,6 +6,7 @@ import { CLICK_SOUNDS, type ClickSound } from '~/audio/drums';
 import { metronome } from '~/audio/metronome';
 import {
   clampBpm,
+  cycleFor,
   DEFAULT_POLY_VOICES,
   describeRhythm,
   DRUMS,
@@ -322,6 +323,7 @@ export default function RitmoRoute() {
   const [params, setParams] = useSearchParams();
   const loaded = useRef(false);
   const clickSound = useSettings((s) => s.clickSound);
+  const figure = useSettings((s) => s.rhythmFigure);
   const set = useSettings((s) => s.set);
   const [undo, setUndo] = useState<DrumConfig[]>([]);
 
@@ -363,7 +365,11 @@ export default function RitmoRoute() {
   };
 
   const { name, rule } = describeRhythm(config);
-  const geometric = config.mode === 'euclid' || config.mode === 'poly';
+  // El compás, el euclidiano y la polirritmia se dibujan como figura; el mutante cambia de compás y va en grilla.
+  const fewHits = cycleFor(config, 0)
+    .lanes.map((_, lane) => cycleFor(config, 0).hits.filter((hit) => hit.lane === lane).length)
+    .every((count) => count < 5);
+  const geometric = config.mode === 'meter' || config.mode === 'euclid' || config.mode === 'poly';
 
   return (
     <div className={`${styles.page} ${ui.frame}`}>
@@ -413,7 +419,25 @@ export default function RitmoRoute() {
 
         {config.mode !== 'drum' && (
           <div className={styles.view}>
-            {geometric ? <Wheel config={config} /> : <RhythmGrid config={config} />}
+            {geometric ? (
+              <>
+                <Segmented
+                  label="Figura del ritmo"
+                  value={figure}
+                  options={[
+                    { value: 'poligono', label: 'Polígono' },
+                    { value: 'estrella', label: 'Estrella' },
+                  ]}
+                  onChange={(value) => set({ rhythmFigure: value })}
+                />
+                <Wheel config={config} kind={figure} />
+                {figure === 'estrella' && fewHits && (
+                  <p className={ui.hint}>Con menos de cinco golpes no hay estrella: queda el polígono.</p>
+                )}
+              </>
+            ) : (
+              <RhythmGrid config={config} />
+            )}
           </div>
         )}
 

@@ -64,12 +64,12 @@ test.describe('ritmo', () => {
       .click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('E(3,8)');
     const wheel = page.getByTestId('wheel');
-    await expect(wheel).toHaveAttribute('aria-label', 'Rueda del ritmo: 3 golpes en 8');
+    await expect(wheel).toHaveAttribute('aria-label', 'Figura del ritmo: 3 golpes en 8');
     await expect(wheel.locator('polygon')).toHaveAttribute('points', /^0,-46 /);
 
     await page.getByRole('button', { name: 'Cinquillo' }).click();
     await expect(page).toHaveURL(/k=5&n=8/);
-    await expect(wheel).toHaveAttribute('aria-label', 'Rueda del ritmo: 5 golpes en 8');
+    await expect(wheel).toHaveAttribute('aria-label', 'Figura del ritmo: 5 golpes en 8');
 
     // Girar la figura cambia dónde arranca, no cuántos golpes tiene.
     const before = await wheel.locator('polygon').getAttribute('points');
@@ -79,7 +79,11 @@ test.describe('ritmo', () => {
 
     await page.locator('#metro-toggle').click();
     await expect(wheel.locator('[data-active]')).toHaveCount(1);
-    await expect(wheel.locator('[data-hand]')).toHaveAttribute('data-running', '');
+    // El pulso viaja por la figura mientras suena.
+    const traveler = wheel.locator('[data-traveler="0"]');
+    await expect(traveler).toHaveAttribute('data-running', '');
+    const first = await traveler.getAttribute('transform');
+    await expect.poll(() => traveler.getAttribute('transform')).not.toBe(first);
 
     // La polirritmia muestra las dos figuras encimadas.
     await page
@@ -89,6 +93,39 @@ test.describe('ritmo', () => {
     await page.getByRole('button', { name: '4 contra 3' }).click();
     await expect(wheel.locator('polygon')).toHaveCount(2);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('4 contra 3');
+    expect(errors).toEqual([]);
+  });
+
+  test('el ritmo se puede ver como estrella, y el 4/4 es un cuadrado', async ({ page }) => {
+    const errors = watchErrors(page);
+    await goto(page, '/ritmo');
+    const wheel = page.getByTestId('wheel');
+    // El compás también es una figura: cuatro golpes, un cuadrado.
+    await expect(wheel).toHaveAttribute('aria-label', 'Figura del ritmo: 4 golpes en 4');
+    await expect(wheel.locator('polygon')).toHaveCount(1);
+    await expect(wheel.locator('text')).toHaveText('4');
+
+    await page
+      .getByRole('group', { name: 'Figura del ritmo' })
+      .getByRole('button', { name: 'Estrella' })
+      .click();
+    await expect(page.getByText('Con menos de cinco golpes no hay estrella')).toBeVisible();
+
+    // Cinco golpes: el pentagrama adentro del pentágono.
+    await page
+      .getByRole('group', { name: 'Tipo de ritmo' })
+      .getByRole('button', { name: 'Euclidiano' })
+      .click();
+    await page.getByRole('button', { name: 'Cinquillo' }).click();
+    await expect(wheel).toHaveAttribute('data-figure', 'estrella');
+    await expect(wheel.locator('polygon')).toHaveCount(2);
+    await expect(wheel.locator('text')).toHaveText('5');
+
+    // La figura elegida se recuerda.
+    await page.reload();
+    await expect(
+      page.getByRole('group', { name: 'Figura del ritmo' }).getByRole('button', { name: 'Estrella' }),
+    ).toHaveAttribute('aria-pressed', 'true');
     expect(errors).toEqual([]);
   });
 

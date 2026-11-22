@@ -5,6 +5,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { CLICK_SOUNDS, type ClickSound } from '~/audio/drums';
 import type { Notation } from '~/core/notes';
 import { TUNINGS } from '~/data/tunings';
+import type { FigureKind } from '~/core/figure';
 
 export type TunerMode = 'guided' | 'auto';
 export type PlayStyle = 'arp' | 'strum';
@@ -29,6 +30,8 @@ interface Settings {
   chordStyle: PlayStyle;
   /** Con qué suena el metrónomo de Ritmo. */
   clickSound: ClickSound;
+  /** Cómo se dibuja el ritmo: como polígono o como estrella. */
+  rhythmFigure: FigureKind;
   /** Ids de las afinaciones favoritas, en el orden en que se marcaron. */
   favorites: string[];
   toggleFavorite: (id: string) => void;
@@ -75,6 +78,8 @@ export function sanitize(
   }
   if (saved.chordStyle === 'arp' || saved.chordStyle === 'strum') clean.chordStyle = saved.chordStyle;
   if (CLICK_SOUNDS.some((sound) => sound.id === saved.clickSound)) clean.clickSound = saved.clickSound;
+  if (saved.rhythmFigure === 'poligono' || saved.rhythmFigure === 'estrella')
+    clean.rhythmFigure = saved.rhythmFigure;
   if (Array.isArray(saved.favorites)) {
     // Una afinación que ya no está en el catálogo se olvida, y ninguna aparece dos veces.
     const known = new Set(TUNINGS.map((tuning) => tuning.id));
@@ -95,6 +100,7 @@ export const useSettings = create<Settings>()(
       listen: { ...DEFAULT_LISTEN, patterns: { ...DEFAULT_LISTEN.patterns } },
       chordStyle: 'strum',
       clickSound: 'clic',
+      rhythmFigure: 'poligono',
       favorites: [],
       toggleFavorite: (id) =>
         set(({ favorites }) => ({
