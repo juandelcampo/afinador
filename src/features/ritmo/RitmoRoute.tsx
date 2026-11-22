@@ -1,6 +1,6 @@
 // Ritmo: metrónomo para compases raros, ritmos euclidianos con su figura, polirritmias, compases que
 // mutan y una caja de ritmos. Suena solo acá: al irse de la página, para.
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useSearchParams, type MetaFunction } from 'react-router';
 import { CLICK_SOUNDS, type ClickSound } from '~/audio/drums';
 import { metronome } from '~/audio/metronome';
@@ -44,10 +44,11 @@ type Mode = RhythmConfig['mode'];
 
 const MODES: ReadonlyArray<{ value: Mode; label: string }> = [
   { value: 'meter', label: 'Compás' },
-  { value: 'drum', label: 'Batería' },
   { value: 'euclid', label: 'Euclidiano' },
   { value: 'poly', label: 'Polirritmia' },
   { value: 'mutante', label: 'Mutante' },
+  // La batería es otra cosa: va última.
+  { value: 'drum', label: 'Batería' },
 ];
 
 const PRESETS: ReadonlyArray<{ label: string; meter: Meter }> = [
@@ -99,7 +100,15 @@ const DEFAULTS: { [K in Mode]: (bpm: number) => Extract<RhythmConfig, { mode: K 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const meterKey = (meter: Meter) => `${meter.groups.join()}/${meter.denom}`;
 
-function MeterEditor({ meter, onChange }: { meter: Meter; onChange: (meter: Meter) => void }) {
+function MeterEditor({
+  meter,
+  onChange,
+  sound,
+}: {
+  meter: Meter;
+  onChange: (meter: Meter) => void;
+  sound: ReactNode;
+}) {
   const key = meter.groups.join('+');
   const [text, setText] = useState(key);
   const [syncedKey, setSyncedKey] = useState(key);
@@ -122,7 +131,7 @@ function MeterEditor({ meter, onChange }: { meter: Meter; onChange: (meter: Mete
           </Button>
         ))}
       </div>
-      <div className={styles.fields}>
+      <div className={styles.rows}>
         <Field label="Agrupación" className={styles.textField}>
           <input
             value={text}
@@ -147,6 +156,7 @@ function MeterEditor({ meter, onChange }: { meter: Meter; onChange: (meter: Mete
             onChange={(value) => onChange({ ...meter, denom: Number(value) as Meter['denom'] })}
           />
         </Field>
+        {sound}
       </div>
       <p className={parsed ? ui.hint : styles.error}>
         {parsed
@@ -157,12 +167,27 @@ function MeterEditor({ meter, onChange }: { meter: Meter; onChange: (meter: Mete
   );
 }
 
-function Editor({ config, onChange }: { config: RhythmConfig; onChange: (config: RhythmConfig) => void }) {
+/**
+ * Lo que se arma en cada tipo de ritmo, siempre en el mismo orden: los de partida arriba, los ajustes en
+ * filas (el rótulo a la izquierda) y la explicación al final.
+ */
+function Editor({
+  config,
+  onChange,
+  sound,
+}: {
+  config: RhythmConfig;
+  onChange: (config: RhythmConfig) => void;
+  /** El sonido del metrónomo: una fila más, en los ritmos que suenan con un solo sonido. */
+  sound: ReactNode;
+}) {
   switch (config.mode) {
     case 'drum':
       return null;
     case 'meter':
-      return <MeterEditor meter={config} onChange={(meter) => onChange({ ...config, ...meter })} />;
+      return (
+        <MeterEditor meter={config} onChange={(meter) => onChange({ ...config, ...meter })} sound={sound} />
+      );
     case 'euclid': {
       const { pulses, steps, rotation } = config;
       return (
@@ -181,7 +206,7 @@ function Editor({ config, onChange }: { config: RhythmConfig; onChange: (config:
               </Button>
             ))}
           </div>
-          <div className={styles.fields}>
+          <div className={styles.rows}>
             <Field label="Golpes" as="div">
               <Stepper
                 label="golpes"
@@ -214,6 +239,7 @@ function Editor({ config, onChange }: { config: RhythmConfig; onChange: (config:
                 onUp={() => onChange({ ...config, rotation: (rotation + 1) % steps })}
               />
             </Field>
+            {sound}
           </div>
           <p className={ui.hint}>
             Los golpes se reparten lo más parejo posible en los pulsos, y la figura que forman es el ritmo.
@@ -242,19 +268,18 @@ function Editor({ config, onChange }: { config: RhythmConfig; onChange: (config:
               </Button>
             ))}
           </div>
-          {lines.map(({ key, count }, line) => (
-            <div key={key} className={styles.fields}>
-              <Field label={line === 0 ? 'Línea 1 (círculos)' : 'Línea 2 (cuadrados)'} as="div">
+          <div className={styles.rows}>
+            {lines.map(({ key, count }, line) => (
+              <Field key={key} label={line === 0 ? 'Círculos' : 'Cuadrados'} as="div">
                 <Stepper
                   label={`golpes de la línea ${line + 1}`}
                   value={count}
                   onDown={() => onChange({ ...config, [key]: clamp(count - 1, 1, LIMITS.lane[1]) })}
                   onUp={() => onChange({ ...config, [key]: clamp(count + 1, 1, LIMITS.lane[1]) })}
                 />
-              </Field>
-              <Field label="Instrumento">
                 <select
                   value={voices[line]}
+                  aria-label={`Instrumento de la línea ${line + 1}`}
                   data-testid={`poly-voice-${line}`}
                   onChange={(event) => {
                     const voice = event.target.value as DrumId;
@@ -268,8 +293,12 @@ function Editor({ config, onChange }: { config: RhythmConfig; onChange: (config:
                   ))}
                 </select>
               </Field>
-            </div>
-          ))}
+            ))}
+          </div>
+          <p className={ui.hint}>
+            Dos líneas parejas en el mismo tiempo: cada una con su figura y su instrumento. Solo coinciden al
+            empezar el ciclo.
+          </p>
         </div>
       );
     }
@@ -277,9 +306,6 @@ function Editor({ config, onChange }: { config: RhythmConfig; onChange: (config:
       const { meters, barsEach } = config;
       return (
         <div className={styles.editor}>
-          <p className={ui.hint}>
-            Tocá los compases que entran en la rueda. Suenan en el orden en que los elegís.
-          </p>
           <div className={styles.presets} role="group" aria-label="Compases de la rotación">
             {PRESETS.map((preset) => {
               const active = meters.some((meter) => meterKey(meter) === meterKey(preset.meter));
@@ -300,14 +326,21 @@ function Editor({ config, onChange }: { config: RhythmConfig; onChange: (config:
               );
             })}
           </div>
-          <Field label="Cambia cada" as="div">
-            <Stepper
-              label="compases entre cambios"
-              value={`${barsEach} ${barsEach === 1 ? 'compás' : 'compases'}`}
-              onDown={() => onChange({ ...config, barsEach: clamp(barsEach - 1, 1, 16) })}
-              onUp={() => onChange({ ...config, barsEach: clamp(barsEach + 1, 1, 16) })}
-            />
-          </Field>
+          <div className={styles.rows}>
+            <Field label="Cambia cada" as="div">
+              <Stepper
+                label="compases entre cambios"
+                value={`${barsEach} ${barsEach === 1 ? 'compás' : 'compases'}`}
+                onDown={() => onChange({ ...config, barsEach: clamp(barsEach - 1, 1, 16) })}
+                onUp={() => onChange({ ...config, barsEach: clamp(barsEach + 1, 1, 16) })}
+              />
+            </Field>
+            {sound}
+          </div>
+          <p className={ui.hint}>
+            Tocá los compases que entran en la rotación: suenan en el orden en que los elegís, y la figura
+            cambia con cada uno.
+          </p>
         </div>
       );
     }
@@ -478,6 +511,10 @@ export default function RitmoRoute() {
               onChange={(event) => setBpm(Number(event.target.value))}
             />
           </div>
+          {/* Un solo volumen, en el mismo lugar para todos los ritmos. */}
+          <div className={styles.volume}>
+            <Fader />
+          </div>
           <TapTempo onTempo={setBpm} />
         </div>
 
@@ -494,20 +531,31 @@ export default function RitmoRoute() {
         <div className={styles.board} data-drum={drum || undefined}>
           {!drum && (
             <section className={styles.figure} aria-label="Figura del ritmo" data-mode={config.mode}>
-              <Segmented
-                label="Figura del ritmo"
-                value={figure}
-                options={[
-                  { value: 'poligono', label: 'Polígono' },
-                  { value: 'estrella', label: 'Estrella' },
-                ]}
-                onChange={(value) => set({ rhythmFigure: value })}
-              />
-              <Wheel cycle={shown} kind={figure} />
-              {config.mode === 'mutante' && <Rotation config={config} index={playing?.index ?? null} />}
+              <div className={styles.figureBar}>
+                <Segmented
+                  label="Figura del ritmo"
+                  value={figure}
+                  options={[
+                    { value: 'poligono', label: 'Polígono' },
+                    { value: 'estrella', label: 'Estrella' },
+                  ]}
+                  onChange={(value) => set({ rhythmFigure: value })}
+                />
+                <Button
+                  id="to-drums"
+                  onClick={() => {
+                    setUndo([]);
+                    apply(rhythmToDrums(config));
+                  }}
+                >
+                  A la batería →
+                </Button>
+              </div>
               {figure === 'estrella' && fewHits && (
                 <p className={ui.hint}>Con menos de cinco golpes no hay estrella: queda el polígono.</p>
               )}
+              <Wheel cycle={shown} kind={figure} />
+              {config.mode === 'mutante' && <Rotation config={config} index={playing?.index ?? null} />}
             </section>
           )}
 
@@ -518,40 +566,29 @@ export default function RitmoRoute() {
                 onChange={apply}
                 onReplace={replaceDrums}
                 onUndo={undo.length > 0 ? goBack : undefined}
-                extra={<Fader />}
               />
             ) : (
-              <Editor config={config} onChange={apply} />
-            )}
-            {!drum && (
-              <div className={styles.sound}>
-                {/* La batería y la polirritmia eligen el instrumento en cada línea. */}
-                {config.mode !== 'poly' && (
-                  <Field label="Sonido">
-                    <select
-                      value={clickSound}
-                      data-testid="click-sound"
-                      onChange={(event) => set({ clickSound: event.target.value as ClickSound })}
-                    >
-                      {CLICK_SOUNDS.map((sound) => (
-                        <option key={sound.id} value={sound.id}>
-                          {sound.name}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                )}
-                <Fader />
-                <Button
-                  id="to-drums"
-                  onClick={() => {
-                    setUndo([]);
-                    apply(rhythmToDrums(config));
-                  }}
-                >
-                  Pasar a la batería →
-                </Button>
-              </div>
+              <Editor
+                config={config}
+                onChange={apply}
+                sound={
+                  config.mode === 'poly' ? null : (
+                    <Field label="Sonido">
+                      <select
+                        value={clickSound}
+                        data-testid="click-sound"
+                        onChange={(event) => set({ clickSound: event.target.value as ClickSound })}
+                      >
+                        {CLICK_SOUNDS.map((sound) => (
+                          <option key={sound.id} value={sound.id}>
+                            {sound.name}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  )
+                }
+              />
             )}
           </div>
         </div>

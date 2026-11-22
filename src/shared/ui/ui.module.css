@@ -35,6 +35,12 @@
   background: var(--ink);
   color: var(--paper);
 }
+/* El foco va adentro del botón, en naranja: no se sale del recuadro ni se confunde con lo elegido. */
+.segmented button:focus-visible,
+.tabs button:focus-visible {
+  outline-color: var(--accent);
+  outline-offset: -6px;
+}
 .stretch {
   display: flex;
   width: 100%;
