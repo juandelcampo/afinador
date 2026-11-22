@@ -439,10 +439,61 @@ export default function RitmoRoute() {
           <p data-testid="rhythm-rule">{rule}</p>
         </PageTitle>
 
-        {/* En pantalla ancha, la figura a la izquierda y todo lo que se toca a la derecha: entra sin bajar. */}
+        {/* La barra de tocar y las pestañas, siempre en el mismo lugar y a lo ancho: lo que cambia pasa abajo. */}
+        <div className={styles.transport}>
+          <Button
+            variant="primary"
+            on={running}
+            onClick={() => (running ? metronome.stop() : metronome.start())}
+            id="metro-toggle"
+          >
+            {running ? '■ Parar' : '▶ Tocar'}
+          </Button>
+          <div className={styles.tempo}>
+            <div className={styles.tempoHead}>
+              <span>Tempo</span>
+              <output data-testid="bpm">{config.bpm}</output>
+              <span>ppm</span>
+              <div className={styles.tempoNudge}>
+                <Button variant="mini" ariaLabel="Tempo a la mitad" onClick={() => setBpm(config.bpm / 2)}>
+                  ÷2
+                </Button>
+                <Button variant="mini" ariaLabel="Bajar un pulso" onClick={() => setBpm(config.bpm - 1)}>
+                  −1
+                </Button>
+                <Button variant="mini" ariaLabel="Subir un pulso" onClick={() => setBpm(config.bpm + 1)}>
+                  +1
+                </Button>
+                <Button variant="mini" ariaLabel="Tempo al doble" onClick={() => setBpm(config.bpm * 2)}>
+                  ×2
+                </Button>
+              </div>
+            </div>
+            <input
+              type="range"
+              min={LIMITS.bpm[0]}
+              max={LIMITS.bpm[1]}
+              value={config.bpm}
+              aria-label="Tempo, en pulsos por minuto"
+              onChange={(event) => setBpm(Number(event.target.value))}
+            />
+          </div>
+          <TapTempo onTempo={setBpm} />
+        </div>
+
+        <Tabs<Mode>
+          label="Tipo de ritmo"
+          value={config.mode}
+          options={MODES}
+          onChange={(mode) => {
+            if (mode === config.mode) return;
+            apply({ ...(metronome.lastOfMode(mode) ?? DEFAULTS[mode](config.bpm)), bpm: config.bpm });
+          }}
+        />
+        {/* Debajo, la figura a la izquierda y lo que se arma a la derecha: entra sin bajar. */}
         <div className={styles.board} data-drum={drum || undefined}>
           {!drum && (
-            <section className={styles.figure} aria-label="Figura del ritmo">
+            <section className={styles.figure} aria-label="Figura del ritmo" data-mode={config.mode}>
               <Segmented
                 label="Figura del ritmo"
                 value={figure}
@@ -461,60 +512,6 @@ export default function RitmoRoute() {
           )}
 
           <div className={styles.controls}>
-            <div className={styles.transport}>
-              <Button
-                variant="primary"
-                on={running}
-                onClick={() => (running ? metronome.stop() : metronome.start())}
-                id="metro-toggle"
-              >
-                {running ? '■ Parar' : '▶ Tocar'}
-              </Button>
-              <div className={styles.tempo}>
-                <div className={styles.tempoHead}>
-                  <span>Tempo</span>
-                  <output data-testid="bpm">{config.bpm}</output>
-                  <span>ppm</span>
-                  <div className={styles.tempoNudge}>
-                    <Button
-                      variant="mini"
-                      ariaLabel="Tempo a la mitad"
-                      onClick={() => setBpm(config.bpm / 2)}
-                    >
-                      ÷2
-                    </Button>
-                    <Button variant="mini" ariaLabel="Bajar un pulso" onClick={() => setBpm(config.bpm - 1)}>
-                      −1
-                    </Button>
-                    <Button variant="mini" ariaLabel="Subir un pulso" onClick={() => setBpm(config.bpm + 1)}>
-                      +1
-                    </Button>
-                    <Button variant="mini" ariaLabel="Tempo al doble" onClick={() => setBpm(config.bpm * 2)}>
-                      ×2
-                    </Button>
-                  </div>
-                </div>
-                <input
-                  type="range"
-                  min={LIMITS.bpm[0]}
-                  max={LIMITS.bpm[1]}
-                  value={config.bpm}
-                  aria-label="Tempo, en pulsos por minuto"
-                  onChange={(event) => setBpm(Number(event.target.value))}
-                />
-              </div>
-              <TapTempo onTempo={setBpm} />
-            </div>
-
-            <Tabs<Mode>
-              label="Tipo de ritmo"
-              value={config.mode}
-              options={MODES}
-              onChange={(mode) => {
-                if (mode === config.mode) return;
-                apply({ ...(metronome.lastOfMode(mode) ?? DEFAULTS[mode](config.bpm)), bpm: config.bpm });
-              }}
-            />
             {drum ? (
               <DrumMachine
                 config={config}

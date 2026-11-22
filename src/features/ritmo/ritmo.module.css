@@ -7,7 +7,7 @@
 .board {
   display: grid;
   gap: 16px 28px;
-  margin-top: 8px;
+  margin-top: 12px;
 }
 .figure {
   display: grid;
@@ -24,15 +24,7 @@
 }
 @container ritmo (min-width: 860px) {
   .board:not([data-drum]) {
-    grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
-  }
-  .wheel {
-    width: min(100%, 320px);
-  }
-  /* La figura acompaña mientras se arma el ritmo. */
-  .figure {
-    position: sticky;
-    top: calc(var(--bar) + 12px);
+    grid-template-columns: minmax(260px, 460px) minmax(0, 1fr);
   }
 }
 
@@ -41,6 +33,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 10px 12px;
+  margin: 10px 0;
 }
 .tempo {
   display: grid;
@@ -149,27 +142,43 @@
   margin-inline: auto;
   overflow: visible;
 }
+@container ritmo (min-width: 860px) {
+  /* Tan grande como entre en lo que queda de la ventana, debajo de la barra de tocar. */
+  .wheel {
+    width: clamp(220px, calc(100dvh - 445px), 460px);
+  }
+  /* En el mutante, debajo va la rotación de compases: la figura cede ese lugar. */
+  .figure[data-mode='mutante'] .wheel {
+    width: clamp(220px, calc(100dvh - 515px), 460px);
+  }
+}
+/* Los trazos miden lo mismo en píxeles aunque la figura crezca: siempre finos. */
+.shape,
+.outline,
+.star {
+  vector-effect: non-scaling-stroke;
+}
 .shape {
   fill: none;
   stroke: var(--ink);
-  stroke-width: 1.4;
+  stroke-width: 2px;
   stroke-linejoin: round;
 }
 .shape[data-lane='1'],
 .star[data-lane='1'] {
-  stroke-width: 1;
-  stroke-dasharray: 2.5 2;
+  stroke-width: 1.5px;
+  stroke-dasharray: 6 4;
 }
 /* La estrella va adentro del polígono parejo, que queda apenas marcado. */
 .outline {
   fill: none;
   stroke: var(--ink);
-  stroke-width: 0.6;
+  stroke-width: 1px;
 }
 .star {
   fill: none;
   stroke: var(--ink);
-  stroke-width: 1.4;
+  stroke-width: 2px;
   stroke-linejoin: round;
 }
 .vertex {
@@ -193,7 +202,7 @@
   stroke-width: 3px;
   stroke-linejoin: round;
   paint-order: stroke;
-  font: 900 expanded 11px/1 var(--heavy);
+  font: 900 expanded 9px/1 var(--heavy);
 }
 /* El pulso: viaja por los lados; quieto, no se ve. */
 .traveler {
@@ -208,6 +217,7 @@
 /* --- Armar --- */
 .editor {
   display: grid;
+  justify-items: start;
   gap: 12px;
 }
 .presets {
