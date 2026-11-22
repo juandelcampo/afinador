@@ -404,48 +404,51 @@
   margin-top: 16px;
 }
 
-/* Tu forma: lo que armaste tocando el diapasón. */
+/* Tu forma: lo que armaste tocando el diapasón. Mide lo mismo que el recuadro de las formas. */
 .mine {
   display: grid;
   margin-top: 12px;
   border: var(--rule);
 }
-.mine > .current {
-  border-bottom: var(--rule);
+.mine .counter b {
+  font-weight: 900;
+  font-size: 13px;
+  text-transform: none;
+  letter-spacing: 0;
 }
-.mineName {
-  font: 900 semi-expanded 22px/1.1 var(--heavy);
-}
-.mineEmpty {
-  padding: 14px 12px;
-  border-bottom: var(--rule);
-  font-weight: 700;
+.current small.notes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0 6px;
   text-align: center;
 }
-.notes {
-  display: grid;
-  gap: 4px;
-  margin: 0;
-  padding: 10px 12px;
-  border-bottom: var(--rule);
-  list-style: none;
-  font-size: 13px;
-  line-height: 1.4;
-}
-.notes li::before {
+.notes > span + span::before {
   content: '· ';
 }
-.notes li[data-kind='mano'],
-.notes li[data-kind='nueva'] {
+.notes [data-kind='mano'] {
   font-weight: 700;
+  color: var(--ink);
 }
-.notes li[data-kind='nueva']::before {
+.notes [data-kind='nueva']::before {
   content: '★ ';
   color: var(--accent);
 }
+
+/* Los dos botones para salir de Tu forma, lado a lado también en el celular. */
 .mineTools {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 10px 12px;
+  gap: 10px;
+}
+@media (max-width: 640px) {
+  .mineTools {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+  .mineTools > button {
+    width: 100%;
+    padding-inline: 8px;
+    white-space: normal;
+  }
 }
