@@ -62,8 +62,7 @@
     color 120ms var(--ease);
 }
 .stepper button:hover {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--soft);
 }
 .stepper button:active {
   background: var(--accent);
@@ -139,8 +138,11 @@
   font-size: 12px;
   letter-spacing: 0.04em;
 }
+/* En toda la app: gris al pasar por encima, tinta lo elegido, naranja lo que suena. */
 .ghost:hover,
-.mini:hover,
+.mini:hover {
+  background: var(--soft);
+}
 .mini[aria-expanded='true'],
 .mini[aria-pressed='true'] {
   background: var(--ink);

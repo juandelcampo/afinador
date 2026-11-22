@@ -41,8 +41,7 @@
 }
 .tool:hover,
 .tool:focus-visible {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--soft);
 }
 .tool:active {
   background: var(--accent);

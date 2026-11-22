@@ -636,16 +636,15 @@ function TuningPage({
             </p>
 
             <div className={styles.playRow}>
-              <button
-                type="button"
+              <Button
+                variant="primary"
                 id="play-toggle"
-                className={styles.playButton}
-                data-on={listener.running}
-                aria-label={listener.running ? 'Parar' : 'Tocar'}
+                on={listener.running}
+                ariaLabel={listener.running ? 'Parar' : 'Tocar'}
                 onClick={() => (listener.running ? listener.stop() : listener.start())}
               >
-                <span aria-hidden="true">{listener.running ? '■' : '▶'}</span>
-              </button>
+                {listener.running ? '■ Parar' : '▶ Tocar'}
+              </Button>
               {/* Cómo suena, todo junto: la forma y el patrón de esa forma. */}
               <Segmented
                 label="Forma de tocar"

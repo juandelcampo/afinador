@@ -66,15 +66,13 @@ export function TunerPanel({ notes, onPlayOpen }: TunerPanelProps) {
       <div className={styles.tunerHead}>
         <SlabHead title="Afinar">
           <div className={styles.tunerTools}>
-            <button
-              type="button"
-              className={styles.openPlay}
-              aria-label="Escuchar la afinación al aire"
+            <Button
+              ariaLabel="Escuchar la afinación al aire"
               title="Las seis cuerdas al aire, de grave a aguda"
               onClick={onPlayOpen}
             >
-              <span aria-hidden="true">▶</span> Al aire
-            </button>
+              ▶ Al aire
+            </Button>
             <Segmented
               label="Modo de afinación"
               value={mode}

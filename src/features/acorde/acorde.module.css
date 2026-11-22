@@ -65,7 +65,7 @@
   border-top: 2px solid var(--ink);
 }
 .facts li > span:first-child {
-  font: 700 11px/1.9 var(--ui);
+  font: 600 12px/1.75 var(--ui);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
