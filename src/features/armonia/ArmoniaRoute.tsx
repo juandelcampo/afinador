@@ -49,7 +49,7 @@ import {
   twoChordMoves,
   walkingBass,
 } from '~/core/progressions';
-import { fingeringFor, MUTED, openChord, type Fingering } from '~/core/tuning';
+import { fingeringsFor, MUTED, openChord, type Fingering } from '~/core/tuning';
 import { TUNINGS, type Tuning } from '~/data/tunings';
 import { VUELTA_GROUPS, VUELTAS, type VueltaMode } from '~/data/vueltas';
 import { Fader } from '~/shared/Fader';
@@ -101,23 +101,35 @@ function voicingOf(tuning: Tuning, chord: Chord, fingering: Fingering | null): V
 const DEFAULT_BEATS = 4;
 const BEAT_OPTIONS = [1, 2, 3, 4, 6, 8] as const;
 
-/** Un acorde puesto en la vuelta: el acorde y cuántos pulsos dura. */
-type Placed = Chord & { beats?: number };
+/**
+ * Un acorde puesto en la vuelta: el acorde, cuántos pulsos dura y con qué figura se toca (0 es la más
+ * fácil, las otras van de a una más difícil).
+ */
+type Placed = Chord & { beats?: number; shape?: number };
 
 const beatsOf = (item: Placed) => item.beats ?? DEFAULT_BEATS;
 
-/** En la URL, la duración va pegada al acorde: "C*2" es C durante dos pulsos. Así se mueve con él. */
+/**
+ * En la URL, la duración y la figura van pegadas al acorde: "C*2" es C durante dos pulsos y "C.1", C con
+ * su segunda figura (el punto no pide codificarse en la URL; ~ sí). Así se mueven con él.
+ */
 function readPlaced(token: string): Placed | null {
-  const [text = '', count] = token.split('*');
+  const [, text = '', count, figure] = /^(.*?)(?:\*(\d+))?(?:\.(\d+))?$/.exec(token) ?? [];
   const chord = parseChord(text);
   if (!chord) return null;
+  const placed: Placed = { ...chord };
   const beats = Number(count);
-  return BEAT_OPTIONS.includes(beats as (typeof BEAT_OPTIONS)[number]) && beats !== DEFAULT_BEATS
-    ? { ...chord, beats }
-    : chord;
+  if (BEAT_OPTIONS.includes(beats as (typeof BEAT_OPTIONS)[number]) && beats !== DEFAULT_BEATS) {
+    placed.beats = beats;
+  }
+  const shape = Number(figure);
+  if (Number.isInteger(shape) && shape > 0) placed.shape = shape;
+  return placed;
 }
 const placedToken = (item: Placed) =>
-  chordToken(item) + (beatsOf(item) === DEFAULT_BEATS ? '' : `*${beatsOf(item)}`);
+  chordToken(item) +
+  (beatsOf(item) === DEFAULT_BEATS ? '' : `*${beatsOf(item)}`) +
+  (item.shape ? `.${item.shape}` : '');
 
 const readVuelta = (text: string) =>
   text
@@ -443,7 +455,10 @@ export default function ArmoniaRoute() {
     const token = chordToken(seen);
     const nth = vuelta.slice(0, index).filter((item) => chordToken(item) === token).length;
     let count = 0;
-    return current.findIndex((item) => chordToken(item) === token && count++ === nth);
+    const found = current.findIndex((item) => chordToken(item) === token && count++ === nth);
+    // Si no está, lo más probable es que se haya cambiado de acorde ahí mismo (otro color, otro bajo): con
+    // la vuelta del mismo largo, vale su lugar.
+    return found < 0 && current.length === vuelta.length ? index : found;
   };
   /** Corre un acorde un lugar a la izquierda (-1) o a la derecha (1). */
   const shift = (index: number, step: -1 | 1) =>
@@ -461,8 +476,27 @@ export default function ArmoniaRoute() {
       return at < 0 ? current : current.filter((_, position) => position !== at);
     });
 
-  const finger = (chord: Chord) =>
-    fingeringFor(tuning.notes, chord.root, CHORD_STEPS[chord.suffix]!, chord.bass ?? chord.root);
+  /** Las figuras de un acorde en esta afinación, de la más fácil a la más difícil. */
+  const shapesOf = (chord: Chord) =>
+    fingeringsFor(tuning.notes, chord.root, CHORD_STEPS[chord.suffix]!, chord.bass ?? chord.root);
+  /** La figura con que se toca: la elegida en la vuelta, o la más fácil. */
+  const finger = (chord: Placed) => {
+    const shapes = shapesOf(chord);
+    return shapes[chord.shape ?? 0] ?? shapes[0] ?? null;
+  };
+  /** Elige la figura de un acorde de la vuelta, y suena. */
+  const setShapeAt = (index: number, shape: number) => {
+    setVuelta((current) => {
+      const at = locate(current, index);
+      return current.map((item, position) =>
+        position === at ? { ...item, shape: shape === 0 ? undefined : shape } : item,
+      );
+    });
+    if (vuelta[index]) listen({ ...vuelta[index], shape });
+  };
+  /** El color de un acorde de la vuelta, como en el editor: la misma raíz, otro color. */
+  const setColorAt = (index: number, suffix: string) =>
+    replaceAt(index, (item) => ({ root: item.root, suffix }));
   const steps = vuelta.map((chord) => ({
     voicing: voicingOf(tuning, chord, finger(chord)),
     beats: beatsOf(chord),
@@ -470,7 +504,7 @@ export default function ArmoniaRoute() {
   const player = useVuelta({ steps, a4, tempo, feel });
 
   const name = (chord: Chord) => chordName(chord, key, notation);
-  const listen = (chord: Chord) => player.strum(voicingOf(tuning, chord, finger(chord)));
+  const listen = (chord: Placed) => player.strum(voicingOf(tuning, chord, finger(chord)));
   /** Suma un acorde al final: dura lo mismo que el último, así una vuelta de dos pulsos sigue en dos. */
   const add = (chord: Chord) => {
     listen(chord);
@@ -483,14 +517,14 @@ export default function ArmoniaRoute() {
   /** Cambia un acorde; si el cambio es una función, se aplica sobre el acorde pedido, no sobre el que se ve. */
   const replaceAt = (index: number, change: Chord | ((item: Chord) => Chord)) => {
     const apply = typeof change === 'function' ? change : () => change;
-    // El acorde cambia, lo que dura queda.
+    // El acorde cambia, lo que dura queda; la figura vuelve a la más fácil del acorde nuevo.
     setVuelta((current) => {
       const at = locate(current, index);
       return current.map((item, position) =>
-        position === at ? { ...apply(item), beats: item.beats } : item,
+        position === at ? { ...apply(item), beats: item.beats, shape: undefined } : item,
       );
     });
-    if (vuelta[index]) listen(apply(vuelta[index]));
+    if (vuelta[index]) listen({ ...apply(vuelta[index]), shape: undefined });
   };
 
   /** Cuántos pulsos dura un acorde, o todos si no se dice cuál. */
@@ -966,6 +1000,13 @@ export default function ArmoniaRoute() {
                   {shown.map((chord, index) => {
                     const feeling = feelingOf(chord, key);
                     const fingering = finger(chord);
+                    const shapeCount = shapesOf(chord).length;
+                    const shapeAt = fingering ? Math.min(chord.shape ?? 0, shapeCount - 1) : 0;
+                    const colors = variantsOf(chord);
+                    // Si el acorde vino con un color que no está en la lista (un sus4 de otro lado), queda arriba.
+                    const colorList = colors.some((variant) => variant.suffix === chord.suffix)
+                      ? colors
+                      : [{ suffix: chord.suffix, label: 'El que está', why: '' }, ...colors];
                     // La clave sigue al acorde (el primer C, el segundo C…), no al lugar: al moverlo, su botón y
                     // el foco van con él.
                     const token = chordToken(chord);
@@ -977,61 +1018,90 @@ export default function ArmoniaRoute() {
                         data-dragging={drag?.to === index || undefined}
                         className={styles.chip}
                       >
-                        <button
-                          type="button"
-                          className={styles.chipMain}
-                          aria-pressed={active === index}
-                          aria-haspopup="dialog"
-                          data-playing={(!drag && player.current === index) || undefined}
-                          onClick={() => openEditor(index)}
-                        >
-                          <small>{degreeLabel(chord, key)}</small>
-                          <strong>{name(chord)}</strong>
-                          {feeling && <Feeling feeling={feeling} />}
-                          {wide && feeling && (
-                            <span className={styles.words}>{feeling.words.join('. ')}.</span>
+                        <div className={styles.chipCard}>
+                          <button
+                            type="button"
+                            className={styles.chipMain}
+                            aria-pressed={active === index}
+                            aria-haspopup="dialog"
+                            data-playing={(!drag && player.current === index) || undefined}
+                            onClick={() => openEditor(index)}
+                          >
+                            <small>{degreeLabel(chord, key)}</small>
+                            <strong>{name(chord)}</strong>
+                            {feeling && <Feeling feeling={feeling} />}
+                            {wide && feeling && (
+                              <span className={styles.words}>{feeling.words.join('. ')}.</span>
+                            )}
+                            {/* Cómo se arma, siempre a la vista: se toca leyendo la vuelta. */}
+                            <span className={styles.tab} data-missing={!fingering}>
+                              {fingering
+                                ? wide
+                                  ? fingering.label
+                                  : compactShape(fingering)
+                                : 'La mano no llega'}
+                            </span>
+                            <Pulses beats={beatsOf(chord)} />
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.chipRemove}
+                            aria-label={`Sacar ${name(chord)}`}
+                            onClick={() => {
+                              removeAt(index);
+                              setSelected(null);
+                            }}
+                          >
+                            ✕
+                          </button>
+                          {/* La manija: se arrastra con el dedo o el mouse, o se mueve con las flechas. */}
+                          <button
+                            type="button"
+                            className={styles.chipGrip}
+                            aria-label={`Mover ${name(chord)}`}
+                            title="Arrastrá para cambiarlo de lugar"
+                            onPointerDown={(event) => {
+                              event.preventDefault();
+                              event.currentTarget.setPointerCapture(event.pointerId);
+                              setDrag({ from: index, to: index });
+                            }}
+                            onKeyDown={(event) => {
+                              const step =
+                                event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : 0;
+                              if (!step) return;
+                              event.preventDefault();
+                              shift(index, step);
+                            }}
+                          >
+                            ⠿
+                          </button>
+                        </div>
+                        {/* Color y figura se cambian acá mismo, sin abrir el editor. */}
+                        <div className={styles.chipBar}>
+                          <select
+                            className={styles.chipColor}
+                            aria-label={`Color de ${name(chord)}`}
+                            value={chord.suffix}
+                            onChange={(event) => setColorAt(index, event.target.value)}
+                          >
+                            {colorList.map((variant) => (
+                              <option key={variant.suffix} value={variant.suffix}>
+                                {variant.label} · {name({ root: chord.root, suffix: variant.suffix })}
+                              </option>
+                            ))}
+                          </select>
+                          {shapeCount > 1 && (
+                            <button
+                              type="button"
+                              className={styles.chipShape}
+                              aria-label={`Otra figura de ${name(chord)}: va la ${shapeAt + 1} de ${shapeCount}`}
+                              title="Otra forma de tocar el mismo acorde"
+                              onClick={() => setShapeAt(index, (shapeAt + 1) % shapeCount)}
+                            >
+                              Figura {shapeAt + 1}/{shapeCount}
+                            </button>
                           )}
-                          {/* Cómo se arma, siempre a la vista: se toca leyendo la vuelta. */}
-                          <span className={styles.tab} data-missing={!fingering}>
-                            {fingering
-                              ? wide
-                                ? fingering.label
-                                : compactShape(fingering)
-                              : 'La mano no llega'}
-                          </span>
-                          <Pulses beats={beatsOf(chord)} />
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.chipRemove}
-                          aria-label={`Sacar ${name(chord)}`}
-                          onClick={() => {
-                            removeAt(index);
-                            setSelected(null);
-                          }}
-                        >
-                          ✕
-                        </button>
-                        {/* La manija: se arrastra con el dedo o el mouse, o se mueve con las flechas. */}
-                        <button
-                          type="button"
-                          className={styles.chipGrip}
-                          aria-label={`Mover ${name(chord)}`}
-                          title="Arrastrá para cambiarlo de lugar"
-                          onPointerDown={(event) => {
-                            event.preventDefault();
-                            event.currentTarget.setPointerCapture(event.pointerId);
-                            setDrag({ from: index, to: index });
-                          }}
-                          onKeyDown={(event) => {
-                            const step = event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : 0;
-                            if (!step) return;
-                            event.preventDefault();
-                            shift(index, step);
-                          }}
-                        >
-                          ⠿
-                        </button>
+                        </div>
                       </li>
                     );
                   })}
@@ -1179,6 +1249,21 @@ export default function ArmoniaRoute() {
                   onChange={(value) => setBeatsAt(active, Number(value))}
                 />
               </div>
+              {shapesOf(activeChord).length > 1 && (
+                <div className={ui.field}>
+                  <span>Figura</span>
+                  <Segmented
+                    label="Con qué figura se toca"
+                    stretch
+                    value={String(Math.min(activeChord.shape ?? 0, shapesOf(activeChord).length - 1))}
+                    options={shapesOf(activeChord).map((_, shape) => ({
+                      value: String(shape),
+                      label: String(shape + 1),
+                    }))}
+                    onChange={(value) => setShapeAt(active, Number(value))}
+                  />
+                </div>
+              )}
             </ShapeGrid>
             <div className={styles.editorTabs}>
               <Segmented

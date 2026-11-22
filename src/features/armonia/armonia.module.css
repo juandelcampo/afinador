@@ -837,14 +837,69 @@
   text-underline-offset: 3px;
 }
 
-/* Cada acorde de la vuelta: tocarlo lo edita, la ✕ lo saca y la manija lo cambia de lugar. */
+/* Cada acorde de la vuelta: tocarlo lo edita, la ✕ lo saca y la manija lo cambia de lugar. Abajo, su color
+   y su figura, para cambiarlos sin abrir nada. */
 .chip {
+  display: grid;
+  /* La barra toma el ancho de la tarjeta, aunque una emoción larga la estire. */
+  grid-template-columns: minmax(min-content, 1fr);
+  grid-template-rows: 1fr auto;
+  min-width: 0;
+}
+.chipCard {
   position: relative;
   display: grid;
   min-width: 0;
 }
-.chip > .chipMain {
+.chipCard > .chipMain {
   height: 100%;
+}
+.chipBar {
+  display: flex;
+  border: 2px solid var(--ink);
+  border-top: 0;
+}
+.chipColor,
+.chipShape {
+  min-height: 34px;
+  border: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 700 12px/1.1 var(--mono);
+}
+.chipColor {
+  flex: 1;
+  width: 0;
+  min-width: 0;
+  padding: 0 4px;
+  text-overflow: ellipsis;
+}
+.chipShape {
+  flex: none;
+  padding: 0 6px;
+  border-left: 2px solid var(--ink);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.chipColor:hover,
+.chipShape:hover {
+  background: var(--soft);
+}
+/* En una tarjeta angosta no entran los dos en fila: el color arriba, la figura abajo. */
+.chip {
+  container-type: inline-size;
+}
+@container (max-width: 199px) {
+  .chipBar {
+    flex-direction: column;
+  }
+  .chipColor {
+    width: 100%;
+  }
+  .chipShape {
+    border-top: 2px solid var(--ink);
+    border-left: 0;
+  }
 }
 .chip[data-dragging] .chipMain {
   outline: 3px dashed var(--accent);
@@ -883,8 +938,8 @@
   background: var(--soft);
   color: var(--ink);
 }
-.chip:has([data-playing]) .chipRemove,
-.chip:has([data-playing]) .chipGrip {
+.chipCard:has([data-playing]) .chipRemove,
+.chipCard:has([data-playing]) .chipGrip {
   color: var(--paper);
 }
 .chips[data-wide] {

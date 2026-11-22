@@ -353,19 +353,39 @@ export interface Fingering {
   noFifth: boolean;
 }
 
-/** La mejor figura de cada combinación de notas y bajo, para una afinación. Se calcula una vez. */
-const fingeringIndexes = new Map<string, Map<number, { frets: number[]; score: number }>>();
+/** Cuántas figuras se ofrecen de cada acorde, y cuántas candidatas se guardan para elegirlas. */
+const SHAPES_PER_CHORD = 4;
+const CANDIDATES = 12;
+
+/** Las que se ofrecen se distinguen en la mano: cada una cambia al menos dos cuerdas de las anteriores. */
+function distinctShapes<T extends { frets: number[] }>(list: readonly T[]): T[] {
+  const kept: T[] = [];
+  for (const item of list) {
+    const differs = (other: T) => other.frets.filter((fret, index) => fret !== item.frets[index]).length >= 2;
+    if (kept.every(differs)) kept.push(item);
+    if (kept.length === SHAPES_PER_CHORD) break;
+  }
+  return kept;
+}
+
+/** Las figuras más fáciles de cada combinación de notas y bajo, para una afinación. Se calcula una vez. */
+const fingeringIndexes = new Map<string, Map<number, Array<{ frets: number[]; score: number }>>>();
 
 function fingeringIndex(open: number[], maxFret: number) {
   const key = open.join(',') + '|' + maxFret;
   let index = fingeringIndexes.get(key);
   if (!index) {
-    const built = new Map<number, { frets: number[]; score: number }>();
+    const built = new Map<number, Array<{ frets: number[]; score: number }>>();
     walkShapes(open, maxFret, (shape) => {
       const id = shape.mask * 12 + (shape.bass % 12);
       const score = handScore(shape);
-      const current = built.get(id);
-      if (!current || score < current.score) built.set(id, { frets: [...shape.frets], score });
+      const list = built.get(id) ?? [];
+      if (list.length === CANDIDATES && score >= list[list.length - 1]!.score) return;
+      // De menor a mayor puntaje; a igual puntaje, la que llegó primero.
+      const at = list.findIndex((item) => score < item.score);
+      list.splice(at < 0 ? list.length : at, 0, { frets: [...shape.frets], score });
+      if (list.length > CANDIDATES) list.pop();
+      built.set(id, list);
     });
     index = built;
     fingeringIndexes.set(key, index);
@@ -374,28 +394,41 @@ function fingeringIndex(open: number[], maxFret: number) {
 }
 
 /**
- * La figura más fácil para un acorde (raíz y pasos en semitonos) con esta nota en el bajo, o null si
- * la mano no llega. Si el acorde completo no entra y tiene quinta justa y al menos cuatro notas,
- * prueba sin la quinta.
+ * Las figuras para un acorde (raíz y pasos en semitonos) con esta nota en el bajo, de la más fácil a la
+ * más difícil; vacío si la mano no llega. Si el acorde completo no entra y tiene quinta justa y al menos
+ * cuatro notas, prueba sin la quinta.
  */
-export function fingeringFor(
+export function fingeringsFor(
   notes: string[],
   root: number,
   steps: readonly number[],
   bass: number = root,
   { maxFret = 9 }: { maxFret?: number } = {},
-): Fingering | null {
+): Fingering[] {
   const index = fingeringIndex(notes.map(noteToMidi), maxFret);
   const toMask = (list: readonly number[]) =>
     list.reduce((acc, step) => acc | (1 << ((root + step) % 12)), 0);
   const bassClass = ((bass % 12) + 12) % 12;
+  const shaped = (list: Array<{ frets: number[] }>, noFifth: boolean) =>
+    distinctShapes(list).map(({ frets }) => ({ frets, label: shapeLabel(frets), noFifth }));
   const full = index.get(toMask(steps) * 12 + bassClass);
-  if (full) return { frets: full.frets, label: shapeLabel(full.frets), noFifth: false };
+  if (full) return shaped(full, false);
   if (steps.length >= 4 && steps.includes(7) && (bassClass - root + 12) % 12 !== 7) {
     const lean = index.get(toMask(steps.filter((step) => step !== 7)) * 12 + bassClass);
-    if (lean) return { frets: lean.frets, label: shapeLabel(lean.frets), noFifth: true };
+    if (lean) return shaped(lean, true);
   }
-  return null;
+  return [];
+}
+
+/** La figura más fácil para un acorde con esta nota en el bajo, o null si la mano no llega. */
+export function fingeringFor(
+  notes: string[],
+  root: number,
+  steps: readonly number[],
+  bass: number = root,
+  options: { maxFret?: number } = {},
+): Fingering | null {
+  return fingeringsFor(notes, root, steps, bass, options)[0] ?? null;
 }
 
 /** La figura en cifrado de trastes, de la 6.ª a la 1.ª, con la cejilla si hace falta. */

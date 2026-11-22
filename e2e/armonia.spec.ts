@@ -246,6 +246,36 @@ test.describe('armonía', () => {
     expect(errors).toEqual([]);
   });
 
+  test('el color y la figura se cambian desde la vuelta, sin abrir el editor', async ({ page }) => {
+    const errors = watchErrors(page);
+    await goto(page, '/armonia?escala=mayor&tono=0&v=C*2_G');
+    await openVuelta(page);
+    const vuelta = page.getByTestId('vuelta');
+    const first = vuelta.getByRole('listitem').first();
+
+    // Otra figura del mismo acorde: queda en la URL y se lee en la tarjeta.
+    await first.getByRole('button', { name: /^Otra figura de C: va la 1/ }).click();
+    await expect(page).toHaveURL(/v=C\*2\.1_G/);
+    await expect(first).not.toContainText('×32010');
+    await expect(first.getByRole('button', { name: /^Otra figura de C: va la 2/ })).toBeVisible();
+
+    // Otro color: cambia el acorde, lo que dura queda y la figura vuelve a la más fácil.
+    await first.getByRole('combobox', { name: 'Color de C' }).selectOption('7');
+    await expect(page).toHaveURL(/v=C7\*2_G/);
+    await expect(first.locator('strong')).toHaveText('C7');
+    await expect(page.getByTestId('chord-editor')).toBeHidden();
+
+    // El editor también elige la figura.
+    await first.getByRole('button').first().click();
+    await page
+      .getByTestId('chord-editor')
+      .getByRole('group', { name: 'Con qué figura se toca' })
+      .getByRole('button', { name: '2' })
+      .click();
+    await expect(page).toHaveURL(/v=C7\*2\.1_G/);
+    expect(errors).toEqual([]);
+  });
+
   test('cada acorde de la vuelta dice cómo se arma y dura lo suyo', async ({ page }) => {
     const errors = watchErrors(page);
     await goto(page, '/armonia?escala=mayor&tono=0&v=C_G');
