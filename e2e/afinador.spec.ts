@@ -24,7 +24,7 @@ test.describe('escuchador', () => {
     await expect(page.locator('#play-toggle')).toHaveAttribute('aria-label', 'Tocar', { timeout: 6000 });
     expect(await plucks(page)).toBe(6);
 
-    await page.getByRole('button', { name: 'Rasgueado' }).click();
+    await page.getByRole('button', { name: 'Rasgueo' }).click();
     await page.locator('#play-toggle').click();
     await expect(page.locator('#play-toggle')).toHaveAttribute('aria-label', 'Tocar', { timeout: 6000 });
     expect(await plucks(page)).toBe(12);
@@ -50,7 +50,7 @@ test.describe('escuchador', () => {
     await expect(steps).toHaveCount(6);
     await expect(steps.first()).toHaveText(/6/);
 
-    await page.getByRole('button', { name: 'Rasgueado' }).click();
+    await page.getByRole('button', { name: 'Rasgueo' }).click();
     await patron(page, 'Folk').click();
     await expect(steps).toHaveCount(8);
     await expect(steps.first()).toContainText('↓');
@@ -82,11 +82,15 @@ test.describe('escuchador', () => {
     await goto(page, '/afinador/dadgad');
     await tocar(page);
     const labels = page.locator('[data-label]');
+    const fretted = page.locator('[data-fret="5:2"]');
     await expect(labels.nth(0)).toHaveText('D');
-    await page.locator('[data-fret="5:2"]').click();
-    await expect(labels.nth(0)).toHaveText('E');
+    // Pisada, la nota que suena va en el dedo; la cejuela sigue diciendo la cuerda al aire.
+    await fretted.click();
+    await expect(fretted).toHaveText('E');
+    await expect(labels.nth(0)).toHaveText('D');
     await page.getByRole('button', { name: 'Subir capo' }).click();
-    await expect(labels.nth(0)).toHaveText('F');
+    await expect(fretted).toHaveText('F');
+    await expect(labels.nth(0)).toHaveText('D#');
     await expect(labels.nth(1)).toHaveText('A#');
   });
 
@@ -106,14 +110,14 @@ test.describe('escuchador', () => {
     const tempo = page.getByRole('slider', { name: /Velocidad/ });
     await goto(page, '/afinador/dadgad');
     await tocar(page);
-    await page.getByRole('button', { name: 'Rasgueado' }).click();
+    await page.getByRole('button', { name: 'Rasgueo' }).click();
     await patron(page, 'Folk').click();
     await tempo.fill('120');
     await lista(page);
     await page.getByRole('button', { name: /^Drop/ }).click();
     await page.locator('[data-id="dropd"]').click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Drop D');
-    await expect(page.getByRole('button', { name: 'Rasgueado' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('button', { name: 'Rasgueo' })).toHaveAttribute('aria-pressed', 'true');
     await expect(patron(page, 'Folk')).toHaveAttribute('aria-pressed', 'true');
     await expect(tempo).toHaveValue('120');
     await page.reload();
@@ -126,7 +130,7 @@ test.describe('escuchador', () => {
   test('los acordes suenan con el patrón elegido', async ({ page }) => {
     await goto(page, '/afinador/dadgad');
     await tocar(page);
-    await page.getByRole('button', { name: 'Rasgueado' }).click();
+    await page.getByRole('button', { name: 'Rasgueo' }).click();
     await patron(page, 'Folk').click();
     await page.getByTestId('chord-shapes').getByRole('button').first().click();
     // Folk tiene seis rasguidos: con una sola bajada no se encendería la tira.

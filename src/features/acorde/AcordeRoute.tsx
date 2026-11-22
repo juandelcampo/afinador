@@ -7,16 +7,17 @@ import { pluckString, strumShape } from '~/audio/instrument';
 import { CHORD_STEPS, chordToken, plainName, suffixSymbol } from '~/core/harmony';
 import { CHORD_WORDS, clusterSense, identifyChord, type ChordReading } from '~/core/identify';
 import { bassReading, encodeFrets, INVERSION_CHORDS, parseFrets, tabOf, toneName } from '~/core/inversions';
-import { intervalName, noteLabel, noteToMidi } from '~/core/notes';
+import { intervalName, noteToMidi } from '~/core/notes';
 import { MUTED } from '~/core/tuning';
-import { GROUPS, TUNINGS } from '~/data/tunings';
+import { TUNINGS } from '~/data/tunings';
 import { Fader } from '~/shared/Fader';
 import { ShapeStyleToggle } from '~/shared/ShapeStyle';
 import { useSettings } from '~/shared/settings';
 import { useHydrated } from '~/shared/useHydrated';
+import { Diapason, LAST_FRET } from '~/shared/Diapason';
+import { TuneLink, TuningField } from '~/shared/TuningField';
 import { Button, PageTitle, Slab } from '~/shared/ui/ui';
-import { Diapason, LAST_FRET } from '../inversiones/Diapason';
-import shared from '../inversiones/inversiones.module.css';
+import ui from '~/shared/ui/ui.module.css';
 import styles from './acorde.module.css';
 
 export const meta: MetaFunction = () => [
@@ -178,37 +179,17 @@ export default function AcordeRoute() {
       : null;
 
   return (
-    <div className={shared.page}>
+    <div className={`${styles.page} ${ui.frame}`}>
       <Slab>
         <PageTitle eyebrow="Ponele nombre a lo que tocás" title="¿Qué acorde?">
           <p>Poné los dedos donde te suena lindo y apagá las cuerdas que no van: te dice cómo se llama.</p>
         </PageTitle>
-        <div className={shared.setup}>
-          <label className={shared.field} data-wide>
-            <span>Afinación</span>
-            <select
-              id="afinacion"
-              value={tuning.id}
-              onChange={(event) =>
-                update(() => ({
-                  afinacion: event.target.value === DEFAULT_TUNING ? null : event.target.value,
-                }))
-              }
-            >
-              {GROUPS.map((item) => (
-                <optgroup key={item.id} label={item.name}>
-                  {TUNINGS.filter((option) => option.group === item.id).map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.name} · {option.notes.map((note) => noteLabel(note, notation)).join(' ')}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-          </label>
-          <Link className={shared.bridge} to={`/afinador/${tuning.id}`}>
-            Afinar en {tuning.name} →
-          </Link>
+        <div className={ui.setup}>
+          <TuningField
+            tuning={tuning}
+            onChange={(id) => update(() => ({ afinacion: id === DEFAULT_TUNING ? null : id }))}
+          />
+          <TuneLink tuning={tuning} />
         </div>
       </Slab>
 
@@ -235,7 +216,7 @@ export default function AcordeRoute() {
           onToggle={toggle}
         />
 
-        <div className={shared.actions}>
+        <div className={ui.actions}>
           <Button variant="primary" onClick={strum} disabled={!sounding.length}>
             ▶ Escuchar
           </Button>
@@ -243,7 +224,7 @@ export default function AcordeRoute() {
             Todas al aire
           </Button>
           <ShapeStyleToggle />
-          <Fader compact />
+          <Fader />
         </div>
 
         {sounding.length > 0 && (
@@ -315,13 +296,13 @@ export default function AcordeRoute() {
 
         {inversionsLink && (
           <p className={styles.next}>
-            <Link className={shared.bridge} to={inversionsLink}>
+            <Link className={ui.bridge} to={inversionsLink}>
               Todas las formas de {pcName(reading!.root) + suffixSymbol(reading!.suffix)} en Inversiones →
             </Link>
           </p>
         )}
 
-        <p className={shared.hint}>
+        <p className={ui.hint}>
           Tocá un casillero para poner el dedo; tocá el dedo para sacarlo y que la cuerda suene al aire. El
           nombre de cada cuerda la apaga (×) o la vuelve a prender. En naranja, la nota del bajo.
         </p>

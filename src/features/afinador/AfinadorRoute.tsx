@@ -14,7 +14,8 @@ import { normalize, searchTunings } from '~/core/search';
 import { GROUPS, TUNINGS, type Tuning } from '~/data/tunings';
 import { Fader } from '~/shared/Fader';
 import { TEMPO_RANGE, useFavorites, useSettings } from '~/shared/settings';
-import { Button, PageTitle, Segmented, Slab, SlabHead, Stepper } from '~/shared/ui/ui';
+import { Button, PageTitle, Rail, Segmented, Slab, SlabHead, Stepper } from '~/shared/ui/ui';
+import ui from '~/shared/ui/ui.module.css';
 import styles from './afinador.module.css';
 import { ChordDiagram } from './ChordDiagram';
 import { Neck, type NeckHandle } from './Neck';
@@ -129,16 +130,13 @@ function TuningList({
   return (
     <aside className={styles.catalog} data-open={open} aria-label="Afinaciones">
       {/* Cerrada, en pantallas anchas queda una franja con su nombre para volver a abrirla. */}
-      <button
-        type="button"
+      <Rail
+        side="left"
         className={styles.rail}
-        aria-expanded={false}
-        aria-label="Abrir la lista de afinaciones"
-        onClick={onOpen}
-      >
-        <span aria-hidden="true">›</span>
-        <span>Afinaciones</span>
-      </button>
+        label="Afinaciones"
+        ariaLabel="Abrir la lista de afinaciones"
+        onOpen={onOpen}
+      />
       <div className={styles.catalogBody}>
         <div className={styles.searchRow}>
           <label className={styles.search}>
@@ -270,10 +268,7 @@ function Hero({ tuning, onChange }: { tuning: Tuning; onChange: () => void }) {
   return (
     <Slab className={styles.hero}>
       <div className={styles.heroHead}>
-        <header className={styles.heroTitle}>
-          {group && <p>{group.name}</p>}
-          <h1>{tuning.name}</h1>
-        </header>
+        <PageTitle eyebrow={group?.name} title={tuning.name} />
         <div className={styles.heroTools}>
           <button
             type="button"
@@ -416,7 +411,7 @@ function Heard({
         })}
       </ul>
       {tuning.octaves === 'est' && (
-        <p className={styles.hint}>
+        <p className={ui.hint}>
           Las fuentes dan estas notas sin octava: las octavas de esta afinación son una estimación.
         </p>
       )}
@@ -454,7 +449,7 @@ function Neighbors({ tuning, onPick }: { tuning: Tuning; onPick: (id: string) =>
   return (
     <section className={styles.near} aria-label="A una cuerda de distancia">
       <h2 className={styles.asideTitle}>A una cuerda de distancia</h2>
-      <p className={styles.hint}>Cambiando una sola cuerda llegás a estas.</p>
+      <p className={ui.hint}>Cambiando una sola cuerda llegás a estas.</p>
       <ul>
         {near.map(({ tuning: other, index, from, to }) => (
           <li key={other.id}>
@@ -531,7 +526,7 @@ function TuningPage({
   // La misma aclaración en Acordes y en Figuras; la de Acordes es la que miran las pruebas.
   const capoNote = (testId?: string) =>
     listener.capo > 0 && (
-      <p className={styles.hint} data-testid={testId}>
+      <p className={ui.hint} data-testid={testId}>
         Con capo en el traste {listener.capo}: los trastes se cuentan desde el capo y el nombre es el del
         acorde que suena.
       </p>
@@ -592,11 +587,7 @@ function TuningPage({
           <Slab className={styles.play}>
             {/* En pantalla ancha la pestaña ya dice Acordes: el título solo va en el celular. */}
             <div data-narrow>
-              <SlabHead title="Acordes">
-                <div className={styles.headTools}>
-                  <Fader compact />
-                </div>
-              </SlabHead>
+              <SlabHead title="Acordes" />
             </div>
 
             <div
@@ -640,7 +631,7 @@ function TuningPage({
               onPluck={(stringIndex, velocity) => listener.playString(stringIndex, undefined, velocity)}
               onToggleFret={listener.toggleFret}
             />
-            <p className={styles.neckHint}>
+            <p className={ui.hint}>
               Tocá un traste para pisarlo; pasá el dedo por la zona gris para rasguear.
             </p>
 
@@ -660,8 +651,8 @@ function TuningPage({
                 label="Forma de tocar"
                 value={listener.style}
                 options={[
-                  { value: 'arp', label: 'Arpegiado' },
-                  { value: 'strum', label: 'Rasgueado' },
+                  { value: 'strum', label: 'Rasgueo' },
+                  { value: 'arp', label: 'Arpegio' },
                 ]}
                 onChange={listener.chooseStyle}
               />
@@ -683,7 +674,7 @@ function TuningPage({
               />
 
               <div className={styles.controls}>
-                <label className={styles.field}>
+                <label className={`${ui.field} ${styles.field}`}>
                   <span>Velocidad: {listener.tempo} ppm</span>
                   <input
                     type="range"
@@ -694,7 +685,7 @@ function TuningPage({
                     onChange={(event) => listener.setTempo(Number(event.target.value))}
                   />
                 </label>
-                <div className={styles.field}>
+                <div className={`${ui.field} ${styles.field}`}>
                   <span>Capo</span>
                   <Stepper
                     label="capo"
@@ -724,10 +715,7 @@ function TuningPage({
                 >
                   Soltar
                 </Button>
-                <div className={`${styles.field} ${styles.volume}`} data-wide>
-                  <span aria-hidden="true">Volumen</span>
-                  <Fader compact />
-                </div>
+                <Fader />
               </div>
             </div>
           </Slab>
@@ -766,7 +754,7 @@ function TuningPage({
                   </button>
                 ))}
             </div>
-            <p className={styles.hint}>
+            <p className={ui.hint}>
               Figuras para la mano, de la 6.ª cuerda a la 1.ª; × es cuerda apagada. Tocá una para escucharla
               con el patrón de Acordes: queda pisada en el mástil.
             </p>
@@ -776,16 +764,13 @@ function TuningPage({
       </div>
 
       <aside className={styles.aside} data-open={asideOpen} data-panel="temas" aria-label="Temas">
-        <button
-          type="button"
+        <Rail
+          side="right"
           className={styles.rail}
-          aria-expanded={false}
-          aria-label="Abrir los temas y las afinaciones cercanas"
-          onClick={() => setAsideOpen(true)}
-        >
-          <span aria-hidden="true">‹</span>
-          <span>Se escuchó en</span>
-        </button>
+          label="Se escuchó en"
+          ariaLabel="Abrir los temas y las afinaciones cercanas"
+          onOpen={() => setAsideOpen(true)}
+        />
         <div className={styles.asideBody}>
           <div className={styles.asideHead}>
             <span>{tuning.name}</span>

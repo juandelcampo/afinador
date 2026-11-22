@@ -4,61 +4,23 @@
   min-width: 0;
 }
 
-.hint {
-  margin-top: 10px;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-/* Afinación y tipo */
-.setup {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 8px 12px;
-  margin-top: 12px;
-}
-.field {
+/* El acorde: las doce notas y qué va en el bajo. Mide lo mismo que el nombre de ¿Qué acorde?. */
+.lead {
   display: grid;
-  flex: 1 1 120px;
-  gap: 3px;
-  min-width: 0;
-  font: 600 12px/1.5 var(--ui);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  align-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
 }
-.field[data-wide] {
-  flex: 3 1 240px;
-  max-width: 420px;
-}
-.field select {
-  width: 100%;
-  min-height: var(--touch);
-  padding: 6px 8px;
-  border: var(--rule);
-  background: var(--paper);
-  color: var(--ink);
-  /* 16px evita que iOS acerque el zoom al elegir. */
-  font: 700 16px/1.2 var(--mono);
-  letter-spacing: 0;
-  text-transform: none;
-}
-.bridge {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--touch);
-  font: 700 semi-expanded 13px/1.2 var(--ui);
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  text-underline-offset: 3px;
+@container content (min-width: 640px) {
+  .lead {
+    min-height: var(--lead);
+  }
 }
 
 /* Las doce notas: una tira, en dos filas en el celular. */
 .roots {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  margin-top: 12px;
   border: var(--rule);
 }
 .roots button {
@@ -139,198 +101,8 @@
   text-transform: uppercase;
 }
 .why {
-  margin: 10px 0 12px;
+  margin-top: 12px;
   font-size: 14px;
-}
-
-/* El diapasón, como el del Afinador: negro, cuerdas blancas y el naranja para el bajo. En el celular
-   se desplaza de costado. */
-.scroller {
-  overflow-x: auto;
-  border: var(--rule);
-  background: var(--neck);
-  overscroll-behavior-x: contain;
-}
-.neck {
-  min-width: 640px;
-  color: var(--neck-ink);
-}
-.string,
-.fretRow {
-  display: grid;
-  grid-template-columns: 44px repeat(15, minmax(0, 1fr));
-}
-.nut,
-.cell {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 38px;
-}
-/* La cuerda pasa por el medio de cada casillero, más gruesa cuanto más grave. */
-.cell::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 0;
-  right: 0;
-  height: var(--gauge, 1px);
-  background: var(--neck-ink);
-  opacity: 0.55;
-  transform: translateY(-50%);
-}
-.string:nth-child(2) {
-  --gauge: 1.3px;
-}
-.string:nth-child(3) {
-  --gauge: 1.7px;
-}
-.string:nth-child(4) {
-  --gauge: 2px;
-}
-.string:nth-child(5) {
-  --gauge: 2.4px;
-}
-.string:nth-child(6) {
-  --gauge: 2.8px;
-}
-.string[data-muted] .cell::before {
-  opacity: 0.18;
-}
-.cell {
-  border-right: 2px solid var(--neck-line);
-}
-.nut {
-  border-right: 7px solid var(--neck-ink);
-}
-.openName {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--neck-ink);
-  font: 700 13px/1 var(--mono);
-}
-/* Si la cuerda al aire es del acorde, su nombre es un botón: se ve como una nota tenue. */
-.openName[data-tone] {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border: 1.5px dashed var(--neck-line);
-  border-radius: 50%;
-}
-.openName[data-tone]:hover {
-  border-color: var(--accent);
-}
-.string[data-muted] .openName {
-  color: var(--accent);
-  font-size: 18px;
-}
-
-/* Las notas del acorde en todo el mástil, tenues. */
-.ghost {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border: 1.5px solid var(--neck-line);
-  border-radius: 50%;
-  background: var(--neck);
-  color: #9a9a9a;
-  font: 600 10px/1 var(--mono);
-}
-/* El círculo es chico, pero se toca todo el casillero: la zona sensible llega a 44 px de alto con el
-   ::after, sin agrandar el dibujo. */
-.ghost::after {
-  content: '';
-  position: absolute;
-  inset: -10px -8px;
-}
-.ghost:hover {
-  border-color: var(--accent);
-  color: var(--neck-ink);
-}
-.ghost:focus-visible {
-  outline: 3px solid var(--accent);
-  outline-offset: 2px;
-}
-.string[data-muted] .ghost {
-  opacity: 0.45;
-}
-/* En modo libre todo el casillero se toca: no se dibuja nada hasta que el mouse o el foco pasan encima. */
-.spot {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  border: 0;
-  background: none;
-}
-.spot::after {
-  content: '';
-  width: 24px;
-  height: 24px;
-  border: 1.5px solid transparent;
-  border-radius: 50%;
-}
-.spot:hover::after {
-  border-color: var(--accent);
-}
-.spot:focus-visible {
-  outline: 3px solid var(--accent);
-  outline-offset: -3px;
-}
-.string[data-muted] .spot {
-  opacity: 0.6;
-}
-/* La forma elegida. */
-.dot {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: var(--neck-ink);
-  color: #000000;
-  font: 700 12px/1 var(--mono);
-}
-.dot[data-bass] {
-  background: var(--accent);
-  color: var(--on-accent);
-}
-.dot:hover {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-.dot:focus-visible {
-  outline: 3px solid var(--accent);
-  outline-offset: 2px;
-}
-.fretRow {
-  border-top: 2px solid var(--neck-ink);
-}
-.fretRow span {
-  height: 24px;
-  font: 12px/22px var(--mono);
-  text-align: center;
-  color: #9a9a9a;
-}
-.fretRow span[data-inlay] {
-  color: var(--neck-ink);
-  font-weight: 700;
-}
-.fretRow span[data-inlay='2'] {
-  text-decoration: underline;
-  text-underline-offset: 3px;
 }
 
 /* Recorrer las formas */
@@ -396,14 +168,6 @@
   margin-top: 12px;
   font-weight: 700;
 }
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px 16px;
-  margin-top: 16px;
-}
-
 /* Tu forma: lo que armaste tocando el diapasón. Mide lo mismo que el recuadro de las formas. */
 .mine {
   display: grid;

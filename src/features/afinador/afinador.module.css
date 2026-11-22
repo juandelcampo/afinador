@@ -57,8 +57,8 @@
   border-left: 0;
 }
 .tabbar button[aria-pressed='true'] {
-  background: var(--accent);
-  color: var(--on-accent);
+  background: var(--ink);
+  color: var(--paper);
   font-weight: 900;
 }
 @media print {
@@ -118,41 +118,11 @@
   background: var(--soft);
 }
 
-/* Cerrada en pantalla ancha: una franja con el nombre en vertical. */
-.rail {
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  gap: 14px;
-  width: 100%;
-  padding: 14px 0;
-  border: 0;
-  background: var(--paper);
-  color: var(--ink);
-  font: 900 12px/1 var(--heavy);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-.rail:hover {
-  background: var(--soft);
-}
-.rail > span:first-child {
-  font-size: 24px;
-  letter-spacing: 0;
-}
-.rail > span:last-child {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-}
-.aside .rail > span:last-child {
-  transform: none;
-}
-
 @container main (min-width: 900px) {
   .page {
-    /* Las filas del mástil se ajustan al alto de la ventana para que Acordes entre sin scrollear. */
-    --row: clamp(32px, calc((100dvh - var(--bar)) * 0.11 - 50px), 44px);
+    /* Las filas del mástil se achican si la ventana es baja, para que Acordes entre sin scrollear; nunca
+       pasan de 38 px, el alto del diapasón de Inversiones y ¿Qué acorde?. */
+    --row: clamp(32px, calc((100dvh - var(--bar)) * 0.11 - 50px), 38px);
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
     height: calc(100dvh - var(--bar));
@@ -788,6 +758,8 @@
   grid-template-columns: 44px repeat(var(--visible), minmax(0, 1fr)) clamp(56px, 20cqi, 200px);
   color: var(--neck-ink);
 }
+/* La cuerda al aire, como en el diapasón de Inversiones y ¿Qué acorde?: un círculo blanco si suena al
+   aire, punteado si está pisada más arriba y una × naranja si está apagada. El bajo va en naranja. */
 .neckLabel {
   display: flex;
   align-items: center;
@@ -800,9 +772,32 @@
   color: var(--neck-ink);
   font: 700 13px/1 var(--mono);
 }
-.neckLabel:hover {
+.neckLabel span {
+  display: grid;
+  place-items: center;
+  width: min(30px, calc(var(--row, 38px) - 6px));
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+.neckLabel[data-state='open'] span {
+  background: var(--neck-ink);
+  color: var(--neck);
+  font-size: 12px;
+}
+.neckLabel[data-state='fretted'] span {
+  border: 1.5px dashed var(--neck-line);
+}
+.neckLabel[data-state='muted'] span {
+  color: var(--accent);
+  font-size: 18px;
+}
+.neckLabel[data-bass] span {
   background: var(--accent);
-  color: #000000;
+  color: var(--on-accent);
+}
+.neckLabel:hover span {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 .fret {
   position: relative;
@@ -812,25 +807,33 @@
   border: 0;
   border-right: 2px solid var(--neck-line);
   background: transparent;
-  color: #000000;
+  color: var(--neck);
   font: 700 12px/1 var(--mono);
 }
-.fret:hover::after {
-  content: '';
-  position: absolute;
-  inset: 9px 20%;
-  background: var(--neck-line);
-}
+/* Al pasar por encima se marca dónde iría el dedo, como en el diapasón. */
+.fret:hover::after,
 .fret[aria-pressed='true']::before {
   content: '';
   position: absolute;
   top: 50%;
   left: 50%;
-  width: min(30px, 90%, calc(var(--row, 38px) - 6px));
   aspect-ratio: 1;
   border-radius: 50%;
-  background: var(--accent);
   transform: translate(-50%, -50%);
+}
+.fret:hover::after {
+  width: min(24px, 80%);
+  border: 1.5px solid var(--accent);
+}
+.fret[aria-pressed='true']::before {
+  width: min(30px, 90%, calc(var(--row, 38px) - 6px));
+  background: var(--neck-ink);
+}
+.fret[data-bass]::before {
+  background: var(--accent);
+}
+.fret[data-bass] {
+  color: var(--on-accent);
 }
 .neck :focus-visible {
   z-index: 3;
@@ -859,7 +862,7 @@
   overflow: hidden;
   border-top: 2px solid var(--neck-ink);
   background: var(--neck);
-  color: #9a9a9a;
+  color: var(--neck-muted);
   font: 12px/22px var(--mono);
   text-align: center;
 }
@@ -1001,34 +1004,6 @@
 .pair > button {
   padding-inline: 8px;
 }
-.field {
-  display: grid;
-  gap: 3px;
-  min-width: 0;
-  font: 600 12px/1.5 var(--ui);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-.field select {
-  min-height: var(--touch);
-  min-width: 150px;
-  max-width: 100%;
-  padding: 6px 8px;
-  border: var(--rule);
-  background: var(--paper);
-  color: var(--ink);
-  /* 16px evita que iOS acerque el zoom al elegir. */
-  font: 700 16px/1.2 var(--mono);
-  letter-spacing: 0;
-  text-transform: none;
-}
-.field input[type='range'] {
-  width: 150px;
-  max-width: 100%;
-  height: var(--touch);
-  margin: 0;
-  accent-color: var(--accent);
-}
 .check {
   display: inline-flex;
   align-items: center;
@@ -1044,49 +1019,6 @@
   width: 22px;
   height: 22px;
 }
-.hint {
-  margin-top: 6px;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-/* Volumen del instrumento y forma de tocar, en la cabecera de Escuchar. */
-.headTools {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px 14px;
-}
-.headTools > label {
-  grid-auto-flow: column;
-  align-items: center;
-  gap: 8px;
-}
-.headTools > label input {
-  width: 110px;
-}
-/* En pantallas angostas: título y volumen en una fila, la forma de tocar a lo ancho debajo. */
-@container column (max-width: 560px) {
-  .headTools {
-    display: contents;
-  }
-  .headTools > label {
-    margin-left: auto;
-  }
-  .headTools > label input {
-    width: 96px;
-  }
-  .headTools > [role='group'] {
-    display: flex;
-    flex: 1 0 100%;
-  }
-  .headTools > [role='group'] button {
-    flex: 1 1 0;
-  }
-}
-
 .heard ul {
   margin: 0;
   padding: 0;
@@ -1191,20 +1123,8 @@
   align-items: stretch;
   gap: 8px;
 }
-.heroTitle {
+.heroHead > header {
   flex: 1;
-  min-width: 0;
-}
-.heroTitle p {
-  margin-bottom: 4px;
-  font: 600 12px/1.5 var(--ui);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-.heroTitle h1 {
-  font: 900 expanded clamp(30px, 7cqi, 48px)/1 var(--heavy);
-  letter-spacing: -0.03em;
-  overflow-wrap: anywhere;
 }
 /* En el celular la lista se abre desde la ficha. */
 .catalogToggle {
@@ -1304,8 +1224,8 @@
   transform: translate(2px, 2px);
 }
 .chips button[aria-pressed='true'] {
-  background: var(--accent);
-  color: var(--on-accent);
+  background: var(--ink);
+  color: var(--paper);
   box-shadow: 3px 3px 0 var(--ink);
 }
 .chips strong,
@@ -1346,12 +1266,6 @@
   }
 }
 
-.neckHint {
-  margin-top: 4px;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.4;
-}
 .filters button {
   font-size: 12px;
   font-stretch: 100%;
@@ -1397,11 +1311,6 @@
     flex-basis: 0;
   }
 }
-/* El volumen en el color de acento, como todo lo que suena. */
-.headTools input[type='range'],
-.volume input[type='range'] {
-  accent-color: var(--accent);
-}
 .stripRow .strip {
   margin-top: 12px;
 }
@@ -1409,12 +1318,6 @@
   flex: 0 0 auto;
   align-self: flex-end;
   min-height: var(--touch);
-}
-.volume {
-  flex: 1 1 120px;
-}
-.volume input {
-  width: 100%;
 }
 /* En pantalla ancha todo entra sin scrollear: la tira y los controles en una fila. */
 @container main (min-width: 900px) {
@@ -1443,8 +1346,9 @@
   .stripRow .controls > div.field {
     flex: 0 0 auto;
   }
-  .stripRow .controls > .volume {
-    flex: 0 0 110px;
+  /* El volumen va último en la fila. */
+  .stripRow .controls > label:last-child {
+    flex: 0 0 130px;
   }
   .play {
     padding-top: 10px;
@@ -1473,12 +1377,6 @@
   .heroInfo .warning {
     flex: 1 0 100%;
     margin: 0;
-  }
-  .hero {
-    padding-block: 10px 12px;
-  }
-  .heroTitle h1 {
-    font-size: clamp(28px, 4cqi, 40px);
   }
 }
 .patterns [role='group'] {
@@ -1713,5 +1611,20 @@
     min-width: 0;
     padding-inline: 6px;
     font-size: 12px;
+  }
+}
+
+/* En pantalla ancha la pestaña ya dice Afinar: el título queda solo para el lector de pantalla. */
+@container main (min-width: 900px) {
+  .tunerHead h2 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .tunerHead > div {
+    justify-content: flex-end;
   }
 }

@@ -1,4 +1,8 @@
 /* ¿Qué acorde?: el nombre grande arriba del diapasón, así se ve cambiar mientras se ponen los dedos. */
+.page {
+  container: content / inline-size;
+  min-width: 0;
+}
 .result {
   display: grid;
   justify-items: start;
@@ -10,6 +14,12 @@
   background: var(--paper);
   color: var(--ink);
   text-align: left;
+}
+/* Mide lo mismo que la elección del acorde en Inversiones: el diapasón queda en el mismo lugar en las dos. */
+@container content (min-width: 640px) {
+  .result {
+    min-height: var(--lead);
+  }
 }
 .result:hover {
   background: var(--soft);

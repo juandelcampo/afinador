@@ -5,7 +5,7 @@ import { useEffect, useRef } from 'react';
 import type { Voicing } from '~/core/inversions';
 import { noteLabel, type Notation } from '~/core/notes';
 import { MUTED } from '~/core/tuning';
-import styles from './inversiones.module.css';
+import styles from './diapason.module.css';
 
 /** Hasta dónde se dibuja: las formas empiezan a lo sumo en el 12 y abren cuatro trastes. */
 export const LAST_FRET = 15;

@@ -160,6 +160,11 @@ export function Neck({ ref, notes, capo, frets, notation, onPluck, onToggleFret 
     // Solo al montar: draw lee todo desde refs y el DOM.
   }, []);
 
+  // La cuerda más grave que suena lleva el naranja, como en las otras herramientas.
+  const pitches = frets.map((fret, index) => (fret < 0 ? Infinity : noteToMidi(notes[index]!) + capo + fret));
+  const lowest = Math.min(...pitches);
+  const bassString = lowest === Infinity ? -1 : pitches.indexOf(lowest);
+
   const rowAt = (event: PointerEvent<HTMLDivElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
     const row = Math.floor(((event.clientY - rect.top) / rect.height) * STRINGS);
@@ -175,12 +180,10 @@ export function Neck({ ref, notes, capo, frets, notation, onPluck, onToggleFret 
           const stringIndex = STRINGS - 1 - row;
           const fret = frets[stringIndex]!;
           const muted = fret < 0;
+          const atNut = midiToNote(noteToMidi(notes[stringIndex]!) + capo);
           const sounding = midiToNote(noteToMidi(notes[stringIndex]!) + capo + Math.max(0, fret));
-          const label = muted
-            ? '×'
-            : fret || capo
-              ? noteLabel(sounding, notation)
-              : noteLabel(notes[stringIndex]!, notation);
+          const label = muted ? '×' : noteLabel(sounding, notation);
+          const isBass = stringIndex === bassString;
           return [
             <button
               key={`label-${row}`}
@@ -188,6 +191,8 @@ export function Neck({ ref, notes, capo, frets, notation, onPluck, onToggleFret 
               className={styles.neckLabel}
               style={{ gridRow: row + 1 }}
               data-label={stringIndex}
+              data-state={muted ? 'muted' : fret === 0 ? 'open' : 'fretted'}
+              data-bass={(isBass && fret === 0) || undefined}
               aria-label={
                 muted
                   ? `Cuerda ${STRINGS - stringIndex} apagada: tocala para que vuelva a sonar al aire`
@@ -196,7 +201,8 @@ export function Neck({ ref, notes, capo, frets, notation, onPluck, onToggleFret 
               // Tocar una cuerda apagada la vuelve al aire (toggleFret con traste 0) y la hace sonar.
               onClick={() => (muted ? onToggleFret(stringIndex, 0) : onPluck(stringIndex))}
             >
-              {label}
+              {/* Pisada más arriba, la cejuela dice qué nota da la cuerda al aire. */}
+              <span>{muted ? '×' : fret === 0 ? label : noteLabel(atNut, notation)}</span>
             </button>,
             ...FRETS.map((column) => (
               <button
@@ -207,6 +213,7 @@ export function Neck({ ref, notes, capo, frets, notation, onPluck, onToggleFret 
                 data-fret={`${stringIndex}:${column}`}
                 data-position={column}
                 aria-pressed={fret === column}
+                data-bass={(isBass && fret === column) || undefined}
                 aria-label={`Cuerda ${STRINGS - stringIndex}, traste ${capo + column}`}
                 onClick={() => onToggleFret(stringIndex, column)}
               >

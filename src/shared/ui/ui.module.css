@@ -1,8 +1,7 @@
 /* Componentes compartidos. Botones y rótulos en Archivo; datos en Plex Mono (ver global.css). */
 
 /* Rótulo chico de los campos: PATRÓN, CAPO, VELOCIDAD. */
-.label,
-.fader > span {
+.label {
   font: 600 12px/1.5 var(--ui);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -172,7 +171,6 @@
 .slabHead > div {
   margin-top: 0;
 }
-/* Rótulo de sección numerado: 01 AFINAR, 02 ESCUCHAR. La cuenta la lleva .board en la pantalla. */
 .slabHead h2 {
   display: flex;
   align-items: center;
@@ -181,14 +179,6 @@
   letter-spacing: -0.01em;
   text-transform: uppercase;
 }
-.number {
-  padding: 4px 6px 3px;
-  background: var(--ink);
-  color: var(--paper);
-  font: 700 12px/1 var(--mono);
-  letter-spacing: 0;
-}
-
 .pageTitle {
   min-width: 0;
 }
@@ -210,20 +200,21 @@
   text-transform: uppercase;
 }
 
-/* Con flex, la última fila se estira y no deja casilleros vacíos. */
+/* Con flex, la última fila se estira y no deja casilleros vacíos. Las rayas de adentro son el fondo que
+   asoma entre los botones: así el recuadro queda entero aunque las filas se partan distinto. */
 .tabs {
   display: flex;
   flex-wrap: wrap;
-  border-bottom: var(--rule);
+  gap: 2px;
+  border: var(--rule);
+  background: var(--ink);
 }
 .tabs button {
   flex: 1 1 110px;
   min-height: 48px;
   padding: 6px 8px;
   border: 0;
-  border-right: 1px solid var(--ink);
-  border-bottom: 1px solid var(--ink);
-  background: none;
+  background: var(--paper);
   font: 700 13px/1.2 var(--ui);
   text-transform: uppercase;
 }
@@ -267,35 +258,11 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/* El volumen: el mismo en todas las herramientas, con su rótulo arriba y en naranja, como todo lo que suena. */
 .fader {
-  display: grid;
-  gap: 1px;
-  min-width: 0;
+  min-width: 130px;
 }
 .fader input {
-  width: 120px;
-  max-width: 100%;
-  height: var(--touch-small);
-  margin: 0;
-  accent-color: var(--accent);
-}
-.fader[data-compact='true'] {
-  accent-color: inherit;
-}
-.fader[data-compact='true'] input {
-  width: 100%;
-  height: 26px;
-  accent-color: inherit;
-}
-.mixer {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr));
-  gap: 6px 14px;
-  margin-top: 12px;
-  padding: 8px 10px;
-  border: var(--rule);
-}
-.mixer .fader input {
   width: 100%;
 }
 
@@ -357,4 +324,117 @@ button:disabled {
   .sheet[data-fixed] {
     height: 90dvh;
   }
+}
+
+/* Lo que va debajo del título en todas las herramientas: la afinación (y lo que haga falta elegir) y el
+   link para ir a afinarla. */
+.setup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 12px;
+  margin-top: 12px;
+}
+.setup > .field {
+  flex: 1 1 120px;
+  max-width: 220px;
+}
+.setup > .field[data-wide] {
+  flex: 3 1 240px;
+  max-width: 420px;
+}
+/* Un campo: el rótulo chico arriba y el control debajo. */
+.field {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  font: 600 12px/1.5 var(--ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.field select {
+  width: 100%;
+  min-height: var(--touch);
+  padding: 6px 8px;
+  border: var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  /* 16px evita que iOS acerque el zoom al elegir. */
+  font: 700 16px/1.2 var(--mono);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.field input[type='range'] {
+  height: var(--touch);
+  margin: 0;
+  accent-color: var(--accent);
+}
+/* El link a otra herramienta: "Afinar en Estándar →". */
+.bridge {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch);
+  font: 700 semi-expanded 13px/1.2 var(--ui);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  text-underline-offset: 3px;
+}
+/* La explicación chica, en gris, que va después de lo que suena. */
+.hint {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+/* La fila de escuchar: el botón grande, lo demás y el volumen. */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 16px;
+  margin-top: 16px;
+}
+
+/* Todas las herramientas miden lo mismo: en pantalla ancha el contenido deja a los costados el lugar de
+   las columnas plegadas (la franja de 56 px), las tenga o no. Las rayas llegan hasta abajo aunque la
+   página sea corta. */
+@container main (min-width: 900px) {
+  .frame {
+    min-height: calc(100dvh - var(--bar));
+    margin-inline: var(--rail);
+    box-shadow:
+      calc(-1 * var(--rule-width)) 0 0 var(--ink),
+      var(--rule-width) 0 0 var(--ink);
+  }
+}
+
+/* Una columna plegada: una franja con su nombre en vertical. Cada pantalla decide cuándo se ve. */
+.rail {
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 0;
+  border: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 900 12px/1 var(--heavy);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.rail:hover {
+  background: var(--soft);
+}
+.rail > span:first-child {
+  font-size: 24px;
+  letter-spacing: 0;
+}
+.rail > span:last-child {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+.rail[data-side='right'] > span:last-child {
+  transform: none;
 }

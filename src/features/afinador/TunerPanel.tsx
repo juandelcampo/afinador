@@ -19,8 +19,9 @@ function NoteName({ note, notation }: { note: string; notation: Notation }) {
 /** Un destello naranja que se apaga solo: confirma que la cuerda sonó, sin volver a renderizar. */
 export function flash(element: HTMLElement) {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const accent = getComputedStyle(element).getPropertyValue('--accent');
-  element.animate([{ offset: 0, backgroundColor: accent, color: '#000000' }], {
+  const css = getComputedStyle(element);
+  const accent = css.getPropertyValue('--accent');
+  element.animate([{ offset: 0, backgroundColor: accent, color: css.getPropertyValue('--on-accent') }], {
     duration: 520,
     easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
   });
@@ -61,28 +62,31 @@ export function TunerPanel({ notes, onPlayOpen }: TunerPanelProps) {
 
   return (
     <Slab>
-      <SlabHead title="Afinar">
-        <div className={styles.tunerTools}>
-          <button
-            type="button"
-            className={styles.openPlay}
-            aria-label="Escuchar la afinación al aire"
-            title="Las seis cuerdas al aire, de grave a aguda"
-            onClick={onPlayOpen}
-          >
-            <span aria-hidden="true">▶</span> Al aire
-          </button>
-          <Segmented
-            label="Modo de afinación"
-            value={mode}
-            options={[
-              { value: 'guided', label: 'Una a una' },
-              { value: 'auto', label: 'Automático' },
-            ]}
-            onChange={(value) => set({ tunerMode: value })}
-          />
-        </div>
-      </SlabHead>
+      {/* En pantalla ancha la pestaña ya dice Afinar: el título queda solo para el lector de pantalla. */}
+      <div className={styles.tunerHead}>
+        <SlabHead title="Afinar">
+          <div className={styles.tunerTools}>
+            <button
+              type="button"
+              className={styles.openPlay}
+              aria-label="Escuchar la afinación al aire"
+              title="Las seis cuerdas al aire, de grave a aguda"
+              onClick={onPlayOpen}
+            >
+              <span aria-hidden="true">▶</span> Al aire
+            </button>
+            <Segmented
+              label="Modo de afinación"
+              value={mode}
+              options={[
+                { value: 'guided', label: 'Una a una' },
+                { value: 'auto', label: 'Automático' },
+              ]}
+              onChange={(value) => set({ tunerMode: value })}
+            />
+          </div>
+        </SlabHead>
+      </div>
 
       <div className={styles.pills}>
         {notes.map((note, index) => {

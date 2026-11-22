@@ -1,5 +1,6 @@
 import { Link, type MetaFunction } from 'react-router';
 import { TUNINGS } from '~/data/tunings';
+import { PageTitle, Slab } from '~/shared/ui/ui';
 import styles from './inicio.module.css';
 
 export const meta: MetaFunction = () => [
@@ -66,14 +67,14 @@ const TOOLS: Tool[] = [
 export default function InicioRoute() {
   return (
     <div className={styles.page}>
-      <header className={styles.intro}>
-        <p className={styles.eyebrow}>Para componer con guitarra</p>
-        <h1>Elegí una herramienta</h1>
-        <p>
-          Para tocar de oído y salir de lo de siempre. Cada herramienta se usa sola: empezá por la que te pida
-          la guitarra hoy.
-        </p>
-      </header>
+      <Slab>
+        <PageTitle eyebrow="Para componer con guitarra" title="Elegí una herramienta">
+          <p>
+            Para tocar de oído y salir de lo de siempre. Cada herramienta se usa sola: empezá por la que te
+            pida la guitarra hoy.
+          </p>
+        </PageTitle>
+      </Slab>
       <ul className={styles.tools}>
         {TOOLS.map((tool, index) => (
           <li key={tool.to}>

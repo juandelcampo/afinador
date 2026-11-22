@@ -11,7 +11,8 @@
   --neck-ink: #ffffff;
   --neck-line: #666666;
   --neck-soft: #222222;
-  --rule: 3px solid var(--ink);
+  --rule-width: 3px;
+  --rule: var(--rule-width) solid var(--ink);
   /* Tres voces: Archivo ancha y negra para títulos, Archivo para botones y rótulos, Plex Mono para los
      datos (notas, números, intervalos). Las dos vienen con la app (root.tsx). */
   --heavy: 'Archivo Variable', 'Arial Black', 'Helvetica Neue', Arial, sans-serif;
@@ -21,12 +22,19 @@
   --lift: 4px;
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --neck-inlay: #3a3a3a;
+  /* Lo tenue sobre el mástil: los números de traste y las notas que se pueden poner. */
+  --neck-muted: #9a9a9a;
   /* Todo lo que se toca mide al menos 44 × 44, también con mouse (WCAG 2.5.5, AAA). */
   --touch: 44px;
   --touch-small: 44px;
   --gutter: 16px;
   /* Alto de la barra de arriba cuando entra en una fila. */
   --bar: 60px;
+  /* Ancho de una columna plegada a un costado, con su raya. */
+  --rail: 56px;
+  /* Lo que va arriba del diapasón en Inversiones y ¿Qué acorde?: con el mismo alto, el diapasón no salta al
+     pasar de una a otra. */
+  --lead: 132px;
 }
 
 @media (prefers-color-scheme: dark) {

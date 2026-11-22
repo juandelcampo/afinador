@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useSearchParams, type MetaFunction } from 'react-router';
+import { useSearchParams, type MetaFunction } from 'react-router';
 import { getAudio } from '~/audio/engine';
 import { pluckString, strumShape } from '~/audio/instrument';
 import { CHORD_STEPS, chordToken, parseChord, plainName, type Chord, type Suffix } from '~/core/harmony';
@@ -14,15 +14,17 @@ import {
   type InversionGroup,
   type Voicing,
 } from '~/core/inversions';
-import { noteLabel, noteToMidi } from '~/core/notes';
+import { noteToMidi } from '~/core/notes';
 import { MUTED, openChord } from '~/core/tuning';
-import { GROUPS, TUNINGS, type Tuning } from '~/data/tunings';
+import { TUNINGS, type Tuning } from '~/data/tunings';
 import { Fader } from '~/shared/Fader';
 import { ShapeStyleToggle } from '~/shared/ShapeStyle';
 import { useSettings } from '~/shared/settings';
 import { useHydrated } from '~/shared/useHydrated';
-import { Button, PageTitle, Slab } from '~/shared/ui/ui';
-import { Diapason, LAST_FRET } from './Diapason';
+import { Diapason, LAST_FRET } from '~/shared/Diapason';
+import { TuneLink, TuningField } from '~/shared/TuningField';
+import { Button, Field, PageTitle, Slab } from '~/shared/ui/ui';
+import ui from '~/shared/ui/ui.module.css';
 import styles from './inversiones.module.css';
 
 export const meta: MetaFunction = () => [
@@ -242,7 +244,7 @@ export default function InversionesRoute() {
     : [];
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${ui.frame}`}>
       <Slab>
         <PageTitle eyebrow="Todas las formas de un acorde" title="Inversiones">
           <p>
@@ -250,32 +252,12 @@ export default function InversionesRoute() {
             mástil.
           </p>
         </PageTitle>
-        <div className={styles.setup}>
-          <label className={styles.field} data-wide>
-            <span>Afinación</span>
-            <select
-              id="afinacion"
-              value={tuning.id}
-              onChange={(event) =>
-                update({
-                  afinacion: event.target.value === DEFAULT_TUNING ? null : event.target.value,
-                  forma: null,
-                })
-              }
-            >
-              {GROUPS.map((item) => (
-                <optgroup key={item.id} label={item.name}>
-                  {TUNINGS.filter((option) => option.group === item.id).map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.name} · {option.notes.map((note) => noteLabel(note, notation)).join(' ')}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-          </label>
-          <label className={styles.field}>
-            <span>Tipo</span>
+        <div className={ui.setup}>
+          <TuningField
+            tuning={tuning}
+            onChange={(id) => update({ afinacion: id === DEFAULT_TUNING ? null : id, forma: null })}
+          />
+          <Field label="Tipo">
             <select
               id="tipo"
               value={chord.suffix}
@@ -287,53 +269,42 @@ export default function InversionesRoute() {
                 </option>
               ))}
             </select>
-          </label>
-          <Link className={styles.bridge} to={`/afinador/${tuning.id}`}>
-            Afinar en {tuning.name} →
-          </Link>
-        </div>
-        <div className={styles.roots} role="group" aria-label="Nota del acorde">
-          {Array.from({ length: 12 }, (_, pc) => (
-            <button
-              key={pc}
-              type="button"
-              aria-pressed={pc === chord.root}
-              onClick={() => setChord({ root: pc })}
-            >
-              {rootName(pc)}
-            </button>
-          ))}
+          </Field>
+          <TuneLink tuning={tuning} />
         </div>
       </Slab>
 
       <Slab>
-        <div className={styles.inversions} role="group" aria-label="Qué va en el bajo">
-          {groups.map((item) => (
-            <button
-              key={item.bass}
-              type="button"
-              aria-pressed={item.inversion === shownGroup.inversion && (!editing || custom !== null)}
-              disabled={item.bare.length + item.full.length === 0}
-              onClick={() => show(item.inversion, easiest(item))}
-            >
-              <strong>{nameWithBass(item)}</strong>
-              <small>{ORDINALS[item.inversion]}</small>
-            </button>
-          ))}
+        {/* Lo que elige el acorde ocupa lo mismo que el nombre en ¿Qué acorde?: el diapasón queda en el
+            mismo lugar en las dos. */}
+        <div className={styles.lead}>
+          <div className={styles.roots} role="group" aria-label="Nota del acorde">
+            {Array.from({ length: 12 }, (_, pc) => (
+              <button
+                key={pc}
+                type="button"
+                aria-pressed={pc === chord.root}
+                onClick={() => setChord({ root: pc })}
+              >
+                {rootName(pc)}
+              </button>
+            ))}
+          </div>
+          <div className={styles.inversions} role="group" aria-label="Qué va en el bajo">
+            {groups.map((item) => (
+              <button
+                key={item.bass}
+                type="button"
+                aria-pressed={item.inversion === shownGroup.inversion && (!editing || custom !== null)}
+                disabled={item.bare.length + item.full.length === 0}
+                onClick={() => show(item.inversion, easiest(item))}
+              >
+                <strong>{nameWithBass(item)}</strong>
+                <small>{ORDINALS[item.inversion]}</small>
+              </button>
+            ))}
+          </div>
         </div>
-
-        <p className={styles.why}>
-          {editing && !custom ? (
-            'Tocá las notas tenues del diapasón para poner los dedos.'
-          ) : (
-            <>
-              <strong>
-                {shownGroup.inversion === 0 ? 'La raíz en el bajo.' : `La ${shownGroup.tone} en el bajo.`}
-              </strong>{' '}
-              {shownGroup.why}
-            </>
-          )}
-        </p>
 
         <Diapason
           notes={tuning.notes}
@@ -437,7 +408,20 @@ export default function InversionesRoute() {
           <p className={styles.empty}>En esta afinación la mano no llega a ninguna forma de {name}.</p>
         )}
 
-        <div className={styles.actions}>
+        <p className={styles.why}>
+          {editing && !custom ? (
+            'Tocá las notas tenues del diapasón para poner los dedos.'
+          ) : (
+            <>
+              <strong>
+                {shownGroup.inversion === 0 ? 'La raíz en el bajo.' : `La ${shownGroup.tone} en el bajo.`}
+              </strong>{' '}
+              {shownGroup.why}
+            </>
+          )}
+        </p>
+
+        <div className={ui.actions}>
           <Button variant="primary" onClick={playTour}>
             ▶ Escuchar las inversiones
           </Button>
@@ -456,9 +440,9 @@ export default function InversionesRoute() {
             </Button>
           )}
           <ShapeStyleToggle />
-          <Fader compact />
+          <Fader />
         </div>
-        <p className={styles.hint}>
+        <p className={ui.hint}>
           Lo tenue son las notas del acorde en todo el mástil; lo blanco, la forma elegida, con el bajo en
           naranja. Para armar la tuya, tocá una nota tenue y el dedo va ahí; tocá un dedo para sacarlo, o el
           nombre de una cuerda para que suene al aire.

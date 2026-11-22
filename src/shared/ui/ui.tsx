@@ -141,24 +141,64 @@ export function Slab({
   );
 }
 
-/** `number` es el rótulo de la sección (01, 02…): ordena la pantalla de un vistazo. */
-export function SlabHead({
-  title,
-  number,
-  children,
-}: {
-  title: string;
-  number?: string;
-  children?: ReactNode;
-}) {
+export function SlabHead({ title, children }: { title: string; children?: ReactNode }) {
   return (
     <div className={styles.slabHead}>
-      <h2>
-        {number && <span className={styles.number}>{number}</span>}
-        {title}
-      </h2>
+      <h2>{title}</h2>
       {children}
     </div>
+  );
+}
+
+/** Un campo con su rótulo chico arriba. `as="div"` cuando adentro hay botones (un label no puede tenerlos). */
+export function Field({
+  label,
+  wide,
+  as: Tag = 'label',
+  className = '',
+  children,
+}: {
+  label: ReactNode;
+  /** El campo principal de la fila (la afinación): toma más lugar. */
+  wide?: boolean;
+  as?: 'label' | 'div';
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <Tag className={`${styles.field} ${className}`} data-wide={wide || undefined}>
+      <span>{label}</span>
+      {children}
+    </Tag>
+  );
+}
+
+/** Una columna plegada a un costado: tocarla la abre. */
+export function Rail({
+  side,
+  label,
+  ariaLabel,
+  onOpen,
+  className = '',
+}: {
+  side: 'left' | 'right';
+  label: ReactNode;
+  ariaLabel: string;
+  onOpen: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      className={`${styles.rail} ${className}`}
+      data-side={side}
+      aria-expanded={false}
+      aria-label={ariaLabel}
+      onClick={onOpen}
+    >
+      <span aria-hidden="true">{side === 'left' ? '›' : '‹'}</span>
+      <span>{label}</span>
+    </button>
   );
 }
 

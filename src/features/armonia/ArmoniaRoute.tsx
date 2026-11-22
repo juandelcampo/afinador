@@ -48,13 +48,15 @@ import {
   walkingBass,
 } from '~/core/progressions';
 import { fingeringFor, MUTED, openChord, type Fingering } from '~/core/tuning';
-import { GROUPS, TUNINGS, type Tuning } from '~/data/tunings';
+import { TUNINGS, type Tuning } from '~/data/tunings';
 import { VUELTA_GROUPS, VUELTAS, type VueltaMode } from '~/data/vueltas';
 import { Fader } from '~/shared/Fader';
 import { TEMPO_RANGE, useSettings } from '~/shared/settings';
 import { useHydrated } from '~/shared/useHydrated';
 import { Sheet } from '~/shared/ui/Sheet';
-import { Button, PageTitle, Segmented, Slab, SlabHead, Tabs } from '~/shared/ui/ui';
+import { TuneLink, TuningField } from '~/shared/TuningField';
+import { Button, Field, PageTitle, Rail, Segmented, Slab, SlabHead, Tabs } from '~/shared/ui/ui';
+import ui from '~/shared/ui/ui.module.css';
 import styles from './armonia.module.css';
 import { CircleNotes, CircleWheel } from './CircleOfFifths';
 import { useVuelta, type Feel, type Voicing } from './useVuelta';
@@ -140,7 +142,7 @@ function SingOverList({ chord, keyOf, spell }: { chord: Chord; keyOf: Key; spell
         ))}
       </dl>
       {notes.blue.length > 0 && (
-        <p className={styles.hint}>Las subrayadas son de blues: chocan, pero bien puestas dan color.</p>
+        <p className={ui.hint}>Las subrayadas son de blues: chocan, pero bien puestas dan color.</p>
       )}
     </div>
   );
@@ -534,33 +536,13 @@ export default function ArmoniaRoute() {
             <PageTitle eyebrow="Acordes por emoción" title="Armonía">
               <p>Elegí un mundo, escuchá qué dice cada acorde y armá tu vuelta.</p>
             </PageTitle>
-            <div className={styles.setup}>
-              <label className={styles.field}>
-                <span>Afinación</span>
-                <select
-                  id="afinacion"
-                  value={tuning.id}
-                  onChange={(event) =>
-                    // La tónica vuelve a la que mejor cae sobre las cuerdas al aire de la nueva afinación.
-                    update({
-                      afinacion: event.target.value === DEFAULT_TUNING ? null : event.target.value,
-                      tono: null,
-                    })
-                  }
-                >
-                  {GROUPS.map((group) => (
-                    <optgroup key={group.id} label={group.name}>
-                      {TUNINGS.filter((item) => item.group === group.id).map((item) => (
-                        <option key={item.id} value={item.id}>
-                          {item.name} · {item.notes.map((note) => noteLabel(note, notation)).join(' ')}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-              </label>
-              <label className={styles.field}>
-                <span>Tónica</span>
+            <div className={ui.setup}>
+              <TuningField
+                tuning={tuning}
+                // La tónica vuelve a la que mejor cae sobre las cuerdas al aire de la nueva afinación.
+                onChange={(id) => update({ afinacion: id === DEFAULT_TUNING ? null : id, tono: null })}
+              />
+              <Field label="Tónica">
                 <select id="tonica" value={tonic} onChange={(event) => update({ tono: event.target.value })}>
                   {tonicNames(scale).map((label, pc) => (
                     <option key={label} value={pc}>
@@ -568,15 +550,13 @@ export default function ArmoniaRoute() {
                     </option>
                   ))}
                 </select>
-              </label>
-              <Link className={styles.bridge} to={`/afinador/${tuning.id}`}>
-                Afinar en {tuning.name} →
-              </Link>
+              </Field>
+              <TuneLink tuning={tuning} />
             </div>
           </Slab>
 
           <Slab>
-            <SlabHead number="01" title="Mundo" />
+            <SlabHead title="Mundo" />
             <Tabs
               label="Escala"
               value={scale.id}
@@ -596,7 +576,7 @@ export default function ArmoniaRoute() {
                 </p>
                 <p>{scale.character}</p>
                 {scale.family === 'modo' && (
-                  <p className={styles.hint}>
+                  <p className={ui.hint}>
                     Para que el modo se sienta, usá los acordes marcados con ★: son los que lo distinguen de
                     la escala mayor o menor de siempre.{' '}
                     {scale.risky !== undefined &&
@@ -606,7 +586,7 @@ export default function ArmoniaRoute() {
               </div>
               <div className={styles.worldChords}>
                 <h3 className={styles.subhead}>Sus acordes</h3>
-                <p className={styles.hint}>Tocá un acorde para escucharlo; el + lo suma a tu vuelta.</p>
+                <p className={ui.hint}>Tocá un acorde para escucharlo; el + lo suma a tu vuelta.</p>
                 <ul className={styles.cards} data-testid="degrees">
                   {degrees.map((item) =>
                     card(item.chord, degreeLabel(item.chord, key), {
@@ -660,16 +640,13 @@ export default function ArmoniaRoute() {
         {/* A la izquierda, de dónde sacar más acordes: todo cerrado hasta que lo pidas. */}
         <aside className={`${styles.side} ${styles.left}`} data-open={leftOpen} aria-label="Más acordes">
           {/* Cerrada, en pantallas anchas queda una franja con su nombre para volver a abrirla. */}
-          <button
-            type="button"
+          <Rail
+            side="left"
             className={styles.rail}
-            aria-expanded={false}
-            aria-label="Abrir más acordes"
-            onClick={() => openSide('left')}
-          >
-            <span aria-hidden="true">›</span>
-            <span>Más acordes</span>
-          </button>
+            label="Más acordes"
+            ariaLabel="Abrir más acordes"
+            onOpen={() => openSide('left')}
+          />
           <div className={styles.sideBody}>
             <div className={styles.sideHead}>
               <span>Más acordes</span>
@@ -684,7 +661,7 @@ export default function ArmoniaRoute() {
             </div>
             <Slab>
               <SlabHead title="Más color" />
-              <p className={styles.hint}>
+              <p className={ui.hint}>
                 ¿Se puede ir del III al I, mezclar escalas? Siempre sí: lo que importa es saber qué emoción
                 elegís.
               </p>
@@ -695,7 +672,7 @@ export default function ArmoniaRoute() {
                     {group.id === 'cine' && last && <span> · desde {name(last)}</span>}
                     <span> · {group.chords.length}</span>
                   </summary>
-                  {group.intro && <p className={styles.hint}>{group.intro}</p>}
+                  {group.intro && <p className={ui.hint}>{group.intro}</p>}
                   <ul className={styles.cards}>
                     {group.chords.map((item) =>
                       card(item.chord, item.label, { words: item.why, feeling: undefined }),
@@ -708,7 +685,7 @@ export default function ArmoniaRoute() {
                   <summary>
                     De dos en dos<span> · desde {name(last)}</span>
                   </summary>
-                  <p className={styles.hint}>
+                  <p className={ui.hint}>
                     Qué da cada cambio de dos acordes, contando {name(last)} como I. Repetí dos acordes varias
                     veces y ya tenés un riff o una estrofa.
                   </p>
@@ -726,7 +703,7 @@ export default function ArmoniaRoute() {
                 <summary>
                   <SlabHead title="Sin centro" />
                 </summary>
-                <p className={styles.hint}>
+                <p className={ui.hint}>
                   Los puntos cardinales: un sistema consonante pero sin tónica. Dentro de un grupo vale ir de
                   cualquier acorde a cualquiera, mayor o menor, y todo suena a fantasía.
                 </p>
@@ -779,12 +756,12 @@ export default function ArmoniaRoute() {
                   ))}
                 </div>
                 {pole && (
-                  <p className={styles.hint} data-testid="same-pole">
+                  <p className={ui.hint} data-testid="same-pole">
                     Tu último acorde está en el polo {pole.pole}. Por el mismo polo pasás a otro grupo:{' '}
                     {pole.roots.map((root) => plainName(root, notation)).join(' o ')}.
                   </p>
                 )}
-                <p className={styles.hint}>
+                <p className={ui.hint}>
                   Para la melodía: sobre acordes mayores, lidio (4.ª ascendida) o lidio con la 7.ª bajada;
                   sobre menores, dórico. La pentatónica queda bien sobre todo.
                 </p>
@@ -795,22 +772,18 @@ export default function ArmoniaRoute() {
 
         {/* A la derecha, tu vuelta: queda a mano mientras recorrés el resto. */}
         <aside className={`${styles.side} ${styles.right}`} data-open={rightOpen} aria-label="Tu vuelta">
-          <button
-            type="button"
+          <Rail
+            side="right"
             className={styles.rail}
-            aria-expanded={false}
-            aria-label="Abrir tu vuelta"
-            onClick={() => openSide('right')}
-          >
-            <span aria-hidden="true">‹</span>
-            <span>Tu vuelta{vuelta.length > 0 && ` · ${vuelta.length}`}</span>
-          </button>
+            label={`Tu vuelta${vuelta.length > 0 ? ` · ${vuelta.length}` : ''}`}
+            ariaLabel="Abrir tu vuelta"
+            onOpen={() => openSide('right')}
+          />
           <div className={styles.sideBody}>
             <Slab className={styles.vueltaSlab}>
               <span id="vuelta" className={styles.anchor} />
               <SlabHead title="Tu vuelta">
                 <div className={styles.vueltaTools}>
-                  <Fader compact />
                   {/* En pantallas anchas, la vuelta también se pliega a un costado. Agrandada, primero se achica. */}
                   {!wide && (
                     <button
@@ -840,12 +813,13 @@ export default function ArmoniaRoute() {
               </SlabHead>
               {vuelta.length === 0 ? (
                 <div className={styles.empty} data-testid="vuelta-empty">
-                  <p className={styles.hint}>
+                  <p className={ui.hint}>
                     Sumá acordes con el +, o arrancá con una vuelta que ya funcionó y después cambiala.
                   </p>
                   <Button variant="primary" full onClick={() => setSheet('arrancar')}>
                     Arrancar con una vuelta
                   </Button>
+                  <Fader />
                 </div>
               ) : (
                 <ol className={styles.chips} data-testid="vuelta" data-wide={wide || undefined}>
@@ -941,7 +915,7 @@ export default function ArmoniaRoute() {
                     >
                       {player.running ? '■ Parar' : '▶ Tocar la vuelta'}
                     </Button>
-                    <label className={styles.field}>
+                    <label className={ui.field}>
                       <span>Velocidad: {tempo} ppm</span>
                       <input
                         type="range"
@@ -952,11 +926,12 @@ export default function ArmoniaRoute() {
                         onChange={(event) => setTempo(Number(event.target.value))}
                       />
                     </label>
+                    <Fader />
                   </div>
                   <details className={styles.more}>
                     <summary>Cómo se toca</summary>
                     <div className={styles.controls}>
-                      <div className={styles.field}>
+                      <div className={ui.field}>
                         <span>Pulsos por acorde</span>
                         <Segmented
                           label="Pulsos por acorde"
@@ -969,7 +944,7 @@ export default function ArmoniaRoute() {
                           onChange={(value) => setBeats(Number(value))}
                         />
                       </div>
-                      <div className={styles.field}>
+                      <div className={ui.field}>
                         <span>Rasguido</span>
                         <Segmented
                           label="Rasguido"
@@ -1112,7 +1087,7 @@ export default function ArmoniaRoute() {
             )}
             {editorTab === 'bajo' && INVERSION_CHORDS.some((item) => item.suffix === activeChord.suffix) && (
               <Link
-                className={styles.bridge}
+                className={ui.bridge}
                 to={`/inversiones?${new URLSearchParams({
                   ...(tuning.id === DEFAULT_TUNING ? {} : { afinacion: tuning.id }),
                   acorde: chordToken({ root: activeChord.root, suffix: activeChord.suffix }),
@@ -1128,7 +1103,7 @@ export default function ArmoniaRoute() {
                     <p className={styles.label}>
                       Misma función: {name(base)} hace de {baseRole.label.toLowerCase()}
                     </p>
-                    <p className={styles.hint}>
+                    <p className={ui.hint}>
                       {baseRole.label}: {baseRole.why}. Cambialo por otro del mismo papel y la vuelta sigue
                       yendo al mismo lado, con otro color.
                     </p>
@@ -1217,7 +1192,7 @@ export default function ArmoniaRoute() {
               />
             )}
             {neighbors.length > 0 && (
-              <p className={styles.hint} data-testid="common-tones">
+              <p className={ui.hint} data-testid="common-tones">
                 {neighbors
                   .map((index) => {
                     const common = commonTones(activeChord, vuelta[index]!);
@@ -1234,7 +1209,7 @@ export default function ArmoniaRoute() {
       </Sheet>
 
       <Sheet open={sheet === 'arrancar'} title="Para arrancar" onClose={closeSheet} testId="starters">
-        <p className={styles.hint}>
+        <p className={ui.hint}>
           Vueltas que ya funcionaron. Son para arrancar: después movelas arrastrando, estiralas o cambiá un
           acorde por su relativo.
         </p>
@@ -1247,7 +1222,7 @@ export default function ArmoniaRoute() {
                 {group.mode !== mode && <span> · {group.mode}</span>}
                 <span> · {items.length}</span>
               </summary>
-              <p className={styles.hint}>{group.intro}</p>
+              <p className={ui.hint}>{group.intro}</p>
               <ul className={styles.starters}>
                 {items.map((item) => {
                   const chords = starter(item.degrees, group.mode);
@@ -1291,7 +1266,7 @@ export default function ArmoniaRoute() {
       </Sheet>
 
       <Sheet open={sheet === 'cerrar'} title="Cerrar con…" onClose={closeSheet} testId="cadences">
-        <p className={styles.hint}>La última cadencia es la última emoción que se lleva quien escucha.</p>
+        <p className={ui.hint}>La última cadencia es la última emoción que se lleva quien escucha.</p>
         <ul className={styles.cadences}>
           {CADENCES.map((cadence) => {
             const chords = cadenceChords(cadence, tonic);
