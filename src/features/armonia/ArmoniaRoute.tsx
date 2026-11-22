@@ -56,7 +56,7 @@ import { useHydrated } from '~/shared/useHydrated';
 import { Sheet } from '~/shared/ui/Sheet';
 import { Button, PageTitle, Segmented, Slab, SlabHead, Tabs } from '~/shared/ui/ui';
 import styles from './armonia.module.css';
-import { CircleOfFifths } from './CircleOfFifths';
+import { CircleNotes, CircleWheel } from './CircleOfFifths';
 import { useVuelta, type Feel, type Voicing } from './useVuelta';
 
 export const meta: MetaFunction = () => [
@@ -70,8 +70,6 @@ export const meta: MetaFunction = () => [
 
 const DEFAULT_TUNING = 'estandar';
 const MAX_CHORDS = 16;
-/** Desde este ancho la rueda va al lado de los acordes (con las dos franjas plegadas, el medio mide ~1000 px). */
-const SIDE_BY_SIDE = '(min-width: 1120px)';
 const EMPTY = new URLSearchParams();
 
 /** La tonalidad que mejor cae sobre las cuerdas al aire: la del acorde que forman, mayor o menor. */
@@ -280,10 +278,10 @@ export default function ArmoniaRoute() {
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
   /** La rueda arranca abierta donde entra al lado de los acordes; en el celular, cerrada. */
-  const circleFold = useRef<HTMLDetailsElement>(null);
-  useEffect(() => {
-    if (circleFold.current && window.matchMedia(SIDE_BY_SIDE).matches) circleFold.current.open = true;
-  }, []);
+  /** En el celular la rueda se abre a pedido; en pantalla ancha está siempre a la vista. */
+  const [circleOpen, setCircleOpen] = useState(false);
+  /** El acorde que tocaste en la rueda: va al medio con su +. */
+  const [circlePick, setCirclePick] = useState<Chord | null>(null);
   /** Sin lugar para las tres columnas, abrir un costado pliega el otro: el medio no se aplasta. */
   const openSide = (side: 'left' | 'right') => {
     const cramped = window.matchMedia('(max-width: 1179px)').matches;
@@ -436,6 +434,20 @@ export default function ArmoniaRoute() {
     },
   ];
 
+  const circleProps = {
+    keyOf: key,
+    vuelta,
+    // En la rueda, cada casilla se escribe en su propio tono: C#m y no D♭m, como el relativo de E.
+    name: (chord: Chord) =>
+      chordName(
+        chord,
+        { tonic: chord.root, scale: findScale(chordColor(chord.suffix) === 'minor' ? 'natural' : 'mayor')! },
+        notation,
+      ),
+    worldTonic: degrees[0]!.chord,
+    picked: circlePick,
+  };
+
   const card = (chord: Chord, label: string, extra: Partial<CardProps> = {}) => (
     <ChordCard
       key={chordToken(chord) + label}
@@ -571,27 +583,28 @@ export default function ArmoniaRoute() {
               options={SCALES.map((item) => ({ value: item.id, label: item.name }))}
               onChange={(value) => update({ escala: value })}
             />
-            <div className={styles.world}>
-              <p className={styles.worldName}>
-                {pitchName(spellIn(tonic, key), notation)} {scale.name.toLowerCase()}
-                {scale.alias && <small> · {scale.alias.toLowerCase()}</small>}
-                <span className={styles.point} data-point={scale.point}>
-                  {POINT_LABEL[scale.point]}
-                </span>
-              </p>
-              <p>{scale.character}</p>
-              {scale.family === 'modo' && (
-                <p className={styles.hint}>
-                  Para que el modo se sienta, usá los acordes marcados con ★: son los que lo distinguen de la
-                  escala mayor o menor de siempre.{' '}
-                  {scale.risky !== undefined &&
-                    'El marcado con OJO tira hacia otra tónica: usalo poco o nada.'}
+            {/* En pantalla ancha, la rueda va sola a la derecha, a la altura del mundo; a la izquierda, el mundo,
+                sus acordes y lo que se lee de la rueda. En el celular, todo en fila y la rueda se abre a pedido. */}
+            <div className={styles.worldGrid} data-circle={circleOpen ? 'open' : 'closed'}>
+              <div className={styles.world}>
+                <p className={styles.worldName}>
+                  {pitchName(spellIn(tonic, key), notation)} {scale.name.toLowerCase()}
+                  {scale.alias && <small> · {scale.alias.toLowerCase()}</small>}
+                  <span className={styles.point} data-point={scale.point}>
+                    {POINT_LABEL[scale.point]}
+                  </span>
                 </p>
-              )}
-            </div>
-            {/* En pantalla ancha, los acordes y la rueda van uno al lado del otro: todo a la vista sin bajar. */}
-            <div className={styles.chordsAndCircle}>
-              <div>
+                <p>{scale.character}</p>
+                {scale.family === 'modo' && (
+                  <p className={styles.hint}>
+                    Para que el modo se sienta, usá los acordes marcados con ★: son los que lo distinguen de
+                    la escala mayor o menor de siempre.{' '}
+                    {scale.risky !== undefined &&
+                      'El marcado con OJO tira hacia otra tónica: usalo poco o nada.'}
+                  </p>
+                )}
+              </div>
+              <div className={styles.worldChords}>
                 <h3 className={styles.subhead}>Sus acordes</h3>
                 <p className={styles.hint}>Tocá un acorde para escucharlo; el + lo suma a tu vuelta.</p>
                 <ul className={styles.cards} data-testid="degrees">
@@ -611,32 +624,27 @@ export default function ArmoniaRoute() {
                   )}
                 </ul>
               </div>
-              {/* Los vecinos del mundo: para ver de un vistazo qué queda cerca, qué es prestado y adónde mudarse. */}
-              <details
-                className={`${styles.group} ${styles.circleFold}`}
+              <button
+                type="button"
+                className={styles.circleToggle}
+                aria-expanded={circleOpen}
                 data-testid="circulo-fold"
-                ref={circleFold}
+                onClick={() => setCircleOpen(!circleOpen)}
               >
-                <summary>
-                  Círculo de quintas <span>· los vecinos del mundo</span>
-                </summary>
-                <CircleOfFifths
-                  keyOf={key}
-                  vuelta={vuelta}
-                  name={(chord) =>
-                    // En la rueda, cada casilla se escribe en su propio tono: C#m y no D♭m, como el relativo de E.
-                    chordName(
-                      chord,
-                      {
-                        tonic: chord.root,
-                        scale: findScale(chordColor(chord.suffix) === 'minor' ? 'natural' : 'mayor')!,
-                      },
-                      notation,
-                    )
-                  }
-                  worldTonic={degrees[0]!.chord}
-                  onListen={listen}
-                  onAdd={add}
+                Círculo de quintas <span>· los vecinos del mundo</span>
+              </button>
+              <CircleWheel
+                {...circleProps}
+                onPick={(chord) => {
+                  setCirclePick(chord);
+                  listen(chord);
+                }}
+                onAdd={add}
+              />
+              <div className={styles.circleText}>
+                <h3 className={styles.subhead}>Círculo de quintas</h3>
+                <CircleNotes
+                  {...circleProps}
                   onMoveWorld={(chord) =>
                     update({
                       tono: String(chord.root),
@@ -644,7 +652,7 @@ export default function ArmoniaRoute() {
                     })
                   }
                 />
-              </details>
+              </div>
             </div>
           </Slab>
         </div>
