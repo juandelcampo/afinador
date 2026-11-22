@@ -152,7 +152,7 @@
 @container main (min-width: 900px) {
   .page {
     /* Las filas del mástil se ajustan al alto de la ventana para que Acordes entre sin scrollear. */
-    --row: clamp(34px, calc((100dvh - var(--bar)) * 0.11 - 50px), 52px);
+    --row: clamp(32px, calc((100dvh - var(--bar)) * 0.11 - 50px), 44px);
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
     height: calc(100dvh - var(--bar));
@@ -781,14 +781,14 @@
   --visible: 12;
   position: relative;
   display: grid;
-  grid-template-columns: 40px repeat(var(--visible), minmax(0, 1fr)) clamp(56px, 20cqi, 200px);
+  grid-template-columns: 44px repeat(var(--visible), minmax(0, 1fr)) clamp(56px, 20cqi, 200px);
   color: var(--neck-ink);
 }
 .neckLabel {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: var(--row, var(--touch));
+  height: var(--row, 38px);
   padding: 0;
   border: 0;
   border-right: 7px solid var(--neck-ink);
@@ -802,7 +802,7 @@
 }
 .fret {
   position: relative;
-  height: var(--row, var(--touch));
+  height: var(--row, 38px);
   min-width: 0;
   padding: 0;
   border: 0;
@@ -822,8 +822,9 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: min(30px, 90%);
+  width: min(30px, 90%, calc(var(--row, 38px) - 6px));
   aspect-ratio: 1;
+  border-radius: 50%;
   background: var(--accent);
   transform: translate(-50%, -50%);
 }
@@ -854,9 +855,18 @@
   overflow: hidden;
   border-top: 2px solid var(--neck-ink);
   background: var(--neck);
-  color: var(--neck-ink);
+  color: #9a9a9a;
   font: 12px/22px var(--mono);
   text-align: center;
+}
+/* Las posiciones (3, 5, 7, 9) en blanco y el 12 subrayado, como en Inversiones y ¿Qué acorde?. */
+.fretNumber[data-inlay] {
+  color: var(--neck-ink);
+  font-weight: 700;
+}
+.fretNumber[data-inlay='2'] {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 /* Los trastes no se estiran más de la cuenta: con menos ancho se muestran menos, pero más anchos
    para el dedo. 12 en una columna ancha, 9, 7 y 5 en el celular. */
@@ -890,7 +900,7 @@
 }
 @container column (min-width: 640px) {
   .neckGrid {
-    grid-template-columns: 56px repeat(var(--visible), minmax(0, 1fr)) clamp(56px, 20cqi, 200px);
+    grid-template-columns: 44px repeat(var(--visible), minmax(0, 1fr)) clamp(56px, 20cqi, 200px);
   }
 }
 
