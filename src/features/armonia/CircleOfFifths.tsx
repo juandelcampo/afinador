@@ -11,6 +11,7 @@ import {
 } from '~/core/circle';
 import { chordColor, degreeLabel, type Chord, type Key } from '~/core/harmony';
 import { Button } from '~/shared/ui/ui';
+import ui from '~/shared/ui/ui.module.css';
 import styles from './armonia.module.css';
 
 // La rueda mide 400 de lado: afuera los mayores, adentro sus relativos, y en el medio el acorde que tocaste.
@@ -132,7 +133,9 @@ export function CircleWheel({
         {picked ? (
           <>
             <strong>{name(picked)}</strong>
-            <span>{outside === 0 ? degreeLabel(picked, keyOf) : `${outside} de afuera`}</span>
+            <span className={styles.wheelDegree}>
+              {outside === 0 ? degreeLabel(picked, keyOf) : `${outside} de afuera`}
+            </span>
             <button
               type="button"
               className={styles.add}
@@ -166,7 +169,7 @@ export function CircleNotes({
   const outside = picked ? notesOutside(picked, keyOf) : 0;
   return (
     <div className={styles.circleNotes}>
-      <p className={styles.hint}>
+      <p className={ui.hint}>
         Afuera los mayores, adentro sus relativos menores. Cada paso alrededor es una quinta, y cada quinta
         gira el color: tu tónica es naranja, los vecinos tienen colores vecinos y lo de enfrente, el
         complementario. Lo de tu mundo va más fuerte; los números son tu vuelta.
@@ -201,7 +204,7 @@ export function CircleNotes({
         </div>
       )}
       {moves.total > 0 && (
-        <p className={styles.hint} data-testid="circulo-vuelta">
+        <p className={ui.hint} data-testid="circulo-vuelta">
           En tu vuelta, {moves.fifths} de {moves.total} cambios caen o suben una quinta
           {moves.fifths === 0
             ? ': salta de un lado a otro de la rueda.'

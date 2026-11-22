@@ -1,5 +1,5 @@
 /* Armonía: el mundo y sus acordes al medio; a la izquierda, de dónde sacar más acordes; a la derecha, tu
-   vuelta. En el celular todo va en una columna: mundo, vuelta, más acordes. Desde 860 px, tres columnas
+   vuelta. En el celular todo va en una columna: mundo, vuelta, más acordes. Desde 900 px, tres columnas
    como en el Afinador: los costados se pliegan a una franja con su nombre (los dos arrancan plegados),
    y el mundo ocupa todo lo que queda en el medio. Los costados quedan fijos y tienen su propio scroll
    mientras el medio baja. */
@@ -39,36 +39,6 @@
   display: none;
 }
 
-/* Plegada: una franja con el nombre en vertical. */
-.rail {
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  gap: 14px;
-  width: 100%;
-  padding: 14px 0;
-  border: 0;
-  background: var(--paper);
-  color: var(--ink);
-  font: 900 12px/1 var(--heavy);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-.rail:hover {
-  background: var(--soft);
-}
-.rail > span:first-child {
-  font-size: 24px;
-  letter-spacing: 0;
-}
-.rail > span:last-child {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-}
-.right .rail > span:last-child {
-  transform: none;
-}
 .sideHead {
   align-items: center;
   justify-content: space-between;
@@ -100,7 +70,7 @@
   font: 900 16px/1 var(--ui);
 }
 
-@container content (min-width: 860px) {
+@container content (min-width: 900px) {
   .page {
     grid-template-areas: 'left center right';
     grid-template-columns: auto minmax(0, 1fr) auto;
@@ -111,7 +81,7 @@
     top: var(--bar);
     display: flex;
     flex-direction: column;
-    width: 56px;
+    width: var(--rail);
     height: calc(100dvh - var(--bar));
   }
   .left {
@@ -149,6 +119,9 @@
   }
   .center {
     min-height: calc(100dvh - var(--bar));
+    box-shadow:
+      calc(-1 * var(--rule-width)) 0 0 var(--ink),
+      var(--rule-width) 0 0 var(--ink);
   }
   /* Agrandada, la vuelta se estira hacia la izquierda y el mundo queda angosto, con su propio scroll. */
   .page[data-wide] {
@@ -167,7 +140,7 @@
   }
 }
 
-/* El volumen y la flecha van juntos a la derecha del título: el volumen cede lo que falte. */
+/* La flecha de agrandar y la de plegar, a la derecha del título. */
 .vueltaTools {
   display: flex;
   flex: 1 1 120px;
@@ -175,9 +148,6 @@
   justify-content: flex-end;
   gap: 8px;
   min-width: 0;
-}
-.vueltaTools > label {
-  flex: 0 1 130px;
 }
 .vueltaTools > button {
   flex: none;
@@ -190,67 +160,10 @@
   font: 900 16px/1 var(--ui);
   transform: rotate(-90deg);
 }
-@container content (min-width: 860px) {
+@container content (min-width: 900px) {
   .widen {
     transform: none;
   }
-}
-
-.hint {
-  margin-top: 6px;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-/* Afinación y tónica */
-.setup {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 8px 12px;
-  margin-top: 12px;
-}
-.setup > .field:first-child {
-  flex: 3 1 240px;
-}
-.setup > .field {
-  flex: 1 1 110px;
-}
-.field {
-  display: grid;
-  gap: 3px;
-  min-width: 0;
-  font: 600 12px/1.5 var(--ui);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-.field select {
-  width: 100%;
-  min-height: var(--touch);
-  padding: 6px 8px;
-  border: var(--rule);
-  background: var(--paper);
-  color: var(--ink);
-  /* 16px evita que iOS acerque el zoom al elegir. */
-  font: 700 16px/1.2 var(--mono);
-  letter-spacing: 0;
-  text-transform: none;
-}
-.field input[type='range'] {
-  width: 100%;
-  height: var(--touch);
-  margin: 0;
-  accent-color: var(--accent);
-}
-.bridge {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--touch);
-  font: 700 semi-expanded 13px/1.2 var(--ui);
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  text-underline-offset: 3px;
 }
 
 /* 01 Mundo */
@@ -587,6 +500,9 @@
 .controls [role='group'] {
   display: flex;
 }
+.controls input[type='range'] {
+  width: 100%;
+}
 .controls [role='group'] button {
   flex: 1;
   padding-inline: 6px;
@@ -711,7 +627,7 @@
   flex: none;
   width: 64px;
 }
-@container content (min-width: 860px) {
+@container content (min-width: 900px) {
   .dock {
     display: none;
   }
@@ -1205,6 +1121,11 @@
 .wheelCenter span {
   font: 600 12px/1.2 var(--mono);
   color: var(--muted);
+}
+/* El grado del acorde tocado: lo segundo que se lee, después del nombre. */
+.wheelCenter .wheelDegree {
+  font: 900 17px/1.1 var(--heavy);
+  color: var(--ink);
 }
 .wheelCenter .add {
   width: var(--touch);
