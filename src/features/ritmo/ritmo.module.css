@@ -19,9 +19,7 @@
 /* Arriba de la figura, cómo se dibuja y el paso a la batería: en el mismo lugar en todos los ritmos. */
 .figureBar {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 8px;
+  justify-content: center;
   width: 100%;
 }
 .figure > p {
@@ -36,7 +34,8 @@
 }
 @container ritmo (min-width: 860px) {
   .board:not([data-drum]) {
-    grid-template-columns: minmax(260px, 460px) minmax(0, 1fr);
+    /* Mitad y mitad: la figura centrada en la suya, los controles llenan la otra. */
+    grid-template-columns: minmax(260px, 1fr) minmax(0, 1fr);
   }
 }
 
@@ -224,38 +223,55 @@
 }
 
 /* --- Armar --- */
+/* Todo a lo ancho de la columna: los de partida arriba, los ajustes en una grilla con el rótulo arriba
+   (como en las otras herramientas) y lo que elige entre pocos, en botones chicos, nunca en una lista. */
 .editor {
   display: grid;
-  justify-items: start;
-  gap: 12px;
+  gap: 14px;
 }
 .presets {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
-/* Los ajustes, uno por fila: el rótulo a la izquierda, con el mismo ancho en todos los ritmos, y el
-   control al lado. Así se leen de arriba abajo, como una lista. */
 .rows {
-  display: grid;
-  gap: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 .rows > * {
+  flex: 1 1 150px;
+  max-width: 300px;
+}
+/* Lo que lleva botones (el sonido, cada línea de la polirritmia) ocupa la fila entera. */
+.rows > .span {
+  flex-basis: 100%;
+  max-width: none;
+}
+/* Los pasos a pasos llenan su celda: la grilla queda pareja. */
+.rows > * > [role='group']:has(> output),
+.line > [role='group']:has(> output) {
+  display: flex;
+  width: 100%;
+}
+.rows output {
+  flex: 1;
+}
+.line {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 10px;
+  gap: 8px 14px;
 }
-/* Si no entra, lo que sigue baja a otra línea, alineado con el control y no con el rótulo. */
-.rows > * > span:first-child {
-  flex: 0 0 110px;
+.line > [role='group']:has(> output) {
+  flex: 0 0 200px;
+  width: auto;
 }
-.rows select {
-  min-width: 160px;
+.rows > .textField {
+  max-width: 420px;
 }
 .textField input {
-  width: 160px;
-  max-width: 100%;
+  width: 100%;
   min-height: var(--touch);
   padding: 6px 10px;
   border: var(--rule);
@@ -269,11 +285,44 @@
 /* Las pistas grises son las de todas las herramientas (ui.hint); acá solo no se estiran de más. */
 .editor > p {
   max-width: 62ch;
+  margin: 0;
 }
 .error {
-  margin-top: 8px;
   font-size: 12px;
   font-weight: 700;
+}
+.controls > :global(#to-drums) {
+  justify-self: start;
+}
+
+/* --- En casillas: el mismo ritmo en una línea, como en la batería --- */
+.strip {
+  display: grid;
+  gap: 6px;
+}
+.stripRow {
+  display: grid;
+  grid-template-columns: repeat(var(--cells), minmax(0, 1fr));
+  gap: 3px;
+}
+.stripRow > span {
+  height: 32px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+}
+/* El golpe con acento, lleno; el que no, más chico adentro de su casilla. */
+.stripRow > span[data-level] {
+  background: var(--ink);
+}
+.stripRow > span[data-level='0'] {
+  box-shadow: inset 0 0 0 5px var(--paper);
+}
+.stripRow > span[data-now] {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
+}
+.stripRow > span[data-level][data-now] {
+  background: var(--accent);
 }
 
 /* --- Caja de ritmos --- */

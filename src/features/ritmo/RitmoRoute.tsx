@@ -24,9 +24,10 @@ import {
 import { DRUM_PRESETS } from '~/data/drums';
 import { Fader } from '~/shared/Fader';
 import { useSettings } from '~/shared/settings';
-import { Button, Field, PageTitle, Segmented, Slab, Stepper, Tabs } from '~/shared/ui/ui';
+import { Button, Field, PageTitle, Slab, Stepper, Tabs } from '~/shared/ui/ui';
 import ui from '~/shared/ui/ui.module.css';
 import { DrumMachine } from './DrumMachine';
+import { Strip } from './Strip';
 import { TapTempo } from './TapTempo';
 import { Wheel } from './Wheel';
 import styles from './ritmo.module.css';
@@ -97,6 +98,44 @@ const DEFAULTS: { [K in Mode]: (bpm: number) => Extract<RhythmConfig, { mode: K 
   drum: (bpm) => ({ ...DRUM_PRESETS[0]!.config, bpm }),
 };
 
+/**
+ * Elegir uno entre pocos: botones chicos, todos a la vista. Es lo mismo para los ritmos con nombre, el
+ * sonido, el instrumento y la figura, así se lee igual en toda la página (sin listas desplegables).
+ */
+function Chips<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+  testId,
+}: {
+  label: string;
+  value: T | null;
+  options: ReadonlyArray<{ value: T; label: string }>;
+  onChange: (value: T) => void;
+  testId?: string;
+}) {
+  return (
+    <div className={styles.presets} role="group" aria-label={label} data-testid={testId}>
+      {options.map((option) => (
+        <Button
+          key={option.value}
+          variant="mini"
+          ariaPressed={option.value === value}
+          onClick={() => onChange(option.value)}
+        >
+          {option.label}
+        </Button>
+      ))}
+    </div>
+  );
+}
+
+const DRUM_OPTIONS: ReadonlyArray<{ value: DrumId; label: string }> = DRUMS.map((drum) => ({
+  value: drum.id,
+  label: drum.name,
+}));
+
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const meterKey = (meter: Meter) => `${meter.groups.join()}/${meter.denom}`;
 
@@ -145,7 +184,7 @@ function MeterEditor({
           />
         </Field>
         <Field label="Unidad" as="div">
-          <Segmented
+          <Chips
             label="Unidad del compás"
             value={String(meter.denom) as '4' | '8' | '16'}
             options={[
@@ -270,28 +309,29 @@ function Editor({
           </div>
           <div className={styles.rows}>
             {lines.map(({ key, count }, line) => (
-              <Field key={key} label={line === 0 ? 'Círculos' : 'Cuadrados'} as="div">
-                <Stepper
-                  label={`golpes de la línea ${line + 1}`}
-                  value={count}
-                  onDown={() => onChange({ ...config, [key]: clamp(count - 1, 1, LIMITS.lane[1]) })}
-                  onUp={() => onChange({ ...config, [key]: clamp(count + 1, 1, LIMITS.lane[1]) })}
-                />
-                <select
-                  value={voices[line]}
-                  aria-label={`Instrumento de la línea ${line + 1}`}
-                  data-testid={`poly-voice-${line}`}
-                  onChange={(event) => {
-                    const voice = event.target.value as DrumId;
-                    onChange({ ...config, voices: line === 0 ? [voice, voices[1]] : [voices[0], voice] });
-                  }}
-                >
-                  {DRUMS.map((drum) => (
-                    <option key={drum.id} value={drum.id}>
-                      {drum.name}
-                    </option>
-                  ))}
-                </select>
+              <Field
+                key={key}
+                label={line === 0 ? 'Círculos · golpes y sonido' : 'Cuadrados · golpes y sonido'}
+                as="div"
+                className={styles.span}
+              >
+                <div className={styles.line}>
+                  <Stepper
+                    label={`golpes de la línea ${line + 1}`}
+                    value={count}
+                    onDown={() => onChange({ ...config, [key]: clamp(count - 1, 1, LIMITS.lane[1]) })}
+                    onUp={() => onChange({ ...config, [key]: clamp(count + 1, 1, LIMITS.lane[1]) })}
+                  />
+                  <Chips<DrumId>
+                    label={`Instrumento de la línea ${line + 1}`}
+                    testId={`poly-voice-${line}`}
+                    value={voices[line] ?? null}
+                    options={DRUM_OPTIONS}
+                    onChange={(voice) =>
+                      onChange({ ...config, voices: line === 0 ? [voice, voices[1]] : [voices[0], voice] })
+                    }
+                  />
+                </div>
               </Field>
             ))}
           </div>
@@ -532,7 +572,7 @@ export default function RitmoRoute() {
           {!drum && (
             <section className={styles.figure} aria-label="Figura del ritmo" data-mode={config.mode}>
               <div className={styles.figureBar}>
-                <Segmented
+                <Chips
                   label="Figura del ritmo"
                   value={figure}
                   options={[
@@ -541,15 +581,6 @@ export default function RitmoRoute() {
                   ]}
                   onChange={(value) => set({ rhythmFigure: value })}
                 />
-                <Button
-                  id="to-drums"
-                  onClick={() => {
-                    setUndo([]);
-                    apply(rhythmToDrums(config));
-                  }}
-                >
-                  A la batería →
-                </Button>
               </div>
               {figure === 'estrella' && fewHits && (
                 <p className={ui.hint}>Con menos de cinco golpes no hay estrella: queda el polígono.</p>
@@ -573,22 +604,35 @@ export default function RitmoRoute() {
                 onChange={apply}
                 sound={
                   config.mode === 'poly' ? null : (
-                    <Field label="Sonido">
-                      <select
+                    <Field label="Sonido" as="div" className={styles.span}>
+                      <Chips<ClickSound>
+                        label="Sonido del metrónomo"
+                        testId="click-sound"
                         value={clickSound}
-                        data-testid="click-sound"
-                        onChange={(event) => set({ clickSound: event.target.value as ClickSound })}
-                      >
-                        {CLICK_SOUNDS.map((sound) => (
-                          <option key={sound.id} value={sound.id}>
-                            {sound.name}
-                          </option>
-                        ))}
-                      </select>
+                        options={CLICK_SOUNDS.map((sound) => ({ value: sound.id, label: sound.name }))}
+                        onChange={(value) => set({ clickSound: value })}
+                      />
                     </Field>
                   )
                 }
               />
+            )}
+            {!drum && (
+              <div className={`${ui.field} ${styles.stripBox}`}>
+                <span>En casillas</span>
+                <Strip cycle={shown} />
+              </div>
+            )}
+            {!drum && (
+              <Button
+                id="to-drums"
+                onClick={() => {
+                  setUndo([]);
+                  apply(rhythmToDrums(config));
+                }}
+              >
+                Pasar a la batería →
+              </Button>
             )}
           </div>
         </div>

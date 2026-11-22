@@ -226,4 +226,29 @@ test.describe('ritmo', () => {
     );
     expect(errors).toEqual([]);
   });
+
+  test('el sonido y los instrumentos se eligen con botones, y las casillas muestran dónde coinciden', async ({
+    page,
+  }) => {
+    const errors = watchErrors(page);
+    await goto(page, '/ritmo');
+    const sound = page.getByRole('group', { name: 'Sonido del metrónomo' });
+    await sound.getByRole('button', { name: 'Madera' }).click();
+    await expect(sound.getByRole('button', { name: 'Madera' })).toHaveAttribute('aria-pressed', 'true');
+
+    // 3 contra 2 sobre una misma grilla de 6: las dos líneas solo coinciden en la primera.
+    await page
+      .getByRole('group', { name: 'Tipo de ritmo' })
+      .getByRole('button', { name: 'Polirritmia' })
+      .click();
+    const rows = page.getByTestId('strip').locator('> div');
+    await expect(rows).toHaveCount(2);
+    await expect(rows.nth(0).locator('span')).toHaveCount(6);
+    await expect(rows.nth(0).locator('span[data-level]')).toHaveCount(3);
+    await expect(rows.nth(1).locator('span[data-level]')).toHaveCount(2);
+    const voice = page.getByTestId('poly-voice-1');
+    await voice.getByRole('button', { name: 'Tom' }).click();
+    await expect(voice.getByRole('button', { name: 'Tom' })).toHaveAttribute('aria-pressed', 'true');
+    expect(errors).toEqual([]);
+  });
 });
