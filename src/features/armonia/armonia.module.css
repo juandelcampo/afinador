@@ -213,7 +213,10 @@
   list-style: none;
 }
 .card {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  /* La barra de color y figura va siempre abajo: en una fila, todas a la misma altura. */
+  grid-template-rows: 1fr auto;
   min-width: 0;
   border: 2px solid var(--ink);
   background: var(--paper);
@@ -854,49 +857,58 @@
 .chipCard > .chipMain {
   height: 100%;
 }
-.chipBar {
+.pickBar {
   display: flex;
+}
+/* En la vuelta, la barra va pegada abajo de la tarjeta, con su mismo borde. */
+.chip > .pickBar {
   border: 2px solid var(--ink);
   border-top: 0;
 }
-.chipColor,
-.chipShape {
+/* En los grados, la barra es la última fila de la tarjeta, a todo lo ancho. */
+.card > .pickBar {
+  grid-column: 1 / -1;
+  border-top: 2px solid var(--ink);
+}
+.pickColor,
+.pickShape {
   min-height: 34px;
   border: 0;
   background: var(--paper);
   color: var(--ink);
   font: 700 12px/1.1 var(--mono);
 }
-.chipColor {
+.pickColor {
   flex: 1;
   width: 0;
   min-width: 0;
   padding: 0 4px;
   text-overflow: ellipsis;
 }
-.chipShape {
+.pickShape {
   flex: none;
   padding: 0 6px;
   border-left: 2px solid var(--ink);
   text-transform: uppercase;
   white-space: nowrap;
 }
-.chipColor:hover,
-.chipShape:hover {
+.pickColor:hover,
+.pickShape:hover {
   background: var(--soft);
 }
 /* En una tarjeta angosta no entran los dos en fila: el color arriba, la figura abajo. */
-.chip {
+.chip,
+.card {
   container-type: inline-size;
 }
 @container (max-width: 199px) {
-  .chipBar {
+  .pickBar {
     flex-direction: column;
   }
-  .chipColor {
+  .pickColor {
     width: 100%;
   }
-  .chipShape {
+  .pickShape {
     border-top: 2px solid var(--ink);
     border-left: 0;
   }

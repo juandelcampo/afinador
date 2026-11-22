@@ -246,6 +246,28 @@ test.describe('armonía', () => {
     expect(errors).toEqual([]);
   });
 
+  test('cada grado elige su color y su figura antes de sumarlo', async ({ page }) => {
+    const errors = watchErrors(page);
+    await goto(page, '/armonia?escala=mayor&tono=0');
+    const degrees = page.getByTestId('degrees');
+    const tonic = degrees.getByRole('listitem').first();
+
+    // Otro color: la tarjeta pasa a ser ese acorde y dice qué le suma.
+    await tonic.getByRole('combobox', { name: 'Color de C' }).selectOption('maj7');
+    await expect(tonic.locator('strong')).toHaveText('Cmaj7');
+    await expect(tonic).toContainText('romántico');
+    // Otra figura, y el + suma el acorde tal como quedó.
+    await tonic.getByRole('button', { name: /^Otra figura de Cmaj7: va la 1/ }).click();
+    await expect(tonic.getByRole('button', { name: /^Otra figura de Cmaj7: va la 2/ })).toBeVisible();
+    await tonic.getByRole('button', { name: 'Sumar Cmaj7 a la vuelta' }).click();
+    await expect(page).toHaveURL(/v=Cmaj7\.1(&|$)/);
+
+    // Otro mundo: los grados vuelven a sus tríadas.
+    await page.locator('#tonica').selectOption('2');
+    await expect(degrees.getByRole('listitem').first().locator('strong')).toHaveText('D');
+    expect(errors).toEqual([]);
+  });
+
   test('el color y la figura se cambian desde la vuelta, sin abrir el editor', async ({ page }) => {
     const errors = watchErrors(page);
     await goto(page, '/armonia?escala=mayor&tono=0&v=C*2_G');
