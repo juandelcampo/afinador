@@ -95,6 +95,15 @@ export const TUNINGS: Tuning[] = [
     group: 'estandar',
     notes: ['C#2', 'F#2', 'B2', 'E3', 'G#3', 'C#4'],
     desc: 'Un tono y medio abajo. Con cuerdas comunes ya se siente floja: conviene subir el calibre.',
+    heard: [
+      {
+        artist: 'Black Sabbath',
+        song: 'Children of the Grave',
+        who: 'en todo Master of Reality',
+        conf: 'fan',
+        video: 'exPPF4yb0js',
+      },
+    ],
   },
   {
     id: 'cstd',
@@ -103,6 +112,7 @@ export const TUNINGS: Tuning[] = [
     notes: ['C2', 'F2', 'A#2', 'D#3', 'G3', 'C4'],
     restring: true,
     desc: 'Dos tonos abajo, con las formas de siempre. Con cuerdas comunes queda muy floja: pide calibres gruesos.',
+    heard: [{ artist: 'Katatonia', song: 'My Twin', conf: 'fan', video: '4AZuvOpMxLo' }],
   },
   {
     id: 'baritono',
@@ -111,6 +121,15 @@ export const TUNINGS: Tuning[] = [
     notes: ['B1', 'E2', 'A2', 'D3', 'F#3', 'B3'],
     restring: true,
     desc: 'Una cuarta abajo de la estándar: las mismas formas suenan en otro registro. Lo ideal es un mástil más largo.',
+    heard: [
+      {
+        artist: 'Glen Campbell',
+        song: 'Wichita Lineman',
+        who: 'el solo, en guitarra barítono',
+        conf: 'fan',
+        video: 'Q8P_xTBpAcY',
+      },
+    ],
   },
   {
     id: 'nashville',
@@ -153,6 +172,7 @@ export const TUNINGS: Tuning[] = [
     group: 'drop',
     notes: ['Db2', 'Ab2', 'Db3', 'Gb3', 'Bb3', 'Eb4'],
     desc: 'Drop D medio tono abajo: el mismo power chord a un dedo, con cuerdas algo más blandas.',
+    heard: [{ artist: 'Alice in Chains', song: 'Them Bones', conf: 'fan', video: 'zTuD8k3JvxQ' }],
   },
   {
     id: 'dropc',
@@ -181,6 +201,7 @@ export const TUNINGS: Tuning[] = [
     notes: ['A1', 'E2', 'A2', 'D3', 'F#3', 'B3'],
     restring: true,
     desc: 'Barítono con la 6.ª bajada un tono: un La grave que casi se siente más de lo que se escucha.',
+    heard: [{ artist: 'Slipknot', song: 'Psychosocial', conf: 'fan', video: '5abamRO41fE' }],
   },
   {
     id: 'bedgbe',
@@ -765,6 +786,14 @@ export const TUNINGS: Tuning[] = [
     group: 'modales',
     notes: ['D2', 'G2', 'D3', 'G3', 'C4', 'D4'],
     desc: 'Sol suspendido: como Sol abierta con la tercera subida a la cuarta. Pide resolver todo el tiempo.',
+    heard: [
+      {
+        artist: 'Molly Tuttle',
+        song: 'Take the Journey',
+        who: 'para tocar clawhammer en guitarra',
+        video: 'ADiwd_AjjEA',
+      },
+    ],
   },
   {
     id: 'cgcgcd',
@@ -914,7 +943,10 @@ export const TUNINGS: Tuning[] = [
     group: 'modales',
     notes: ['B1', 'F#2', 'B2', 'G3', 'B3', 'E4'],
     desc: 'Las tres agudas como en la estándar y abajo una quinta de Si muy grave: un Mi menor con novena sobre su quinta.',
-    heard: [{ artist: 'Karnivool', who: 'en buena parte de su discografía', conf: 'fan' }],
+    heard: [
+      { artist: 'Karnivool', song: 'All I Know', conf: 'fan', video: '18SUFbABxNQ' },
+      { artist: 'Karnivool', song: 'Scarabs', conf: 'fan', video: 'gThevzcjZV0' },
+    ],
   },
   {
     id: 'faddgd',
@@ -1484,7 +1516,14 @@ export const TUNINGS: Tuning[] = [
     group: 'regulares',
     notes: ['E2', 'A2', 'D3', 'G3', 'C4', 'F4'],
     desc: 'Corrige el salto de tercera de la estándar: toda forma de escala se puede mover a cualquier cuerda.',
-    heard: [{ artist: 'Stanley Jordan', who: 'con su técnica de tapping a dos manos' }],
+    heard: [
+      {
+        artist: 'Stanley Jordan',
+        song: 'Eleanor Rigby',
+        who: 'con su técnica de tapping a dos manos',
+        video: 'QLCjVvjXo0Y',
+      },
+    ],
   },
   {
     id: 'fourthseb',
@@ -1508,7 +1547,10 @@ export const TUNINGS: Tuning[] = [
     notes: ['C2', 'G2', 'D3', 'A3', 'E4', 'G4'],
     restring: true,
     desc: 'Quintas justas con una tercera menor arriba: amplia en el grave y tocable en el agudo.',
-    heard: [{ artist: 'Robert Fripp', who: 'la creó y la enseña en Guitar Craft' }],
+    heard: [
+      { artist: 'Robert Fripp', who: 'la creó y la enseña en Guitar Craft' },
+      { artist: 'King Crimson', song: 'VROOOM', who: 'Robert Fripp', conf: 'fan', video: 'SCcDJKLlxvE' },
+    ],
   },
   {
     id: 'thirds',
@@ -1925,7 +1967,14 @@ export const TUNINGS: Tuning[] = [
     notes: ['G2', 'C3', 'F3', 'A3', 'D4', 'G4'],
     restring: true,
     desc: 'El laúd renacentista y la vihuela en Sol: cuartas con una tercera mayor en el centro. Es la vihuela tres semitonos arriba, o con capo en el traste 3.',
-    heard: [{ artist: 'Luis de Milán', who: 'vihuela, El Maestro (1536)' }],
+    heard: [
+      {
+        artist: 'Luis de Milán',
+        song: 'Pavana I',
+        who: 'El Maestro (1536), en vihuela por Pedro Alcàcer',
+        video: 'GmkMNCvUblI',
+      },
+    ],
   },
   {
     id: 'eights',
