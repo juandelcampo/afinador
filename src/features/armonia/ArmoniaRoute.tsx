@@ -154,27 +154,33 @@ const moveItem = <T,>(list: readonly T[], from: number, to: number): T[] => {
   return next;
 };
 
-/** Algo para poner en la vuelta: el botón grande lo pone, el ▶ lo hace sonar antes de decidir. */
+/**
+ * Algo para poner en la vuelta, igual que las tarjetas de acordes: tocar el recuadro lo hace sonar y el +
+ * lo pone. El que ya está puesto queda marcado, con ✓ en lugar de +.
+ */
 function Option({
   title,
   detail,
   why,
-  pressed,
+  current,
   disabled,
+  addLabel,
   onApply,
   onPreview,
 }: {
   title: string;
   detail: string;
   why?: string;
-  pressed?: boolean;
+  current?: boolean;
   disabled?: boolean;
+  /** Qué dice el + para quien no lo ve: "Poner Am", "Sumar F C a la vuelta". */
+  addLabel: string;
   onApply: () => void;
   onPreview: () => void;
 }) {
   return (
-    <li className={styles.option}>
-      <button type="button" aria-pressed={pressed} disabled={disabled} onClick={onApply}>
+    <li className={styles.option} data-current={current || undefined}>
+      <button type="button" className={styles.optionListen} disabled={disabled} onClick={onPreview}>
         <strong>
           {title} <span>{detail}</span>
         </strong>
@@ -182,11 +188,12 @@ function Option({
       </button>
       <button
         type="button"
-        className={styles.optionListen}
-        aria-label={`Escuchar ${detail}`}
-        onClick={onPreview}
+        className={styles.add}
+        aria-label={current ? `${detail}: es el que está` : addLabel}
+        disabled={disabled || current}
+        onClick={onApply}
       >
-        ▶
+        {current ? '✓' : '+'}
       </button>
     </li>
   );
@@ -937,8 +944,9 @@ export default function ArmoniaRoute() {
                         key={variant.suffix}
                         title={variant.label}
                         detail={name(next)}
+                        addLabel={`Poner ${name(next)}`}
                         why={variant.why}
-                        pressed={isActive(next)}
+                        current={isActive(next)}
                         onApply={() => replaceAt(active, next)}
                         onPreview={() => previewInPlace(active, next)}
                       />
@@ -959,9 +967,10 @@ export default function ArmoniaRoute() {
                       key={role.id}
                       title={role.label}
                       detail={name(next)}
+                      addLabel={`Poner ${name(next)}`}
                       why={role.why}
                       disabled={bass === undefined}
-                      pressed={bassRoleOf(activeChord) === role.id}
+                      current={bassRoleOf(activeChord) === role.id}
                       onApply={() =>
                         replaceAt(active, (item) => {
                           const value = bassFor(item, role.id);
@@ -1007,8 +1016,9 @@ export default function ArmoniaRoute() {
                               : item.label
                           }
                           detail={name(item.chord)}
+                          addLabel={`Poner ${name(item.chord)}`}
                           why={item.why}
-                          pressed={isActive(item.chord)}
+                          current={isActive(item.chord)}
                           onApply={() => swapTo(active, item.chord)}
                           onPreview={() => previewInPlace(active, item.chord)}
                         />
@@ -1040,8 +1050,9 @@ export default function ArmoniaRoute() {
                           key={swapItem.id}
                           title={swapItem.label}
                           detail={name(swapItem.chord)}
+                          addLabel={`Poner ${name(swapItem.chord!)}`}
                           why={swapItem.why}
-                          pressed={isActive(swapItem.chord)}
+                          current={isActive(swapItem.chord)}
                           onApply={() => swapTo(active, swapItem.chord!)}
                           onPreview={() => previewInPlace(active, swapItem.chord!)}
                         />
@@ -1055,6 +1066,7 @@ export default function ArmoniaRoute() {
                       key={move.label}
                       title={move.label}
                       detail={name(move.chord)}
+                      addLabel={`Sumar ${name(move.chord)} después de ${name(activeChord)}`}
                       why={move.why}
                       onApply={() => {
                         setVuelta((current) =>
@@ -1115,32 +1127,34 @@ export default function ArmoniaRoute() {
                   const chords = starter(item.degrees, group.mode);
                   return (
                     <li key={item.id} className={styles.starter} data-testid={`vuelta-${item.id}`}>
-                      <p className={styles.starterDegrees}>{item.degrees.map(romanLabel).join(' ')}</p>
-                      <strong className={styles.starterChords}>{chords.map(name).join(' · ')}</strong>
-                      {item.why && <p className={styles.words}>{item.why}</p>}
-                      {item.songs.length > 0 && (
-                        <p className={styles.songs}>Como en {item.songs.join(', ')}</p>
-                      )}
-                      <div className={styles.starterTools}>
-                        <Button
-                          variant="mini"
-                          ariaLabel={`Escuchar ${chords.map(name).join(' ')}`}
-                          onClick={() =>
-                            player.preview(chords.map((chord) => voicingOf(tuning, chord, finger(chord))))
-                          }
-                        >
-                          ▶
-                        </Button>
-                        <Button
-                          variant="mini"
-                          onClick={() => {
-                            applyStarter(chords, group.mode);
-                            closeSheet();
-                          }}
-                        >
-                          Usar
-                        </Button>
-                      </div>
+                      <button
+                        type="button"
+                        className={styles.starterListen}
+                        aria-label={`Escuchar ${chords.map(name).join(' ')}`}
+                        onClick={() =>
+                          player.preview(chords.map((chord) => voicingOf(tuning, chord, finger(chord))))
+                        }
+                      >
+                        <span className={styles.starterDegrees}>
+                          {item.degrees.map(romanLabel).join(' ')}
+                        </span>
+                        <strong className={styles.starterChords}>{chords.map(name).join(' · ')}</strong>
+                        {item.why && <span className={styles.words}>{item.why}</span>}
+                        {item.songs.length > 0 && (
+                          <span className={styles.songs}>Como en {item.songs.join(', ')}</span>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.add}
+                        aria-label={`Usar ${chords.map(name).join(' ')}`}
+                        onClick={() => {
+                          applyStarter(chords, group.mode);
+                          closeSheet();
+                        }}
+                      >
+                        +
+                      </button>
                     </li>
                   );
                 })}
@@ -1160,6 +1174,7 @@ export default function ArmoniaRoute() {
                 key={cadence.id}
                 title={cadence.name}
                 detail={chords.map(name).join(' → ')}
+                addLabel={`Sumar ${chords.map(name).join(' ')} a la vuelta`}
                 why={cadence.why}
                 disabled={vuelta.length + chords.length > MAX_CHORDS}
                 onApply={() => {

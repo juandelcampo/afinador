@@ -713,11 +713,31 @@
   list-style: none;
 }
 .starter {
-  display: grid;
-  grid-template-rows: auto auto 1fr auto;
-  gap: 3px;
-  padding: 8px;
+  display: flex;
   border: 2px solid var(--ink);
+  background: var(--paper);
+}
+/* Como las tarjetas de acordes: el recuadro suena, el + la usa. */
+.starterListen {
+  display: grid;
+  flex: 1;
+  align-content: start;
+  gap: 3px;
+  min-width: 0;
+  padding: 8px;
+  border: 0;
+  background: none;
+  text-align: left;
+  transition:
+    background-color 120ms var(--ease),
+    color 120ms var(--ease);
+}
+.starterListen:hover {
+  background: var(--soft);
+}
+.starterListen:active {
+  background: var(--accent);
+  color: var(--on-accent);
 }
 .starterDegrees {
   font: 600 12px/1.3 var(--mono);
@@ -732,10 +752,8 @@
   font-style: italic;
   line-height: 1.35;
 }
-.starterTools {
-  display: flex;
-  gap: 4px;
-  margin-top: 4px;
+.starterListen:active .songs {
+  color: inherit;
 }
 
 /* Para cantar encima */
@@ -840,26 +858,55 @@
   font-size: 30px;
 }
 
-/* Una opción: el botón grande la pone en la vuelta, el ▶ la hace sonar antes. */
+/* Una opción, como las tarjetas de acordes: el recuadro suena, el + la pone. */
 .option {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--touch);
-}
-.variants .option > button:first-child,
-.cadences .option > button:first-child {
-  border-right: 0;
+  display: flex;
+  border: 2px solid var(--ink);
+  background: var(--paper);
 }
 .variants .optionListen,
 .cadences .optionListen {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  transition:
+    background-color 120ms var(--ease),
+    color 120ms var(--ease);
+}
+.variants .optionListen:active,
+.cadences .optionListen:active {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.variants .add,
+.cadences .add {
   display: grid;
   place-items: center;
   align-content: center;
+  width: var(--touch);
+  min-height: 0;
   padding: 0;
-  font: 800 14px/1 var(--ui);
-  text-align: center;
+  border: 0;
+  border-left: 2px solid var(--ink);
 }
-.variants .optionListen:hover,
-.cadences .optionListen:hover {
+.variants .add:hover:enabled,
+.cadences .add:hover:enabled {
+  background: var(--ink);
+  color: var(--paper);
+}
+.variants .add:active:enabled,
+.cadences .add:active:enabled {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+/* El que está puesto. */
+.option[data-current] .optionListen {
+  background: var(--ink);
+  color: var(--paper);
+}
+.option[data-current] .add:disabled {
+  opacity: 1;
   background: var(--ink);
   color: var(--paper);
 }
