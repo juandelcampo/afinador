@@ -56,7 +56,7 @@ test.describe('escalas', () => {
     await expect(page.locator('#afinacion')).toHaveValue('dadgad');
 
     const before = await plucks(page);
-    await page.getByRole('button', { name: '▶ Escuchar la escala' }).click();
+    await page.getByRole('button', { name: '▶ Escuchar' }).click();
     await expect(page.getByRole('button', { name: '■ Parar' })).toBeVisible();
     await expect.poll(() => plucks(page)).toBeGreaterThan(before + 5);
     await page.getByRole('button', { name: '■ Parar' }).click();

@@ -42,9 +42,11 @@ La afinación, la tónica, la escala y la vuelta viven en la URL (`/armonia?afin
 
 ### Escalas
 
+En pantalla ancha entra sin bajar: arriba el título, la afinación y la tónica en una fila; abajo, las escalas a la izquierda y a la derecha la elegida con sus notas, el mástil, las posiciones y lo que suena. En el celular va primero el mástil y las escalas se eligen en una hoja (Cambiar).
+
 Pariente de Armonía: las mismas escalas, con el mismo carácter, y los mismos parámetros en la URL (`/escalas?afinacion=dadgad&tono=2&escala=mixolidio`), así un link abre la misma tonalidad en las dos. Además de las catorce de Armonía tiene pentatónicas y blues, más exóticas (napolitanas, rumana, persa, hindú, enigmática, japonesas), de jazz (bebop, alterada, lidio aumentado) y simétricas (tonos enteros, disminuidas, aumentada): 38 en seis familias. Se elige la familia y debajo aparecen solo sus escalas.
 
-Debajo, el nombre y el carácter, y las notas en una tira con su grado (1, ♭3, ♯4): tocar una la hace sonar. Las marcadas con ★ son las que la separan de la mayor o de la menor natural, según su tercera, y "Comparar" toca primero esa y después la elegida. Si Armonía la conoce, un link lleva a sus acordes.
+El nombre y el carácter, y las notas en una tira con su grado (1, ♭3, ♯4): tocar una la hace sonar. Las marcadas con ★ son las que la separan de la mayor o de la menor natural, según su tercera, y "Comparar" toca primero esa y después la elegida. Si Armonía la conoce, un link al lado de "Afinar en…" lleva a sus acordes.
 
 El diapasón es el de Inversiones: todas las notas de la escala, la tónica en naranja, las de color con aro blanco, con grados o nombres. Con ◀ ▶ se recorren las posiciones, una caja de cuatro trastes (cinco si la escala tiene siete notas o más) por cada nota de la escala en la cuerda más grave; lo de afuera se apaga. "Escuchar la escala" la toca de tónica a tónica dentro de la caja, subiendo y bajando, y el diapasón va marcando cada nota. El drone deja sonando la tónica grave con su quinta (`audio/drone.ts`) hasta que se apaga o te vas de la página.
 

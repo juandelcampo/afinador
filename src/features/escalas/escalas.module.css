@@ -13,11 +13,74 @@
   min-height: 40px;
 }
 
+/* En pantalla ancha todo entra sin bajar: arriba el título y la afinación en una fila; abajo, las
+   escalas a la izquierda y a la derecha la elegida con su mástil. En el celular, primero el mástil y las
+   escalas en una hoja. */
+.body {
+  display: grid;
+}
+.inlinePicker {
+  display: none;
+}
+@container content (min-width: 980px) {
+  .top {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 12px 32px;
+  }
+  .top > :last-child {
+    flex-wrap: nowrap;
+    margin-top: 0;
+  }
+  .top > :last-child > :first-child {
+    width: 330px;
+  }
+  .bridges {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .body {
+    grid-template-columns: minmax(340px, 4fr) minmax(0, 7fr);
+  }
+  .side {
+    grid-row: 1;
+    grid-column: 1;
+    border-right: var(--rule);
+  }
+  .main {
+    grid-column: 2;
+  }
+  .inlinePicker {
+    display: block;
+  }
+  /* Al costado entran cuatro por fila y más bajas: la familia más larga no empuja la página. */
+  .inlinePicker button {
+    flex-basis: 80px;
+    min-height: 40px;
+    padding: 4px 6px;
+    font-size: 12px;
+  }
+  .change {
+    display: none;
+  }
+}
+.bridges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 16px;
+}
+.worldHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 /* La escala elegida, escrita como el mundo de Armonía. */
 .world {
   display: grid;
   gap: 6px;
-  margin-top: 16px;
 }
 .worldName {
   display: flex;
@@ -53,6 +116,7 @@
 /* Las notas de la escala en una tira: el nombre grande y el grado abajo. Tocar una la hace sonar. */
 .notes {
   display: grid;
+  margin-bottom: 12px;
   grid-template-columns: repeat(var(--count), minmax(0, 1fr));
   margin-top: 12px;
   border: var(--rule);
@@ -108,11 +172,18 @@
   margin-top: 10px;
 }
 
-/* Recorrer las posiciones, como las formas de Inversiones. */
+/* Recorrer las posiciones, como las formas de Inversiones, y al lado lo que suena. */
+.play {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 10px;
+  margin-top: 12px;
+}
 .browse {
   display: grid;
+  flex: 1 1 280px;
   grid-template-columns: 56px minmax(0, 1fr) 56px;
-  margin-top: 12px;
   border: var(--rule);
 }
 .arrow {
