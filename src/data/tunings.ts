@@ -142,7 +142,10 @@ export const TUNINGS: Tuning[] = [
     group: 'drop',
     notes: ['D2', 'A2', 'D3', 'G3', 'B3', 'D4'],
     desc: 'Las dos Mi bajan a Re: el bordón queda en las dos puntas del acorde.',
-    heard: [{ artist: 'Neil Young', song: 'Cinnamon Girl', video: 'KNp6ENVVZvc' }],
+    heard: [
+      { artist: 'Neil Young', song: 'Cinnamon Girl', video: 'KNp6ENVVZvc' },
+      { artist: 'Sarah McLachlan', song: 'Building a Mystery', conf: 'fan', video: '_QUq72fla3o' },
+    ],
   },
   {
     id: 'dropdb',
@@ -160,6 +163,7 @@ export const TUNINGS: Tuning[] = [
     heard: [
       { artist: 'System of a Down', song: 'Chop Suey!', video: 'CSvFpBOe8eY' },
       { artist: 'John Fahey', song: 'America', who: 'él la llama Double Drop D', video: 'W4_ODjf-VMs' },
+      { artist: 'Muse', song: 'Map of the Problematique', who: 'en vivo', conf: 'fan', video: 'AR6A3dap6MI' },
     ],
   },
   {
@@ -179,6 +183,14 @@ export const TUNINGS: Tuning[] = [
     desc: 'Barítono con la 6.ª bajada un tono: un La grave que casi se siente más de lo que se escucha.',
   },
   {
+    id: 'bedgbe',
+    name: 'BEDGBE',
+    group: 'drop',
+    notes: ['B1', 'E2', 'D3', 'G3', 'B3', 'E4'],
+    desc: 'Las dos graves bajan una cuarta y las cuatro agudas quedan como en la estándar: es una guitarra de siete cuerdas a la que le falta el La.',
+    heard: [{ artist: 'Tool', song: 'Parabola', conf: 'fan', video: '-DuAAmHpGbw' }],
+  },
+  {
     id: 'rondena',
     name: 'Rondeña',
     group: 'drop',
@@ -188,6 +200,13 @@ export const TUNINGS: Tuning[] = [
       { artist: 'Ramón Montoya', song: 'Rondeña', video: 'BE5TWd8mFm4' },
       { artist: 'Cyril Pahinui', song: 'Salomila', video: '2_1OPo26SpU' },
       { artist: 'Kapono Beamer', song: 'Pipeline Slack Key', video: 'otsILRP69BA' },
+      { artist: 'Radiohead', song: 'Jigsaw Falling Into Place', conf: 'fan', video: 'GoLJJRIWCLU' },
+      { artist: 'King Krule', song: 'Out Getting Ribs', conf: 'fan', video: 'Lj_ws_BzKUs' },
+      { artist: 'Paco de Lucía', song: 'Cueva del Gato', capo: 3, conf: 'fan', video: 'Uoyvo_5I9Rg' },
+      { artist: 'Pavement', song: 'Gold Soundz', conf: 'fan', video: 'lPvhKV3Yg2k' },
+      { artist: 'Pavement', song: 'Here', conf: 'fan', video: 'bKipkWC90eU' },
+      { artist: 'Pavement', song: 'Stereo', conf: 'fan', video: 'Z5j4W2Y7RPQ' },
+      { artist: 'Pavement', song: 'Summer Babe', conf: 'fan', video: 'c9Ks0kvlxXw' },
     ],
   },
   {
@@ -247,6 +266,8 @@ export const TUNINGS: Tuning[] = [
       { artist: 'John Fahey', song: 'The Siege of Sevastopol', video: 'YaMRPg8XecE' },
       { artist: JONI, song: 'Chelsea Morning', capo: 2, conf: 'fan', video: '1uNbExe6o_I' },
       { artist: JONI, song: 'Cactus Tree', conf: 'fan', video: 'w1lxaS_57y0' },
+      { artist: DRAKE, song: 'Place to Be', conf: 'fan', video: 'jvLtyyBRITo' },
+      { artist: 'Fleet Foxes', song: 'Helplessness Blues', conf: 'fan', video: 'TYODuV8GcJA' },
     ],
   },
   {
@@ -279,6 +300,11 @@ export const TUNINGS: Tuning[] = [
       { artist: 'John Fahey', song: 'Sunflower River Blues', video: 'tRyne6rjF1g' },
       { artist: 'John Fahey', song: 'On the Banks of the Owchita', video: 'iLx98o_kdB0' },
       { artist: 'John Fahey', song: 'Sail Away Ladies', video: 'A5xa9yXzXQ8' },
+      {
+        artist: 'Devin Townsend',
+        who: 'en su obra solista, también más abajo y en siete cuerdas (GCGCGCE)',
+        conf: 'fan',
+      },
     ],
   },
   {
@@ -337,6 +363,7 @@ export const TUNINGS: Tuning[] = [
         who: 'versión de The Return of the Repressed',
         video: 'gkucmqYOopc',
       },
+      { artist: 'Pearl Jam', song: 'Daughter', conf: 'fan', video: 'zgUwd2Gkb-E' },
     ],
   },
   {
@@ -459,6 +486,7 @@ export const TUNINGS: Tuning[] = [
     heard: [
       { artist: 'John Fahey', song: 'Dance of Death', video: 'VkE9gELnJJo' },
       { artist: 'John Fahey', song: 'Come Back Baby', video: '6OZg99aeaJg' },
+      { artist: 'Rush', song: 'Bravest Face', conf: 'fan', video: 'oWnlB3QJknU' },
     ],
   },
   {
@@ -467,6 +495,22 @@ export const TUNINGS: Tuning[] = [
     group: 'menores',
     notes: ['E2', 'A2', 'E3', 'A3', 'C4', 'E4'],
     desc: 'Toda en La y Mi, con un solo Do arriba que le da el color menor.',
+  },
+  {
+    id: 'dadfae',
+    name: 'DADFAE',
+    group: 'menores',
+    notes: ['D2', 'A2', 'D3', 'F3', 'A3', 'E4'],
+    desc: 'Re menor abierta con la 1.ª sin bajar: el Mi suma la novena y el acorde al aire queda oscuro y abierto.',
+    heard: [
+      {
+        artist: 'Opeth',
+        song: 'Ghost of Perdition',
+        who: 'en todo Ghost Reveries',
+        conf: 'fan',
+        video: 'MDBykpSXsSE',
+      },
+    ],
   },
   {
     id: 'cminor',
@@ -497,6 +541,8 @@ export const TUNINGS: Tuning[] = [
     heard: [
       { artist: 'Keola Beamer', song: "Hi'ilawe", video: 'AM5JS7ZfwH4' },
       { artist: 'Atahualpa Yupanqui', who: 'sexta en Re y quinta en Sol, en temas en Sol' },
+      { artist: 'Soundgarden', song: 'Superunknown', conf: 'fan', video: '-9AY713Extw' },
+      { artist: 'Muse', song: 'Uprising', conf: 'fan', video: 'w8KQmps-Sog' },
     ],
   },
   {
@@ -532,7 +578,44 @@ export const TUNINGS: Tuning[] = [
     heard: [
       { artist: 'Richard Thompson', song: '1952 Vincent Black Lightning', capo: 3, video: 'MOCZwKmjR6E' },
       { artist: 'Keola Beamer', song: "Holo Wa'apa", video: 'ZljQlY_8rOc' },
+      { artist: 'Soundgarden', song: 'Mailman', conf: 'fan', video: '3KmLpdVR9Yw' },
+      { artist: 'Pavement', who: 'Stephen Malkmus la usa seguido', conf: 'fan' },
     ],
+  },
+  {
+    id: 'cgdgbb',
+    name: 'CGDGBB',
+    group: 'extendidas',
+    notes: ['C2', 'G2', 'D3', 'G3', 'B3', 'B3'],
+    desc: 'CGDGBE con la 1.ª bajada al Si de la 2.ª: un Do con séptima mayor y novena, sin tercera y con dos cuerdas al unísono arriba.',
+    heard: [{ artist: SY, song: 'Sunday', conf: 'fan', video: '2CXD8PK6Djc' }],
+  },
+  {
+    id: 'facgce',
+    name: 'FACGCE',
+    group: 'extendidas',
+    notes: ['F2', 'A2', 'C3', 'G3', 'C4', 'E4'],
+    desc: 'Un Fa maj9 al aire, con la 6.ª y la 2.ª subidas medio tono y la 4.ª bajada a Do. Es el sonido del math rock y del emo del Medio Oeste.',
+    heard: [
+      {
+        artist: 'American Football',
+        song: 'Never Meant',
+        who: 'la usan en casi todo',
+        conf: 'fan',
+        video: '_NfnXdXpjL0',
+      },
+      { artist: 'Yvette Young', song: 'A Map, a String, a Light', conf: 'fan', video: '6M4d2SmhSP8' },
+      { artist: 'Periphery', song: 'Wax Wings', who: 'transportada a Do', conf: 'fan', video: 'bJ6lwiP6O-s' },
+    ],
+  },
+  {
+    id: 'ggdgce',
+    name: 'GGDGCE',
+    group: 'extendidas',
+    notes: ['G2', 'G2', 'D3', 'G3', 'C4', 'E4'],
+    octaves: 'est',
+    desc: 'Las dos graves al unísono en Sol y arriba Do y Mi: un Do con novena que se apoya en su quinta.',
+    heard: [{ artist: 'Rush', song: 'The Way the Wind Blows', conf: 'fan', video: '5ZZGajFuHJM' }],
   },
   {
     id: 'em7',
@@ -689,6 +772,11 @@ export const TUNINGS: Tuning[] = [
     group: 'modales',
     notes: ['C2', 'G2', 'C3', 'G3', 'C4', 'D4'],
     desc: 'Do modal: quintas y octavas amplias, con un Re arriba que frota contra el Do.',
+    heard: [
+      { artist: 'Huun-Huur-Tu', song: 'Kongurei', conf: 'fan', video: 'NLErTLjep7M' },
+      { artist: 'Huun-Huur-Tu', song: 'Ödügen Taiga', conf: 'fan', video: 'AEoHb9HY3mE' },
+      { artist: 'Huun-Huur-Tu', song: 'Konguroi', conf: 'fan', video: 'AYSrbrXiXOY' },
+    ],
   },
   {
     id: 'eadeae',
@@ -781,6 +869,7 @@ export const TUNINGS: Tuning[] = [
       { artist: DRAKE, song: 'Road', capo: 3, conf: 'fan', video: 'oQJmaKBcMzo' },
       { artist: DRAKE, song: 'Things Behind the Sun', capo: 6, conf: 'fan', video: 'j14PgxHghjQ' },
       { artist: DRAKE, song: 'Fruit Tree', capo: 2, conf: 'fan', video: 'lBBeyHk8Gmw' },
+      { artist: 'David Crosby', song: 'Laughing', conf: 'fan', video: 'bLMxH2hivGo' },
     ],
   },
   {
@@ -804,12 +893,77 @@ export const TUNINGS: Tuning[] = [
     heard: [{ artist: SY, song: 'Karen Revisited', conf: 'fan', video: 'FXp8c1yYzy4' }],
   },
   {
+    id: 'dgdgbc',
+    name: 'DGDGBC',
+    group: 'modales',
+    notes: ['D2', 'G2', 'D3', 'G3', 'B3', 'C4'],
+    desc: 'Sol abierta con la 1.ª en Do: queda medio tono arriba del Si de la 2.ª y frota contra él en cada acorde al aire.',
+    heard: [{ artist: 'Soundgarden', song: 'Like Suicide', conf: 'fan', video: '2MIr85gz3-4' }],
+  },
+  {
+    id: 'cfcgbe',
+    name: 'CFCGBE',
+    group: 'modales',
+    notes: ['C2', 'F2', 'C3', 'G3', 'B3', 'E4'],
+    desc: 'Las tres agudas como en la estándar y abajo Do, Fa y Do: un Do maj7 con cuarta que no termina de decidirse entre Do y Fa.',
+    heard: [{ artist: 'Soundgarden', song: '4th of July', conf: 'fan', video: '91rHFP0OtTE' }],
+  },
+  {
+    id: 'bfsbgbe',
+    name: 'BF#BGBE',
+    group: 'modales',
+    notes: ['B1', 'F#2', 'B2', 'G3', 'B3', 'E4'],
+    desc: 'Las tres agudas como en la estándar y abajo una quinta de Si muy grave: un Mi menor con novena sobre su quinta.',
+    heard: [{ artist: 'Karnivool', who: 'en buena parte de su discografía', conf: 'fan' }],
+  },
+  {
+    id: 'faddgd',
+    name: 'FADDGD',
+    group: 'modales',
+    notes: ['F2', 'A2', 'D3', 'D3', 'G3', 'D4'],
+    octaves: 'est',
+    desc: 'Fa en el bajo, dos Re al unísono en el medio y un Sol arriba: un Re menor con cuarta, borroso y sin la tónica abajo.',
+    heard: [{ artist: 'U2', song: 'The Unforgettable Fire', conf: 'fan', video: 'KTzmzrruHwc' }],
+  },
+  {
+    id: 'gadfac',
+    name: 'GADFAC',
+    group: 'modales',
+    notes: ['G2', 'A2', 'D3', 'F3', 'A3', 'C4'],
+    octaves: 'est',
+    desc: 'Dos cuerdas a un tono en el bajo y arriba un Re menor con séptima. La 6.ª sube a Sol, así que conviene una cuerda más fina.',
+    heard: [{ artist: 'Fleet Foxes', song: 'Mearcstapa', conf: 'fan', video: '8SLwzGegjek' }],
+  },
+  {
+    id: 'fsaegsae',
+    name: 'F#AEG#AE',
+    group: 'modales',
+    notes: ['F#2', 'A2', 'E3', 'G#3', 'A3', 'E4'],
+    octaves: 'est',
+    desc: 'Un Fa# menor con séptima y novena, sin quinta: la 2.ª baja a La y queda pegada al Sol# de la 3.ª.',
+    heard: [{ artist: 'Unwound', song: 'October All Over', conf: 'fan', video: 'AfCUcgkRekw' }],
+  },
+  {
+    id: 'fsaegae',
+    name: 'F#AEGAE',
+    group: 'modales',
+    notes: ['F#2', 'A2', 'E3', 'G3', 'A3', 'E4'],
+    octaves: 'est',
+    desc: 'F#AEG#AE con la 3.ª en Sol: el Sol frota medio tono contra el Fa# del bajo y el acorde se vuelve más áspero.',
+    heard: [{ artist: 'Unwound', song: 'Look a Ghost', conf: 'fan', video: '5fNnkb8ACWs' }],
+  },
+  {
     id: 'bebebe',
     name: 'BEBEBE',
     group: 'modales',
     notes: ['B1', 'E2', 'B2', 'E3', 'B3', 'E4'],
     desc: 'Solo dos notas alternadas en tres octavas, muy grave y desnuda. Cualquier dedo que se agregue cambia todo el color.',
-    heard: [{ artist: DRAKE, conf: 'duda' }],
+    heard: [
+      { artist: DRAKE, song: 'Northern Sky', conf: 'duda', video: 'qFFyFcSQiI4' },
+      { artist: DRAKE, song: 'From the Morning', conf: 'duda', video: 'xPe5ZQx0OpQ' },
+      { artist: DRAKE, song: 'Fly', conf: 'duda', video: 'SFr9WYRiwZc' },
+      { artist: DRAKE, song: 'At the Chime of a City Clock', conf: 'duda', video: '7xbFQtW2T9I' },
+    ],
   },
 
   {
@@ -876,7 +1030,10 @@ export const TUNINGS: Tuning[] = [
     notes: ['C2', 'G2', 'D3', 'F3', 'C4', 'E4'],
     octaves: 'est',
     desc: 'Parecida a la CGCFCE de Nick Drake, con un Re en la 4.ª que suma la novena.',
-    heard: [{ artist: JONI, song: 'Coyote', conf: 'fan', video: 'LsJunrvPw_g' }],
+    heard: [
+      { artist: JONI, song: 'Coyote', conf: 'fan', video: 'LsJunrvPw_g' },
+      { artist: JONI, song: 'Just Like This Train', conf: 'fan', video: 'HLIArmiG0wY' },
+    ],
   },
   {
     id: 'cgdfgc',
@@ -910,7 +1067,10 @@ export const TUNINGS: Tuning[] = [
     notes: ['D2', 'G2', 'D3', 'G3', 'G3', 'D4'],
     octaves: 'est',
     desc: 'Sol abierta con la 2.ª bajada al Sol de la 3.ª: sin tercera y con dos cuerdas al unísono.',
-    heard: [{ artist: 'John Fahey', song: 'I Am the Resurrection', video: 'fIm93J7G9O0' }],
+    heard: [
+      { artist: 'John Fahey', song: 'I Am the Resurrection', video: 'fIm93J7G9O0' },
+      { artist: 'Big Wreck', song: 'The Oaf', conf: 'fan', video: 'LuhzlSQovxc' },
+    ],
   },
   {
     id: 'cgcdga',
@@ -1295,6 +1455,27 @@ export const TUNINGS: Tuning[] = [
       },
     ],
   },
+  {
+    id: 'csfscsfsfsfs',
+    name: 'C#F#C#F#F#F#',
+    group: 'estrechas',
+    notes: ['C#2', 'F#2', 'C#3', 'F#3', 'F#3', 'F#4'],
+    octaves: 'est',
+    desc: 'Solo Do# y Fa#, con dos Fa# al unísono y otro una octava arriba: una quinta sin tercera que zumba.',
+    heard: [{ artist: 'Beck', song: 'Blackhole', conf: 'fan', video: 'hZL41U4lHUg' }],
+  },
+  {
+    id: 'ccccgc',
+    name: 'CCCCGC',
+    group: 'estrechas',
+    notes: ['C2', 'C3', 'C3', 'C3', 'G3', 'C4'],
+    octaves: 'est',
+    restring: true,
+    desc: 'Cinco Do en tres octavas y un Sol: un bordón casi sin acorde, para tocar melodía arriba.',
+    heard: [
+      { artist: 'Stephen Stills', song: "Love the One You're With", conf: 'fan', video: 'cZyj6GECjZ0' },
+    ],
+  },
 
   // Regulares
   {
@@ -1304,6 +1485,13 @@ export const TUNINGS: Tuning[] = [
     notes: ['E2', 'A2', 'D3', 'G3', 'C4', 'F4'],
     desc: 'Corrige el salto de tercera de la estándar: toda forma de escala se puede mover a cualquier cuerda.',
     heard: [{ artist: 'Stanley Jordan', who: 'con su técnica de tapping a dos manos' }],
+  },
+  {
+    id: 'fourthseb',
+    name: 'Cuartas en Mib',
+    group: 'regulares',
+    notes: ['Eb2', 'Ab2', 'Db3', 'Gb3', 'B3', 'E4'],
+    desc: 'Las cuatro graves bajan medio tono y las dos agudas quedan como en la estándar: todo el mástil en cuartas, como un bajo. El power chord tiene la misma forma en cualquier par de cuerdas, por eso la buscan los bajistas que pasan a la guitarra y el punk.',
   },
   {
     id: 'fifths',
@@ -1395,6 +1583,47 @@ export const TUNINGS: Tuning[] = [
     group: 'zumbido',
     notes: ['D2', 'A2', 'D3', 'A3', 'A3', 'D4'],
     desc: 'Solo Re y La, sin tercera: una base abierta para tocar melodía sobre un bordón constante.',
+    heard: [
+      { artist: 'My Bloody Valentine', song: 'Soon', conf: 'fan', video: 'ft56il9bGMk' },
+      { artist: 'My Bloody Valentine', song: 'Sometimes', conf: 'fan', video: 'hSI_9P9rRt4' },
+      { artist: 'The English Beat', song: 'Save It for Later', conf: 'fan', video: '_0PUXt4-q80' },
+      { artist: 'Rush', song: 'Hope', conf: 'fan', video: 'v3_cz3QBESg' },
+      { artist: 'Dave Mason', song: 'Only You Know and I Know', conf: 'fan', video: 'Cn0tnfv0KCc' },
+    ],
+  },
+  {
+    id: 'daddad',
+    name: 'DADDAD',
+    group: 'zumbido',
+    notes: ['D2', 'A2', 'D3', 'D3', 'A3', 'D4'],
+    desc: 'Solo Re y La, con la 3.ª bajada al Re de la 4.ª: dos cuerdas al unísono en el medio y una quinta al aire en todo el mástil.',
+    heard: [
+      { artist: 'Laura Marling', song: 'Take the Night Off', conf: 'fan', video: 'kut06QWDwjk' },
+      { artist: 'Laura Marling', song: 'I Was an Eagle', conf: 'fan', video: 'UXEGpj2Vk-s' },
+      { artist: 'Laura Marling', song: 'You Know', conf: 'fan', video: 'BJ7DDRmpAxc' },
+      { artist: 'Laura Marling', song: 'Breathe', conf: 'fan', video: 's3snlXwzEb8' },
+      { artist: 'Laura Marling', song: 'Walk Alone', conf: 'fan', video: 'N6ytHXzXgyw' },
+      { artist: 'Laura Marling', song: 'David', conf: 'fan', video: '7EF6RIlsj9w' },
+      {
+        artist: 'Crosby, Stills, Nash & Young',
+        song: '4 + 20',
+        who: 'Stephen Stills',
+        conf: 'fan',
+        video: '_cNbOmVgFuc',
+      },
+    ],
+  },
+  {
+    id: 'csfscsfscsfs',
+    name: 'C#F#C#F#C#F#',
+    group: 'zumbido',
+    notes: ['C#2', 'F#2', 'C#3', 'F#3', 'C#4', 'F#4'],
+    octaves: 'est',
+    desc: 'Cuartas y quintas alternadas entre Do# y Fa#, sin tercera: cualquier cejilla es un power chord. Hay quien la llama Open Slayer.',
+    heard: [
+      { artist: 'Converge', song: 'Concubine', conf: 'fan', video: 'JrAxmXDSiuA' },
+      { artist: 'Converge', song: 'Fault and Fracture', conf: 'fan', video: 'f0YztcXC5mI' },
+    ],
   },
   {
     id: 'todoe',
@@ -1677,6 +1906,10 @@ export const TUNINGS: Tuning[] = [
     group: 'antiguas',
     notes: ['E2', 'A2', 'D3', 'F#3', 'B3', 'E4'],
     desc: 'Solo baja medio tono la 3.ª y mueve la tercera mayor al centro del mástil, como en la vihuela y el laúd renacentista.',
+    heard: [
+      { artist: 'Bruce Cockburn', conf: 'fan' },
+      { artist: DRAKE, song: 'Cello Song', conf: 'duda', video: 'h4y8WGOJu_c' },
+    ],
   },
   {
     id: 'violway',
