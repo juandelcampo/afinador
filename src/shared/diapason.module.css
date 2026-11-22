@@ -187,3 +187,36 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+/* Escalas: la tónica en naranja, las notas de color con un aro blanco, lo que queda fuera de la caja
+   apagado y la que suena, llena. */
+.ghost[data-tonic],
+.openName[data-tonic] {
+  border-color: var(--accent);
+  color: var(--accent);
+  border-style: solid;
+  font-weight: 700;
+}
+.ghost[data-color],
+.openName[data-color] {
+  border: 2px solid var(--neck-ink);
+  color: var(--neck-ink);
+  border-style: solid;
+}
+.ghost[data-dim],
+.openName[data-dim] {
+  opacity: 0.3;
+}
+.ghost[data-lit],
+.openName[data-lit] {
+  border-color: var(--neck-ink);
+  background: var(--neck-ink);
+  color: var(--neck);
+  opacity: 1;
+}
+.ghost[data-lit][data-tonic],
+.openName[data-lit][data-tonic] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}

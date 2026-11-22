@@ -123,7 +123,7 @@ const PLAIN = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
 const SHARP_KEYS = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'G#', 'A', 'Bb', 'B'];
 
 /** Nombre de una nota con una letra y a lo sumo una alteración, o null si haría falta doble. */
-function spellWithLetter(pc: number, letterIndex: number): string | null {
+export function spellWithLetter(pc: number, letterIndex: number): string | null {
   const letter = LETTERS[((letterIndex % 7) + 7) % 7]!;
   const diff = mod12(pc - LETTER_PC[((letterIndex % 7) + 7) % 7]!);
   if (diff === 0) return letter;
@@ -408,7 +408,7 @@ export interface Key {
 }
 
 /** Cómo se escriben las doce tónicas para esta escala. */
-export const tonicNames = (scale: Scale) => (scale.minorSpelling ? SHARP_KEYS : PLAIN);
+export const tonicNames = (scale: Pick<Scale, 'minorSpelling'>) => (scale.minorSpelling ? SHARP_KEYS : PLAIN);
 
 /** El nombre de cada clase de altura dentro de una tonalidad: una letra por grado cuando se puede. */
 export function spellIn(pc: number, key: Key): string {

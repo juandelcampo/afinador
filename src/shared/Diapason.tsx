@@ -1,6 +1,7 @@
 // El diapasón de las inversiones: todas las notas del acorde, tenues, y la forma elegida encima. Tocar una
 // nota tenue pone un dedo ahí; tocar un dedo lo saca. Así se arma una forma propia. En modo libre (¿Qué
-// acorde?) se puede tocar cualquier casillero y la cejuela deja sonar o apaga cada cuerda.
+// acorde?) se puede tocar cualquier casillero y la cejuela deja sonar o apaga cada cuerda. En modo escuchar
+// (Escalas) no hay dedos: las notas tenues son las de la escala y tocarlas las hace sonar.
 import { useEffect, useRef } from 'react';
 import type { Voicing } from '~/core/inversions';
 import { noteLabel, type Notation } from '~/core/notes';
@@ -12,6 +13,17 @@ export const LAST_FRET = 15;
 const FRETS = Array.from({ length: LAST_FRET }, (_, index) => index + 1);
 /** Marcas de posición, como en una guitarra: una en 3, 5, 7, 9 y 15, dos en el 12. */
 const INLAYS: Record<number, number> = { 3: 1, 5: 1, 7: 1, 9: 1, 12: 2, 15: 1 };
+
+/**
+ * Cómo se pinta una nota tenue: la tónica en naranja, las de color con un aro, lo que queda fuera de la
+ * caja apagado y la que está sonando, llena.
+ */
+export interface NoteMark {
+  tonic?: boolean;
+  color?: boolean;
+  dim?: boolean;
+  lit?: boolean;
+}
 
 interface DiapasonProps {
   /** El nombre de cada cuerda al aire, de la 6.ª a la 1.ª. */
@@ -27,7 +39,19 @@ interface DiapasonProps {
   free?: boolean;
   /** Pone o saca un dedo: el traste en esa cuerda, 0 al aire. */
   onToggle: (stringIndex: number, fret: number) => void;
+  /** Sin dedos: tocar una nota tenue la hace sonar, y los rótulos lo dicen así. */
+  listen?: boolean;
+  mark?: (stringIndex: number, fret: number) => NoteMark | undefined;
+  /** Hasta qué traste se desplaza en el celular cuando no hay forma. */
+  focus?: number;
 }
+
+const markData = (mark: NoteMark | undefined) => ({
+  'data-tonic': mark?.tonic || undefined,
+  'data-color': mark?.color || undefined,
+  'data-dim': mark?.dim || undefined,
+  'data-lit': mark?.lit || undefined,
+});
 
 export function Diapason({
   notes,
@@ -37,6 +61,9 @@ export function Diapason({
   canPlace = () => true,
   free = false,
   onToggle,
+  listen = false,
+  mark,
+  focus = 0,
 }: DiapasonProps) {
   const scroller = useRef<HTMLDivElement>(null);
   const count = notes.length;
@@ -44,7 +71,7 @@ export function Diapason({
   const bassString = sounding.length ? voicing!.midis.indexOf(Math.min(...sounding)) : -1;
 
   // En el celular el diapasón se desplaza de costado: la forma elegida queda a la vista.
-  const position = voicing?.position ?? 0;
+  const position = voicing?.position ?? focus;
   useEffect(() => {
     const box = scroller.current;
     if (!box || box.scrollWidth <= box.clientWidth) return;
@@ -88,7 +115,12 @@ export function Diapason({
                 <button
                   type="button"
                   className={free ? styles.spot : styles.ghost}
-                  aria-label={`Poner un dedo en la ${where(column)} (${tone})`}
+                  {...markData(mark?.(stringIndex, column))}
+                  aria-label={
+                    listen
+                      ? `Tocar la ${where(column)} (${tone})`
+                      : `Poner un dedo en la ${where(column)} (${tone})`
+                  }
                   onClick={() => onToggle(stringIndex, column)}
                 >
                   {free ? '' : tone}
@@ -110,10 +142,13 @@ export function Diapason({
                     type="button"
                     className={styles.openName}
                     data-tone
+                    {...markData(mark?.(stringIndex, 0))}
                     aria-label={
-                      free && !muted
-                        ? `Apagar la ${count - stringIndex}.ª cuerda (${noteLabel(notes[stringIndex]!, notation)})`
-                        : `Dejar sonar al aire la ${count - stringIndex}.ª cuerda (${toneAt(stringIndex, 0)})`
+                      listen
+                        ? `Tocar al aire la ${count - stringIndex}.ª cuerda (${toneAt(stringIndex, 0)})`
+                        : free && !muted
+                          ? `Apagar la ${count - stringIndex}.ª cuerda (${noteLabel(notes[stringIndex]!, notation)})`
+                          : `Dejar sonar al aire la ${count - stringIndex}.ª cuerda (${toneAt(stringIndex, 0)})`
                     }
                     onClick={() => onToggle(stringIndex, 0)}
                   >

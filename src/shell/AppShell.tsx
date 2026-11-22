@@ -9,6 +9,7 @@ import styles from './shell.module.css';
 const TOOLS = [
   { to: '/afinador', label: 'Afinador', match: (path: string) => path.startsWith('/afinador') },
   { to: '/armonia', label: 'Armonía', match: (path: string) => path.startsWith('/armonia') },
+  { to: '/escalas', label: 'Escalas', match: (path: string) => path.startsWith('/escalas') },
   {
     to: '/inversiones',
     label: 'Inversiones',

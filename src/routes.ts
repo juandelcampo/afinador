@@ -8,6 +8,7 @@ export default [
     route('afinador', 'features/afinador/AfinadorRoute.tsx', { id: 'afinador-index' }),
     route('afinador/:tuningId', 'features/afinador/AfinadorRoute.tsx', { id: 'afinador-tuning' }),
     route('armonia', 'features/armonia/ArmoniaRoute.tsx'),
+    route('escalas', 'features/escalas/EscalasRoute.tsx'),
     route('inversiones', 'features/inversiones/InversionesRoute.tsx'),
     route('acorde', 'features/acorde/AcordeRoute.tsx'),
     route('ritmo', 'features/ritmo/RitmoRoute.tsx'),

@@ -4,6 +4,7 @@ Herramientas para componer con guitarra, pensadas para quien toca de oído y qui
 
 - **Afinador**: 147 afinaciones, afinador por micrófono, escuchador interactivo sobre un mástil y acordes que se pueden hacer con la mano en cada afinación.
 - **Armonía** (`/armonia`): acordes por emoción para armar una vuelta con las figuras de tu afinación.
+- **Escalas** (`/escalas`): dónde cae cada nota de una escala en tu afinación, posición por posición, con un drone para tocar encima.
 - **Inversiones** (`/inversiones`): todas las maneras de hacer un acorde en el mástil, agrupadas por la nota que va en el bajo.
 - **¿Qué acorde?** (`/acorde`): ponés los dedos en el diapasón y te dice qué acorde suena.
 - **Ritmo** (`/ritmo`): metrónomo para compases raros, ritmos euclidianos dibujados como figuras, polirritmias y una caja de ritmos.
@@ -38,6 +39,16 @@ En el celular va todo en una columna. Desde 860 px son tres: más acordes a la i
 | Sin centro         | Los puntos cardinales: grupos de acordes sin tónica, con el paso de grupo por el mismo polo.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 
 La afinación, la tónica, la escala y la vuelta viven en la URL (`/armonia?afinacion=dadgad&v=D_G_A7`): se comparten con un link.
+
+### Escalas
+
+Pariente de Armonía: las mismas escalas, con el mismo carácter, y los mismos parámetros en la URL (`/escalas?afinacion=dadgad&tono=2&escala=mixolidio`), así un link abre la misma tonalidad en las dos. Además de las catorce de Armonía tiene pentatónicas y blues, más exóticas (napolitanas, rumana, persa, hindú, enigmática, japonesas), de jazz (bebop, alterada, lidio aumentado) y simétricas (tonos enteros, disminuidas, aumentada): 38 en seis familias. Se elige la familia y debajo aparecen solo sus escalas.
+
+Debajo, el nombre y el carácter, y las notas en una tira con su grado (1, ♭3, ♯4): tocar una la hace sonar. Las marcadas con ★ son las que la separan de la mayor o de la menor natural, según su tercera, y "Comparar" toca primero esa y después la elegida. Si Armonía la conoce, un link lleva a sus acordes.
+
+El diapasón es el de Inversiones: todas las notas de la escala, la tónica en naranja, las de color con aro blanco, con grados o nombres. Con ◀ ▶ se recorren las posiciones, una caja de cuatro trastes (cinco si la escala tiene siete notas o más) por cada nota de la escala en la cuerda más grave; lo de afuera se apaga. "Escuchar la escala" la toca de tónica a tónica dentro de la caja, subiendo y bajando, y el diapasón va marcando cada nota. El drone deja sonando la tónica grave con su quinta (`audio/drone.ts`) hasta que se apaga o te vas de la página.
+
+Las escalas, los grados, el deletreo y las posiciones están en `core/scales.ts`.
 
 ### Inversiones
 

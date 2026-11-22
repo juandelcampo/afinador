@@ -10,6 +10,7 @@ export default {
     '/',
     '/afinador',
     '/armonia',
+    '/escalas',
     '/inversiones',
     '/ritmo',
     ...TUNINGS.map((tuning) => `/afinador/${tuning.id}`),
