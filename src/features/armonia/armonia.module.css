@@ -17,6 +17,8 @@
   min-width: 0;
 }
 .center {
+  /* El medio se mide a sí mismo: la rueda va al lado de los acordes según lo que quede con los costados. */
+  container: center / inline-size;
   grid-area: center;
   min-width: 0;
 }
@@ -1009,6 +1011,21 @@
   cursor: default;
 }
 
+/* Acordes y rueda: en el celular uno abajo del otro; con lugar, los acordes a la izquierda y la rueda a la
+   derecha, para tocar todo sin bajar. */
+@container center (min-width: 940px) {
+  .chordsAndCircle {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 440px);
+    gap: 28px;
+    align-items: start;
+  }
+  .chordsAndCircle > .circleFold {
+    margin-top: 0;
+    border-top: 0;
+  }
+}
+
 /* El círculo de quintas: la rueda ocupa el ancho que haya, hasta 420 px, y el acorde tocado va al medio. */
 .circle {
   padding-bottom: 6px;
@@ -1040,15 +1057,24 @@
   text-anchor: middle;
   pointer-events: none;
 }
-.cell[data-state='world'] path {
-  fill: var(--accent);
-  fill-opacity: 0.28;
-}
 .cell[data-state='tonic'] path {
   fill: var(--accent);
 }
+.cell[data-state='world'] path {
+  fill: var(--accent);
+  fill-opacity: 0.55;
+}
+.cell[data-state='near'] path {
+  fill: var(--accent);
+  fill-opacity: 0.25;
+}
+.cell[data-state='far'] path {
+  fill: var(--accent);
+  fill-opacity: 0.12;
+}
+.cell[data-state='tonic'] text,
 .cell[data-state='world'] text,
-.cell[data-state='tonic'] text {
+.cell[data-state='near'] text {
   fill: var(--ink);
   font-weight: 900;
 }
@@ -1062,8 +1088,43 @@
 .cell[data-state='away']:hover path {
   fill: var(--soft);
 }
-.cell[data-state='world']:hover path {
-  fill-opacity: 0.5;
+.cell:is([data-state='world'], [data-state='near'], [data-state='far']):hover path {
+  fill-opacity: 0.7;
+}
+
+/* La leyenda usa los mismos tonos que la rueda. */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  font: 600 12px/1.2 var(--mono);
+}
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.legend li::before {
+  content: '';
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+}
+.legend li[data-state='tonic']::before {
+  background: var(--accent);
+}
+.legend li[data-state='world']::before {
+  background: color-mix(in srgb, var(--accent) 55%, var(--paper));
+}
+.legend li[data-state='near']::before {
+  background: color-mix(in srgb, var(--accent) 25%, var(--paper));
+}
+.legend li[data-state='far']::before {
+  background: color-mix(in srgb, var(--accent) 12%, var(--paper));
 }
 .cell:focus-visible path {
   stroke: var(--accent);

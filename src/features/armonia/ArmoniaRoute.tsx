@@ -70,6 +70,8 @@ export const meta: MetaFunction = () => [
 
 const DEFAULT_TUNING = 'estandar';
 const MAX_CHORDS = 16;
+/** Desde este ancho la rueda va al lado de los acordes (con las dos franjas plegadas, el medio mide ~1000 px). */
+const SIDE_BY_SIDE = '(min-width: 1120px)';
 const EMPTY = new URLSearchParams();
 
 /** La tonalidad que mejor cae sobre las cuerdas al aire: la del acorde que forman, mayor o menor. */
@@ -277,6 +279,11 @@ export default function ArmoniaRoute() {
   /** En pantallas anchas, las columnas de los costados se pliegan como en el Afinador y arrancan cerradas: el mundo manda. */
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
+  /** La rueda arranca abierta donde entra al lado de los acordes; en el celular, cerrada. */
+  const circleFold = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    if (circleFold.current && window.matchMedia(SIDE_BY_SIDE).matches) circleFold.current.open = true;
+  }, []);
   /** Sin lugar para las tres columnas, abrir un costado pliega el otro: el medio no se aplasta. */
   const openSide = (side: 'left' | 'right') => {
     const cramped = window.matchMedia('(max-width: 1179px)').matches;
@@ -582,54 +589,63 @@ export default function ArmoniaRoute() {
                 </p>
               )}
             </div>
-            <h3 className={styles.subhead}>Sus acordes</h3>
-            <p className={styles.hint}>Tocá un acorde para escucharlo; el + lo suma a tu vuelta.</p>
-            <ul className={styles.cards} data-testid="degrees">
-              {degrees.map((item) =>
-                card(item.chord, degreeLabel(item.chord, key), {
-                  feeling: item.feeling,
-                  mark: item.characteristic ? (
-                    <span className={styles.star} title="Grado característico">
-                      ★
-                    </span>
-                  ) : item.risky ? (
-                    <span className={styles.risk} title="Tira hacia otra tónica">
-                      OJO
-                    </span>
-                  ) : undefined,
-                }),
-              )}
-            </ul>
-            {/* Los vecinos del mundo: para ver de un vistazo qué queda cerca, qué es prestado y adónde mudarse. */}
-            <details className={styles.group} data-testid="circulo-fold">
-              <summary>
-                Círculo de quintas <span>· los vecinos del mundo</span>
-              </summary>
-              <CircleOfFifths
-                keyOf={key}
-                vuelta={vuelta}
-                name={(chord) =>
-                  // En la rueda, cada casilla se escribe en su propio tono: C#m y no D♭m, como el relativo de E.
-                  chordName(
-                    chord,
-                    {
-                      tonic: chord.root,
-                      scale: findScale(chordColor(chord.suffix) === 'minor' ? 'natural' : 'mayor')!,
-                    },
-                    notation,
-                  )
-                }
-                worldTonic={degrees[0]!.chord}
-                onListen={listen}
-                onAdd={add}
-                onMoveWorld={(chord) =>
-                  update({
-                    tono: String(chord.root),
-                    escala: chordColor(chord.suffix) === 'minor' ? 'natural' : 'mayor',
-                  })
-                }
-              />
-            </details>
+            {/* En pantalla ancha, los acordes y la rueda van uno al lado del otro: todo a la vista sin bajar. */}
+            <div className={styles.chordsAndCircle}>
+              <div>
+                <h3 className={styles.subhead}>Sus acordes</h3>
+                <p className={styles.hint}>Tocá un acorde para escucharlo; el + lo suma a tu vuelta.</p>
+                <ul className={styles.cards} data-testid="degrees">
+                  {degrees.map((item) =>
+                    card(item.chord, degreeLabel(item.chord, key), {
+                      feeling: item.feeling,
+                      mark: item.characteristic ? (
+                        <span className={styles.star} title="Grado característico">
+                          ★
+                        </span>
+                      ) : item.risky ? (
+                        <span className={styles.risk} title="Tira hacia otra tónica">
+                          OJO
+                        </span>
+                      ) : undefined,
+                    }),
+                  )}
+                </ul>
+              </div>
+              {/* Los vecinos del mundo: para ver de un vistazo qué queda cerca, qué es prestado y adónde mudarse. */}
+              <details
+                className={`${styles.group} ${styles.circleFold}`}
+                data-testid="circulo-fold"
+                ref={circleFold}
+              >
+                <summary>
+                  Círculo de quintas <span>· los vecinos del mundo</span>
+                </summary>
+                <CircleOfFifths
+                  keyOf={key}
+                  vuelta={vuelta}
+                  name={(chord) =>
+                    // En la rueda, cada casilla se escribe en su propio tono: C#m y no D♭m, como el relativo de E.
+                    chordName(
+                      chord,
+                      {
+                        tonic: chord.root,
+                        scale: findScale(chordColor(chord.suffix) === 'minor' ? 'natural' : 'mayor')!,
+                      },
+                      notation,
+                    )
+                  }
+                  worldTonic={degrees[0]!.chord}
+                  onListen={listen}
+                  onAdd={add}
+                  onMoveWorld={(chord) =>
+                    update({
+                      tono: String(chord.root),
+                      escala: chordColor(chord.suffix) === 'minor' ? 'natural' : 'mayor',
+                    })
+                  }
+                />
+              </details>
+            </div>
           </Slab>
         </div>
 

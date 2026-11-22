@@ -208,11 +208,21 @@ test.describe('armonía', () => {
   test('el círculo de quintas suena, suma y muda el mundo', async ({ page }) => {
     const errors = watchErrors(page);
     await goto(page, '/armonia?escala=mayor&tono=0&v=Am_Dm_G_C');
-    await page.getByTestId('circulo-fold').locator('summary').click();
+    // En pantalla ancha la rueda ya está abierta, al lado de los acordes.
     const circle = page.getByTestId('circulo');
+    await expect(circle).toBeVisible();
     // Cada casilla se escribe en su tono: el relativo de E es C#m, no D♭m.
     await expect(circle.getByRole('button', { name: 'Escuchar C#m' })).toBeVisible();
     await expect(page.getByTestId('circulo-vuelta')).toContainText('3 de 4');
+    // El color dice cuánto tiene que ver con el mundo: D trae una nota de afuera, E♭ dos.
+    await expect(circle.getByRole('button', { name: 'Escuchar D', exact: true })).toHaveAttribute(
+      'data-state',
+      'near',
+    );
+    await expect(circle.getByRole('button', { name: 'Escuchar Eb', exact: true })).toHaveAttribute(
+      'data-state',
+      'far',
+    );
 
     const before = await plucks(page);
     await circle.getByRole('button', { name: 'Escuchar D', exact: true }).click();

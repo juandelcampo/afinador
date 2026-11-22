@@ -28,6 +28,16 @@ const xy = (radius: number, index: number) => {
   return { x: Number(x), y: Number(y) };
 };
 
+/** Cuánto tiene que ver cada casilla con el mundo, por las notas que trae de afuera: cuanto más, más pálida. */
+const DISTANCE = ['world', 'near', 'far', 'away'] as const;
+const LEGEND = [
+  { state: 'tonic', label: 'El I' },
+  { state: 'world', label: 'Tu mundo' },
+  { state: 'near', label: '1 nota de afuera' },
+  { state: 'far', label: '2 de afuera' },
+  { state: 'away', label: 'Nada que ver' },
+] as const;
+
 const sameColorChord = (a: Chord, b: Chord) =>
   a.root === b.root && chordColor(a.suffix) === chordColor(b.suffix);
 
@@ -64,8 +74,16 @@ export function CircleOfFifths({
     <div className={styles.circle} data-testid="circulo">
       <p className={styles.hint}>
         Afuera los mayores, adentro sus relativos menores. Cada paso alrededor es una quinta: los vecinos
-        comparten todas las notas menos una. Lo pintado es tu mundo; los números, tu vuelta.
+        comparten todas las notas menos una. El color dice cuánto tiene que ver cada uno con tu mundo; los
+        números, dónde cae tu vuelta.
       </p>
+      <ul className={styles.legend} aria-label="Colores de la rueda">
+        {LEGEND.map((item) => (
+          <li key={item.state} data-state={item.state}>
+            {item.label}
+          </li>
+        ))}
+      </ul>
       <div className={styles.wheel}>
         <svg viewBox="0 0 400 400" role="group" aria-label="Círculo de quintas">
           {PLACES.map((place) => {
@@ -79,9 +97,7 @@ export function CircleOfFifths({
                 ? 'picked'
                 : sameColorChord(worldTonic, chord)
                   ? 'tonic'
-                  : notesOutside(chord, keyOf) === 0
-                    ? 'world'
-                    : 'away';
+                  : DISTANCE[Math.min(notesOutside(chord, keyOf), 3)]!;
             const onKeyDown = (event: KeyboardEvent) => {
               if (event.key !== 'Enter' && event.key !== ' ') return;
               event.preventDefault();
