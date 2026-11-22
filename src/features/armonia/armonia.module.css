@@ -435,7 +435,8 @@
 /* 04 Tu vuelta */
 .chips {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  /* 110 px es lo que pide la emoción más larga al lado de la manija: dos por fila al costado, tres en el celular. */
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
   gap: 6px;
   margin: 0;
   padding: 0;
@@ -892,6 +893,7 @@
 .chip {
   position: relative;
   display: grid;
+  min-width: 0;
 }
 .chip > .chipMain {
   height: 100%;

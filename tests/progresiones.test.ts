@@ -77,6 +77,28 @@ describe('vueltas en grados', () => {
     }
   });
 
+  it('después del grado puede ir el acorde entero: las vueltas con séptimas', () => {
+    const jazz = ['IIm7', 'V7', 'Imaj7'].map((token) => romanChord(token, 0, 'mayor'));
+    expect(names(jazz)).toEqual(['Dm7', 'G7', 'Cmaj7']);
+    const menor = ['IIm7b5', 'V7', 'Im(maj7)', 'IVmaj'].map((token) => romanChord(token, 9, 'menor'));
+    expect(names(menor)).toEqual(['Bm7♭5', 'E7', 'Am(maj7)', 'D']);
+    expect(() => romanChord('V7x', 0, 'mayor')).toThrow();
+  });
+
+  it('el círculo de quintas en mayor recorre los siete acordes del mundo', () => {
+    const vuelta = VUELTAS.find((item) => item.id === 'q-vuelta-entera')!;
+    expect(names(vuelta.degrees.map((token) => romanChord(token, 0, 'mayor')))).toEqual([
+      'C',
+      'F',
+      'Bdim',
+      'Em',
+      'Am',
+      'Dm',
+      'G',
+      'C',
+    ]);
+  });
+
   it('un grado mal escrito avisa', () => {
     expect(() => romanChord('VIII', 0, 'mayor')).toThrow();
   });

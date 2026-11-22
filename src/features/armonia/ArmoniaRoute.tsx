@@ -99,8 +99,8 @@ const readVuelta = (text: string) =>
     .filter((chord): chord is Chord => chord !== null)
     .slice(0, MAX_CHORDS);
 
-/** El grado como lo escribe Rooksby, con el bemol de verdad: "♭VII", "II mayor". */
-const romanLabel = (token: string) => token.replace(/^b/, '♭').replace(/maj$/, ' M');
+/** El grado como lo escribe Rooksby, con el bemol de verdad: "♭VII", "II M", "IIm7♭5". */
+const romanLabel = (token: string) => token.replace(/^b/, '♭').replace(/maj$/, ' M').replace(/b(\d)/g, '♭$1');
 
 const sameChords = (a: readonly Chord[], b: readonly Chord[]) =>
   a.length === b.length && a.every((chord, index) => chordToken(chord) === chordToken(b[index]!));
@@ -1180,8 +1180,8 @@ export default function ArmoniaRoute() {
 
       <Sheet open={sheet === 'arrancar'} title="Para arrancar" onClose={closeSheet} testId="starters">
         <p className={styles.hint}>
-          Vueltas de cuatro acordes que ya funcionaron. Son para arrancar: después movelas arrastrando,
-          estiralas o cambiá un acorde por su relativo.
+          Vueltas que ya funcionaron. Son para arrancar: después movelas arrastrando, estiralas o cambiá un
+          acorde por su relativo.
         </p>
         {VUELTA_GROUPS.map((group, index) => {
           const items = VUELTAS.filter((item) => item.group === group.id);

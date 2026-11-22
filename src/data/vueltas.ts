@@ -1,6 +1,8 @@
-// Vueltas de cuatro acordes para arrancar, agrupadas como en Rikky Rooksby, "How to Write Songs on
-// Guitar" (capítulo 3). Están en grados: "IImaj" es el II en mayor, "IVm" el IV en menor, "bVII" el
-// séptimo bajado. Los temas son ejemplos del libro, para ir a escucharlos.
+// Vueltas para arrancar. Las de cuatro acordes están agrupadas como en Rikky Rooksby, "How to Write Songs
+// on Guitar" (capítulo 3), y sus temas son ejemplos del libro. Las del círculo de quintas, las de jazz, las
+// clásicas y los clichés son de uso común, y sus temas son ejemplos conocidos para ir a escucharlas.
+// Están en grados: "IImaj" es el II en mayor, "IVm" el IV en menor, "bVII" el séptimo bajado; detrás del
+// grado puede ir el acorde entero ("V7", "IIm7b5", "Im(maj7)").
 // Rooksby avisa que repetir una vuelta todo el tema es lo más perezoso que hay: son para arrancar y romperlas.
 
 export type VueltaMode = 'mayor' | 'menor';
@@ -68,6 +70,36 @@ export const VUELTA_GROUPS: readonly VueltaGroup[] = [
     title: 'Exóticas',
     intro: 'Poco comunes: una sola alcanza para darle otro gusto a un tema.',
     mode: 'mayor',
+  },
+  {
+    id: 'quintas',
+    title: 'Por el círculo de quintas',
+    intro: 'Cada acorde cae una quinta al siguiente: el bajo empuja y todo desemboca en el I.',
+    mode: 'mayor',
+  },
+  {
+    id: 'quintas-menor',
+    title: 'Por el círculo, en menor',
+    intro: 'Las mismas caídas de quinta en menor: más dramáticas, con el V mayor para volver.',
+    mode: 'menor',
+  },
+  {
+    id: 'jazz',
+    title: 'Con séptimas, de jazz',
+    intro: 'El II V I con séptimas: cada acorde suma una nota que pide moverse al siguiente.',
+    mode: 'mayor',
+  },
+  {
+    id: 'largas',
+    title: 'Largas',
+    intro: 'De ocho y de doce acordes: son una sección entera, no una vuelta corta.',
+    mode: 'mayor',
+  },
+  {
+    id: 'cliche',
+    title: 'Una voz que baja',
+    intro: 'El acorde se queda quieto y una sola nota baja de a medio tono por adentro.',
+    mode: 'menor',
   },
 ];
 
@@ -337,5 +369,115 @@ export const VUELTAS: readonly Vuelta[] = [
     group: 'exoticas',
     degrees: ['I', 'bVII', 'bVI', 'Vm'],
     songs: ['The Sensual World'],
+  },
+
+  {
+    id: 'q-vi-ii-v-i',
+    group: 'quintas',
+    degrees: ['VI', 'II', 'V', 'I'],
+    why: 'Tres caídas de quinta seguidas hasta el I: llega sin vueltas.',
+    songs: [],
+  },
+  {
+    id: 'q-iii-vi-ii-v',
+    group: 'quintas',
+    degrees: ['III', 'VI', 'II', 'V'],
+    why: 'Arranca lejos del I y termina en el V: pide volver a empezar.',
+    songs: [],
+  },
+  {
+    id: 'q-i-vi7-ii7-v7',
+    group: 'quintas',
+    degrees: ['I', 'VI7', 'II7', 'V7'],
+    why: 'Cada acorde es la dominante del que sigue: todas las puntas, suena a ragtime.',
+    songs: [],
+  },
+  {
+    id: 'q-vuelta-entera',
+    group: 'quintas',
+    degrees: ['I', 'IV', 'VII', 'III', 'VI', 'II', 'V', 'I'],
+    why: 'La vuelta entera por los siete acordes del mundo, de quinta en quinta.',
+    songs: [],
+  },
+
+  {
+    id: 'qm-ii-v-i',
+    group: 'quintas-menor',
+    degrees: ['IIm7b5', 'V7', 'Im7', 'Im7'],
+    why: 'El II V I en menor: el semidisminuido inquieta y el V7 resuelve con punta.',
+    songs: ['Autumn Leaves'],
+  },
+  {
+    id: 'qm-vuelta-entera',
+    group: 'quintas-menor',
+    degrees: ['I', 'IV', 'VII', 'III', 'VI', 'II', 'Vmaj', 'I'],
+    why: 'La vuelta entera en menor: pasa por el relativo mayor y vuelve por el V mayor.',
+    songs: ['Fly Me To The Moon'],
+  },
+  {
+    id: 'qm-iv-vii-iii-vi',
+    group: 'quintas-menor',
+    degrees: ['IV', 'VII', 'III', 'VI'],
+    why: 'Media vuelta que nunca toca el I: queda flotando en el relativo mayor.',
+    songs: [],
+  },
+
+  {
+    id: 'j-ii-v-i',
+    group: 'jazz',
+    degrees: ['IIm7', 'V7', 'Imaj7', 'Imaj7'],
+    why: 'La cadencia del jazz: tensión, más tensión y llegada.',
+    songs: [],
+  },
+  {
+    id: 'j-i-vi-ii-v',
+    group: 'jazz',
+    degrees: ['Imaj7', 'VIm7', 'IIm7', 'V7'],
+    why: 'El turnaround: da vueltas sin cerrar nunca. Muy de standards.',
+    songs: ['Blue Moon'],
+  },
+  {
+    id: 'j-iii-vi-ii-v',
+    group: 'jazz',
+    degrees: ['IIIm7', 'VIm7', 'IIm7', 'V7'],
+    why: 'Todo menor hasta el V7: suave, y el final empuja de vuelta.',
+    songs: [],
+  },
+  {
+    id: 'j-i-imaj7-i7-iv',
+    group: 'jazz',
+    degrees: ['I', 'Imaj7', 'I7', 'IV'],
+    why: 'Una voz baja adentro del I (do, si, si♭) y lo lleva al IV.',
+    songs: ['Something'],
+  },
+
+  {
+    id: 'l-pachelbel',
+    group: 'largas',
+    degrees: ['I', 'V', 'VI', 'III', 'IV', 'I', 'IV', 'V'],
+    why: 'El bajo baja de a pasos mientras los acordes van de quinta en cuarta.',
+    songs: ['Canon de Pachelbel'],
+  },
+  {
+    id: 'l-blues',
+    group: 'largas',
+    degrees: ['I7', 'I7', 'I7', 'I7', 'IV7', 'IV7', 'I7', 'I7', 'V7', 'IV7', 'I7', 'V7'],
+    why: 'El blues de doce compases, un acorde por compás: la forma del blues y del rock and roll.',
+    songs: ['Johnny B. Goode', 'Hound Dog'],
+  },
+
+  {
+    id: 'c-menor',
+    group: 'cliche',
+    degrees: ['I', 'Im(maj7)', 'Im7', 'Im6'],
+    why: 'La voz baja de la raíz a la sexta: melancólica, de película.',
+    songs: ['My Funny Valentine'],
+  },
+  {
+    id: 'c-menor-iv',
+    group: 'cliche',
+    degrees: ['I', 'Im(maj7)', 'Im7', 'IVmaj'],
+    why: 'La voz sigue bajando hasta la tercera del IV mayor: se abre una luz.',
+    songs: ['Stairway To Heaven'],
   },
 ];

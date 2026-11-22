@@ -21,15 +21,17 @@ const QUALITY: Record<VueltaMode, readonly Suffix[]> = {
 
 /**
  * Un grado como los escribe Rooksby: "VI", "IVm", "IImaj", "bVII". La alteración mueve la raíz desde la
- * escala de la vuelta; un grado alterado sin calidad es mayor.
+ * escala de la vuelta; un grado alterado sin calidad es mayor. Después del grado también puede ir el
+ * acorde entero, para las vueltas con séptimas: "V7", "IIm7b5", "Imaj7", "Im(maj7)".
  */
 export function romanChord(token: string, tonic: number, mode: VueltaMode): Chord {
-  const match = /^(b|#)?(VII|VI|IV|V|III|II|I)(maj|m)?$/.exec(token);
+  const match = /^(b|#)?(VII|VI|IV|V|III|II|I)(.*)$/.exec(token);
   if (!match) throw new Error(`Grado inválido: ${token}`);
   const degree = DEGREES[match[2]!]!;
   const shift = match[1] === 'b' ? -1 : match[1] === '#' ? 1 : 0;
-  const suffix: Suffix =
-    match[3] === 'maj' ? '' : match[3] === 'm' ? 'm' : shift ? '' : QUALITY[mode][degree]!;
+  const tail = match[3]!;
+  if (tail && tail !== 'maj' && !(tail in CHORD_STEPS)) throw new Error(`Grado inválido: ${token}`);
+  const suffix: Suffix = tail === 'maj' ? '' : tail || (shift ? '' : QUALITY[mode][degree]!);
   return { root: mod12(tonic + STEPS[mode][degree]! + shift), suffix };
 }
 
