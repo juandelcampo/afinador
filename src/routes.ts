@@ -10,5 +10,6 @@ export default [
     route('armonia', 'features/armonia/ArmoniaRoute.tsx'),
     route('inversiones', 'features/inversiones/InversionesRoute.tsx'),
     route('acorde', 'features/acorde/AcordeRoute.tsx'),
+    route('ritmo', 'features/ritmo/RitmoRoute.tsx'),
   ]),
 ] satisfies RouteConfig;

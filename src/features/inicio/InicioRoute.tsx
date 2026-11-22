@@ -7,7 +7,7 @@ export const meta: MetaFunction = () => [
   { title: 'Herramientas para componer con guitarra · Afinador' },
   {
     name: 'description',
-    content: `Afiná y escuchá ${TUNINGS.length} afinaciones, armá vueltas de acordes por emoción y encontrá todas las formas de cada acorde en tu afinación.`,
+    content: `Afiná y escuchá ${TUNINGS.length} afinaciones, armá vueltas de acordes por emoción, encontrá todas las formas de cada acorde en tu afinación y tocá encima de un ritmo.`,
   },
 ];
 
@@ -59,6 +59,16 @@ const TOOLS: Tool[] = [
       'Cualquier forma, con las cuerdas al aire o apagadas',
       'Sus notas, qué va en el bajo y otras maneras de leerlo',
       'En tu afinación, y de ahí a todas sus formas',
+    ],
+  },
+  {
+    to: '/ritmo',
+    name: 'Ritmo',
+    pitch: 'Un metrónomo para compases raros y una caja de ritmos para tocar encima.',
+    things: [
+      '7/8, 5/4 y compases que cambian solos',
+      'Ritmos euclidianos dibujados como figuras, y polirritmias',
+      'Marcá el tempo tocando, y armá tu batería',
     ],
   },
 ];

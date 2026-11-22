@@ -2,6 +2,7 @@
 import { useSyncExternalStore } from 'react';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import { CLICK_SOUNDS, type ClickSound } from '~/audio/drums';
 import type { Notation } from '~/core/notes';
 import { TUNINGS } from '~/data/tunings';
 
@@ -26,6 +27,8 @@ interface Settings {
   listen: ListenPrefs;
   /** Cómo suena un acorde suelto: rasgueado o arpegiado, nota por nota. */
   chordStyle: PlayStyle;
+  /** Con qué suena el metrónomo de Ritmo. */
+  clickSound: ClickSound;
   /** Ids de las afinaciones favoritas, en el orden en que se marcaron. */
   favorites: string[];
   toggleFavorite: (id: string) => void;
@@ -71,6 +74,7 @@ export function sanitize(
     };
   }
   if (saved.chordStyle === 'arp' || saved.chordStyle === 'strum') clean.chordStyle = saved.chordStyle;
+  if (CLICK_SOUNDS.some((sound) => sound.id === saved.clickSound)) clean.clickSound = saved.clickSound;
   if (Array.isArray(saved.favorites)) {
     // Una afinación que ya no está en el catálogo se olvida, y ninguna aparece dos veces.
     const known = new Set(TUNINGS.map((tuning) => tuning.id));
@@ -90,6 +94,7 @@ export const useSettings = create<Settings>()(
       tunerMode: 'auto',
       listen: { ...DEFAULT_LISTEN, patterns: { ...DEFAULT_LISTEN.patterns } },
       chordStyle: 'strum',
+      clickSound: 'clic',
       favorites: [],
       toggleFavorite: (id) =>
         set(({ favorites }) => ({

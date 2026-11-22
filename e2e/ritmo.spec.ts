@@ -1,0 +1,171 @@
+import { expect, test } from '@playwright/test';
+import { clicks, countSounds, goto, watchErrors } from './fixtures/helpers';
+
+test.describe('ritmo', () => {
+  test.beforeEach(async ({ page }) => {
+    await countSounds(page);
+  });
+
+  test('suena al tocar, marca el tempo con el mouse y para al irse de la página', async ({ page }) => {
+    const errors = watchErrors(page);
+    await goto(page, '/ritmo');
+    const tools = page.getByRole('navigation', { name: 'Herramientas' });
+    await expect(tools.getByRole('link', { name: 'Ritmo' })).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('4/4');
+
+    await page.locator('#metro-toggle').click();
+    await expect(page.locator('#metro-toggle')).toHaveText('■ Parar');
+    await expect.poll(() => clicks(page)).toBeGreaterThan(2);
+
+    // Cuatro golpes cada 400 ms: unos 150 por minuto. Se dan desde la página, con el reloj de la página,
+    // para que la demora de cada clic de la prueba no cambie el tempo.
+    const tap = page.locator('#tap-tempo');
+    await tap.evaluate(
+      (button) =>
+        new Promise<void>((resolve) => {
+          const hit = () =>
+            button.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }));
+          hit();
+          let left = 3;
+          const id = setInterval(() => {
+            hit();
+            if (--left === 0) {
+              clearInterval(id);
+              resolve();
+            }
+          }, 400);
+        }),
+    );
+    await expect(tap).toContainText('4 golpes');
+    const bpm = Number(await page.getByTestId('bpm').textContent());
+    expect(bpm).toBeGreaterThan(120);
+    expect(bpm).toBeLessThan(175);
+    await expect(page).toHaveURL(new RegExp(`bpm=${bpm}`));
+
+    await page.getByRole('button', { name: 'Tempo a la mitad' }).click();
+    await expect(page.getByTestId('bpm')).toHaveText(String(Math.round(bpm / 2)));
+
+    // Al pasar a otra herramienta, el ritmo deja de sonar.
+    await tools.getByRole('link', { name: 'Armonía' }).click();
+    await expect(page).toHaveURL(/\/armonia/);
+    await expect(page.locator('#metro-toggle')).toHaveCount(0);
+    const after = await clicks(page);
+    await page.waitForTimeout(700);
+    expect(await clicks(page)).toBe(after);
+    expect(errors).toEqual([]);
+  });
+
+  test('el euclidiano se dibuja como una figura que gira', async ({ page }) => {
+    const errors = watchErrors(page);
+    await goto(page, '/ritmo');
+    await page
+      .getByRole('group', { name: 'Tipo de ritmo' })
+      .getByRole('button', { name: 'Euclidiano' })
+      .click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('E(3,8)');
+    const wheel = page.getByTestId('wheel');
+    await expect(wheel).toHaveAttribute('aria-label', 'Rueda del ritmo: 3 golpes en 8');
+    await expect(wheel.locator('polygon')).toHaveAttribute('points', /^0,-46 /);
+
+    await page.getByRole('button', { name: 'Cinquillo' }).click();
+    await expect(page).toHaveURL(/k=5&n=8/);
+    await expect(wheel).toHaveAttribute('aria-label', 'Rueda del ritmo: 5 golpes en 8');
+
+    // Girar la figura cambia dónde arranca, no cuántos golpes tiene.
+    const before = await wheel.locator('polygon').getAttribute('points');
+    await page.getByRole('button', { name: 'Subir rotación' }).click();
+    await expect(page).toHaveURL(/r=1/);
+    await expect(wheel.locator('polygon')).not.toHaveAttribute('points', before!);
+
+    await page.locator('#metro-toggle').click();
+    await expect(wheel.locator('[data-active]')).toHaveCount(1);
+    await expect(wheel.locator('[data-hand]')).toHaveAttribute('data-running', '');
+
+    // La polirritmia muestra las dos figuras encimadas.
+    await page
+      .getByRole('group', { name: 'Tipo de ritmo' })
+      .getByRole('button', { name: 'Polirritmia' })
+      .click();
+    await page.getByRole('button', { name: '4 contra 3' }).click();
+    await expect(wheel.locator('polygon')).toHaveCount(2);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('4 contra 3');
+    expect(errors).toEqual([]);
+  });
+
+  test('la caja de ritmos: partida, pintar, callar, correr, swing y volver', async ({ page }) => {
+    const errors = watchErrors(page);
+    await goto(page, '/ritmo');
+    await page.getByRole('group', { name: 'Tipo de ritmo' }).getByRole('button', { name: 'Batería' }).click();
+    const machine = page.getByTestId('drum-machine');
+    await expect(machine.getByRole('button', { name: 'Rock' })).toHaveAttribute('aria-pressed', 'true');
+
+    await machine.getByRole('button', { name: 'Funk' }).click();
+    await expect(page).toHaveURL(/bpm=98/);
+    await expect(page).toHaveURL(/p=1001001000100000_/);
+
+    // Pintar arrastrando: tres casillas de tom de un solo gesto.
+    const tomFirst = machine.getByRole('button', { name: 'Tom, paso 1', exact: true });
+    await tomFirst.scrollIntoViewIfNeeded();
+    const a = await tomFirst.boundingBox();
+    const b = await machine.getByRole('button', { name: 'Tom, paso 3', exact: true }).boundingBox();
+    await page.mouse.move(a!.x + a!.width / 2, a!.y + a!.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(b!.x + b!.width / 2, b!.y + b!.height / 2, { steps: 6 });
+    await page.mouse.up();
+    for (const step of [1, 2, 3]) {
+      await expect(machine.getByRole('button', { name: `Tom, paso ${step}`, exact: true })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+    }
+    await expect(machine.getByRole('button', { name: 'Funk' })).toHaveAttribute('aria-pressed', 'false');
+
+    await machine.getByRole('button', { name: 'Correr tom un paso después' }).click();
+    await expect(machine.getByRole('button', { name: 'Tom, paso 1', exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+    await expect(machine.getByRole('button', { name: 'Tom, paso 4', exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+
+    await machine.getByRole('button', { name: 'Callar bombo' }).click();
+    await expect(machine.getByRole('button', { name: 'Callar bombo' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+
+    await machine.getByRole('slider', { name: /Swing/ }).fill('66');
+    await expect(page.getByTestId('swing')).toHaveText('66');
+    await expect(page).toHaveURL(/sw=66/);
+
+    await machine.getByRole('button', { name: 'Borrar todos los golpes' }).click();
+    await expect(machine.locator('[aria-pressed="true"][data-step]')).toHaveCount(0);
+    await page.locator('#undo-drums').click();
+    await expect(machine.getByRole('button', { name: 'Tom, paso 4', exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+
+    await page.locator('#metro-toggle').click();
+    await expect(machine.locator('[data-now]').first()).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+
+  test('un link abre el ritmo que trae, y cualquier ritmo pasa a la batería', async ({ page }) => {
+    const errors = watchErrors(page);
+    await goto(page, '/ritmo?m=meter&bpm=150&g=2%2B2%2B3&d=8');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('7/8 (2+2+3)');
+    await expect(page.getByTestId('bpm')).toHaveText('150');
+    await expect(page.getByRole('button', { name: '7/8 2+2+3' })).toHaveAttribute('aria-pressed', 'true');
+
+    await page.locator('#to-drums').click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Batería en 14 pasos');
+    await expect(page.getByRole('button', { name: 'Bombo, paso 1', exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(errors).toEqual([]);
+  });
+});

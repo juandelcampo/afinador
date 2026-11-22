@@ -142,6 +142,16 @@
   .tool:nth-child(4) {
     border-left: 0;
   }
+  /* Con cinco herramientas hay una tercera fila: la marca la acompaña y la última ocupa la fila entera. */
+  .tools:has(> .tool:nth-child(6)) .home {
+    grid-row: span 3;
+  }
+  .tool:last-child:nth-child(even) {
+    grid-column: span 2;
+  }
+  .tool:nth-child(even) {
+    border-left: 0;
+  }
   .settingsToggle {
     padding-inline: 8px;
     font-size: 16px;

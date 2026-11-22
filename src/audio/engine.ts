@@ -1,4 +1,4 @@
-// Un solo AudioContext para toda la app, con un solo volumen: todo lo que suena es el instrumento.
+// Un solo AudioContext para toda la app, con un solo volumen para el instrumento y el ritmo.
 // Se crea con el primer gesto de la persona, nunca durante el render ni al generar las páginas estáticas.
 
 let volume = 0.68;
@@ -7,6 +7,7 @@ let context: AudioContext | null = null;
 let output: GainNode | null = null;
 let instrumentInput: GainNode | null = null;
 let sampleInput: GainNode | null = null;
+let rhythmInput: GainNode | null = null;
 
 /** El oído percibe el volumen de forma logarítmica: el cuadrado da un fader más parejo. */
 const toGain = (value: number) => value * value;
@@ -48,9 +49,19 @@ export function getAudio(): { ctx: AudioContext; bus: GainNode; sampleBus: GainN
     shine.gain.value = 5;
     sampleInput = context.createGain();
     sampleInput.connect(mud).connect(shine).connect(output);
+
+    // La batería y el metrónomo van derecho a la salida: los filtros de guitarra los empastarían.
+    rhythmInput = context.createGain();
+    rhythmInput.connect(output);
   }
   if (context.state === 'suspended') void context.resume();
   return { ctx: context, bus: instrumentInput, sampleBus: sampleInput };
+}
+
+/** La entrada del ritmo: metrónomo y batería. */
+export function rhythmBus(): GainNode {
+  getAudio();
+  return rhythmInput!;
 }
 
 /** Se puede llamar antes de que exista el audio: el valor se aplica al crearlo. */

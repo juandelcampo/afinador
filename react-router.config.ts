@@ -11,6 +11,7 @@ export default {
     '/afinador',
     '/armonia',
     '/inversiones',
+    '/ritmo',
     ...TUNINGS.map((tuning) => `/afinador/${tuning.id}`),
   ],
 } satisfies Config;

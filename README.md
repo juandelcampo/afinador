@@ -6,6 +6,7 @@ Herramientas para componer con guitarra, pensadas para quien toca de oído y qui
 - **Armonía** (`/armonia`): acordes por emoción para armar una vuelta con las figuras de tu afinación.
 - **Inversiones** (`/inversiones`): todas las maneras de hacer un acorde en el mástil, agrupadas por la nota que va en el bajo.
 - **¿Qué acorde?** (`/acorde`): ponés los dedos en el diapasón y te dice qué acorde suena.
+- **Ritmo** (`/ritmo`): metrónomo para compases raros, ritmos euclidianos dibujados como figuras, polirritmias y una caja de ritmos.
 
 Salió de [Scordatura](../Afinador%20Drake), donde era una de las herramientas. Acá vive solo.
 
@@ -58,7 +59,25 @@ Arriba del diapasón, el nombre grande (tocarlo hace sonar la forma, rasgueada o
 
 El nombre sale de `core/identify.ts`: se prueba cada nota que suena como raíz contra los acordes de `CHORD_STEPS`, con la quinta (y en los de oncena, la novena) opcional; si ninguno calza, contra un acorde base con tensiones encima (♭9, 9, ♯9, 11, ♯11, ♭13, 13). Gana la lectura con la raíz en el bajo, después la que menos agrega u omite y después la más común. La afinación y la forma van en la URL (`/acorde?afinacion=dadgad&forma=0-0-0-2-0-0`); si el acorde es de los que abre Inversiones, un link lleva ahí con la misma forma.
 
-La barra de arriba tiene los nombres de las notas (E A D o Mi La Re) y la referencia del La. El volumen está en Escuchar, que es lo único que suena.
+### Ritmo
+
+Vino de Scordatura y se rehízo para que suene solo: arranca en 4/4 con ▶ Tocar grande, y al irse de la página para (no hay barra de abajo ni estado compartido con las otras herramientas). El tempo se cambia con el deslizador, con ÷2 / −1 / +1 / ×2, o marcándolo: se toca el botón Marcar con el mouse (o la T) y toma el promedio de los últimos ocho golpes; una pausa de dos segundos empieza de nuevo.
+
+Hay cinco tipos de ritmo:
+
+- **Compás**: agrupaciones como 2+2+3, con el primer golpe de cada grupo acentuado.
+- **Batería**: la caja de ritmos.
+- **Euclidiano**: k golpes repartidos parejo en n pulsos. Se dibuja como una rueda: cada golpe es un vértice y juntos forman una figura, con una aguja que gira mientras suena.
+- **Polirritmia**: dos figuras encimadas en la misma rueda, círculos y cuadrados.
+- **Mutante**: compases que se turnan cada tantos compases.
+
+Cualquiera pasa a la batería para editarlo a mano (`rhythmToDrums`).
+
+La caja de ritmos tiene ritmos de partida (rock, funk, hip hop, shuffle, dembow, cumbia, bossa…), un patrón inventado (euclidiano por sonido, con el bombo en el uno), Borrar y Volver, pasos de 8 a 32 y swing de 50 (parejo) a 75. Se pinta arrastrando. Cada fila se escucha tocando su nombre, y se puede callar, correr un paso o bajar de volumen. En el celular los pasos se parten en filas de a 8, 7, 6 o 5, para que el compás se lea.
+
+El motor (`core/rhythm.ts`) reduce todo a un ciclo de golpes entre 0 y 1; `audio/metronome.ts` los programa con anticipación desde un Worker (`ticker.ts`), y `audio/drums.ts` sintetiza la batería. El ritmo entero va en la URL (`/ritmo?m=meter&bpm=150&g=2+2+3&d=8`), menos las filas calladas.
+
+La barra de arriba tiene los nombres de las notas (E A D o Mi La Re) y la referencia del La. El volumen es uno solo para todo lo que suena; está en Escuchar y en Ritmo.
 
 ## Comandos
 
@@ -82,12 +101,12 @@ El micrófono solo funciona en `localhost` o por `https`, así que para usarlo d
 
 ```text
 src/
-  core/        notas, detección de altura (pitch.ts), síntesis de cuerda (pluck.ts), afinaciones y figuras (tuning.ts), armonía (harmony.ts), lo de Rooksby (progressions.ts) y las figuras de cada inversión (inversions.ts). TypeScript puro.
-  data/        el catálogo de afinaciones (tunings.ts) y las vueltas para arrancar (vueltas.ts). Solo datos.
-  audio/       AudioContext y mezcla, instrumento (muestras de guitarra en samples.ts) y micrófono. Sin React.
+  core/        notas, detección de altura (pitch.ts), síntesis de cuerda (pluck.ts), afinaciones y figuras (tuning.ts), armonía (harmony.ts), lo de Rooksby (progressions.ts) las figuras de cada inversión (inversions.ts) y el ritmo (rhythm.ts). TypeScript puro.
+  data/        el catálogo de afinaciones (tunings.ts), las vueltas para arrancar (vueltas.ts) y los ritmos de partida de la batería (drums.ts). Solo datos.
+  audio/       AudioContext y mezcla, instrumento (muestras de guitarra en samples.ts), micrófono, metrónomo y batería sintetizada. Sin React.
   shared/      preferencias, el hook del afinador (useTuner.ts) y componentes de interfaz.
   shell/       la barra de arriba, con las herramientas.
-  features/    una carpeta por pantalla: inicio/ (la portada), afinador/, armonia/, inversiones/ y acorde/.
+  features/    una carpeta por pantalla: inicio/ (la portada), afinador/, armonia/, inversiones/, acorde/ y ritmo/.
 tests/         lógica y validación del catálogo (Vitest)
 e2e/           pruebas en Chrome real, con micrófono simulado (Playwright)
 ```
@@ -105,7 +124,7 @@ ESLint hace cumplir las tres primeras.
 
 ### Rutas
 
-`/` es la portada, `/afinador` abre la afinación estándar y `/armonia` la armonía, `/inversiones` las inversiones, `/acorde` ¿Qué acorde?. Cada afinación tiene su página en `/afinador/<id>`, generada como HTML estático para los buscadores. Se mantuvieron las URL de Scordatura para que sus links sigan abriendo.
+`/` es la portada, `/afinador` abre la afinación estándar y `/armonia` la armonía, `/inversiones` las inversiones, `/acorde` ¿Qué acorde? y `/ritmo` el ritmo. Cada afinación tiene su página en `/afinador/<id>`, generada como HTML estático para los buscadores. Se mantuvieron las URL de Scordatura para que sus links sigan abriendo.
 
 ### Agregar una afinación
 
