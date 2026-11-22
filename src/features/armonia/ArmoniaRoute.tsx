@@ -273,6 +273,20 @@ export default function ArmoniaRoute() {
   const [sheet, setSheet] = useState<'editor' | 'arrancar' | 'cerrar' | null>(null);
   /** La vuelta como vista principal: pasa al medio y el mundo se va a un costado. */
   const [wide, setWide] = useState(false);
+  /** En pantallas anchas, las columnas de los costados se pliegan como en el Afinador: más color arranca cerrado. */
+  const [leftOpen, setLeftOpen] = useState(false);
+  const [rightOpen, setRightOpen] = useState(true);
+  /** Sin lugar para las tres columnas, abrir un costado pliega el otro: el medio no se aplasta. */
+  const openSide = (side: 'left' | 'right') => {
+    const cramped = window.matchMedia('(max-width: 1179px)').matches;
+    if (side === 'left') {
+      setLeftOpen(true);
+      if (cramped) setRightOpen(false);
+    } else {
+      setRightOpen(true);
+      if (cramped) setLeftOpen(false);
+    }
+  };
   /** El acorde que se está arrastrando y dónde caería. */
   const [drag, setDrag] = useState<{ from: number; to: number } | null>(null);
   const [editorTab, setEditorTab] = useState<'color' | 'bajo' | 'cambiar' | 'cantar'>('color');
@@ -488,15 +502,17 @@ export default function ArmoniaRoute() {
 
   return (
     <div className={styles.wrap}>
-      <div className={styles.page} data-wide={wide || undefined}>
+      <div
+        className={styles.page}
+        data-wide={(wide && rightOpen) || undefined}
+        data-left={leftOpen}
+        data-right={rightOpen}
+      >
         {/* Al medio, el mundo y sus acordes: lo principal. */}
         <div className={styles.center}>
           <Slab>
             <PageTitle eyebrow="Acordes por emoción" title="Armonía">
-              <p>
-                Elegí un mundo, escuchá qué dice cada acorde y armá tu vuelta. Las emociones son las que suele
-                sentir la mayoría, según Mauro De María; si a vos te dicen otra cosa, vale lo tuyo.
-              </p>
+              <p>Elegí un mundo, escuchá qué dice cada acorde y armá tu vuelta.</p>
             </PageTitle>
             <div className={styles.setup}>
               <label className={styles.field}>
@@ -587,318 +603,367 @@ export default function ArmoniaRoute() {
         </div>
 
         {/* A la izquierda, de dónde sacar más acordes: todo cerrado hasta que lo pidas. */}
-        <aside className={`${styles.side} ${styles.left}`} aria-label="Más acordes">
-          <Slab>
-            <SlabHead title="Más color" />
-            <p className={styles.hint}>
-              ¿Se puede ir del III al I, mezclar escalas? Siempre sí: lo que importa es saber qué emoción
-              elegís.
-            </p>
-            {groups.map((group) => (
-              <details key={group.id} className={styles.group}>
+        <aside className={`${styles.side} ${styles.left}`} data-open={leftOpen} aria-label="Más acordes">
+          {/* Cerrada, en pantallas anchas queda una franja con su nombre para volver a abrirla. */}
+          <button
+            type="button"
+            className={styles.rail}
+            aria-expanded={false}
+            aria-label="Abrir más acordes"
+            onClick={() => openSide('left')}
+          >
+            <span aria-hidden="true">›</span>
+            <span>Más acordes</span>
+          </button>
+          <div className={styles.sideBody}>
+            <div className={styles.sideHead}>
+              <span>Más acordes</span>
+              <button
+                type="button"
+                className={styles.fold}
+                aria-label="Cerrar la columna de más acordes"
+                onClick={() => setLeftOpen(false)}
+              >
+                <span aria-hidden="true">‹</span>
+              </button>
+            </div>
+            <Slab>
+              <SlabHead title="Más color" />
+              <p className={styles.hint}>
+                ¿Se puede ir del III al I, mezclar escalas? Siempre sí: lo que importa es saber qué emoción
+                elegís.
+              </p>
+              {groups.map((group) => (
+                <details key={group.id} className={styles.group}>
+                  <summary>
+                    {group.title}
+                    {group.id === 'cine' && last && <span> · desde {name(last)}</span>}
+                    <span> · {group.chords.length}</span>
+                  </summary>
+                  {group.intro && <p className={styles.hint}>{group.intro}</p>}
+                  <ul className={styles.cards}>
+                    {group.chords.map((item) =>
+                      card(item.chord, item.label, { words: item.why, feeling: undefined }),
+                    )}
+                  </ul>
+                </details>
+              ))}
+              {last && (
+                <details className={styles.group} data-testid="moves">
+                  <summary>
+                    De dos en dos<span> · desde {name(last)}</span>
+                  </summary>
+                  <p className={styles.hint}>
+                    Qué da cada cambio de dos acordes, contando {name(last)} como I. Repetí dos acordes varias
+                    veces y ya tenés un riff o una estrofa.
+                  </p>
+                  <ul className={styles.cards}>
+                    {twoChordMoves(last).map((move) =>
+                      card(move.chord, move.label, { words: move.why, feeling: undefined }),
+                    )}
+                  </ul>
+                </details>
+              )}
+            </Slab>
+
+            <Slab>
+              <details className={styles.section} data-testid="sin-centro">
                 <summary>
-                  {group.title}
-                  {group.id === 'cine' && last && <span> · desde {name(last)}</span>}
-                  <span> · {group.chords.length}</span>
-                </summary>
-                {group.intro && <p className={styles.hint}>{group.intro}</p>}
-                <ul className={styles.cards}>
-                  {group.chords.map((item) =>
-                    card(item.chord, item.label, { words: item.why, feeling: undefined }),
-                  )}
-                </ul>
-              </details>
-            ))}
-            {last && (
-              <details className={styles.group} data-testid="moves">
-                <summary>
-                  De dos en dos<span> · desde {name(last)}</span>
+                  <SlabHead title="Sin centro" />
                 </summary>
                 <p className={styles.hint}>
-                  Qué da cada cambio de dos acordes, contando {name(last)} como I. Repetí dos acordes varias
-                  veces y ya tenés un riff o una estrofa.
+                  Los puntos cardinales: un sistema consonante pero sin tónica. Dentro de un grupo vale ir de
+                  cualquier acorde a cualquiera, mayor o menor, y todo suena a fantasía.
                 </p>
-                <ul className={styles.cards}>
-                  {twoChordMoves(last).map((move) =>
-                    card(move.chord, move.label, { words: move.why, feeling: undefined }),
-                  )}
-                </ul>
+                <Segmented
+                  label="Geometría"
+                  value={geometry}
+                  options={[
+                    { value: 'cuadrado', label: 'Cuadrado · 3' },
+                    { value: 'triangulo', label: 'Triángulo · 4' },
+                  ]}
+                  onChange={setGeometry}
+                />
+                <div className={styles.compasses} data-geometry={geometry}>
+                  {cardinalGroups(geometry).map((group) => (
+                    <section
+                      key={group.index}
+                      className={styles.compass}
+                      aria-label={`Grupo ${group.index + 1}`}
+                    >
+                      <h3>Grupo {group.index + 1}</h3>
+                      {group.points.map((point) => (
+                        <div key={point.pole} className={styles.pole} data-pole={point.pole}>
+                          {(['', 'm'] as const).map((suffix) => {
+                            const chord: Chord = { root: point.root, suffix };
+                            const label = plainName(point.root, notation) + suffix;
+                            // Como las tarjetas: el recuadro suena, el + lo suma.
+                            return (
+                              <div key={suffix} className={styles.poleChord}>
+                                <button
+                                  type="button"
+                                  aria-label={`Escuchar ${label}`}
+                                  onClick={() => listen(chord)}
+                                >
+                                  {label}
+                                </button>
+                                <button
+                                  type="button"
+                                  className={styles.add}
+                                  aria-label={`Sumar ${label} a la vuelta`}
+                                  onClick={() => add(chord)}
+                                >
+                                  +
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </section>
+                  ))}
+                </div>
+                {pole && (
+                  <p className={styles.hint} data-testid="same-pole">
+                    Tu último acorde está en el polo {pole.pole}. Por el mismo polo pasás a otro grupo:{' '}
+                    {pole.roots.map((root) => plainName(root, notation)).join(' o ')}.
+                  </p>
+                )}
+                <p className={styles.hint}>
+                  Para la melodía: sobre acordes mayores, lidio (4.ª ascendida) o lidio con la 7.ª bajada;
+                  sobre menores, dórico. La pentatónica queda bien sobre todo.
+                </p>
               </details>
-            )}
-          </Slab>
-
-          <Slab>
-            <details className={styles.section} data-testid="sin-centro">
-              <summary>
-                <SlabHead title="Sin centro" />
-              </summary>
-              <p className={styles.hint}>
-                Los puntos cardinales: un sistema consonante pero sin tónica. Dentro de un grupo vale ir de
-                cualquier acorde a cualquiera, mayor o menor, y todo suena a fantasía.
-              </p>
-              <Segmented
-                label="Geometría"
-                value={geometry}
-                options={[
-                  { value: 'cuadrado', label: 'Cuadrado · 3' },
-                  { value: 'triangulo', label: 'Triángulo · 4' },
-                ]}
-                onChange={setGeometry}
-              />
-              <div className={styles.compasses} data-geometry={geometry}>
-                {cardinalGroups(geometry).map((group) => (
-                  <section
-                    key={group.index}
-                    className={styles.compass}
-                    aria-label={`Grupo ${group.index + 1}`}
-                  >
-                    <h3>Grupo {group.index + 1}</h3>
-                    {group.points.map((point) => (
-                      <div key={point.pole} className={styles.pole} data-pole={point.pole}>
-                        {(['', 'm'] as const).map((suffix) => {
-                          const chord: Chord = { root: point.root, suffix };
-                          const label = plainName(point.root, notation) + suffix;
-                          // Como las tarjetas: el recuadro suena, el + lo suma.
-                          return (
-                            <div key={suffix} className={styles.poleChord}>
-                              <button
-                                type="button"
-                                aria-label={`Escuchar ${label}`}
-                                onClick={() => listen(chord)}
-                              >
-                                {label}
-                              </button>
-                              <button
-                                type="button"
-                                className={styles.add}
-                                aria-label={`Sumar ${label} a la vuelta`}
-                                onClick={() => add(chord)}
-                              >
-                                +
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ))}
-                  </section>
-                ))}
-              </div>
-              {pole && (
-                <p className={styles.hint} data-testid="same-pole">
-                  Tu último acorde está en el polo {pole.pole}. Por el mismo polo pasás a otro grupo:{' '}
-                  {pole.roots.map((root) => plainName(root, notation)).join(' o ')}.
-                </p>
-              )}
-              <p className={styles.hint}>
-                Para la melodía: sobre acordes mayores, lidio (4.ª ascendida) o lidio con la 7.ª bajada; sobre
-                menores, dórico. La pentatónica queda bien sobre todo.
-              </p>
-            </details>
-          </Slab>
+            </Slab>
+          </div>
         </aside>
 
         {/* A la derecha, tu vuelta: queda a mano mientras recorrés el resto. */}
-        <aside className={`${styles.side} ${styles.right}`} aria-label="Tu vuelta">
-          <Slab className={styles.vueltaSlab}>
-            <span id="vuelta" className={styles.anchor} />
-            <SlabHead title="Tu vuelta">
-              <div className={styles.vueltaTools}>
-                <Fader compact />
-                {/* La flecha estira la vuelta hacia el medio y la vuelve a su lugar; en el celular, abre para abajo. */}
-                <Button
-                  variant="mini"
-                  ariaPressed={wide}
-                  ariaLabel={wide ? 'Achicar la vuelta' : 'Agrandar la vuelta'}
-                  title={
-                    wide ? 'Volver la vuelta a su lugar' : 'Estirar la vuelta: cada acorde con su figura'
-                  }
-                  onClick={() => setWide(!wide)}
-                >
-                  <span className={styles.widen} aria-hidden="true">
-                    {wide ? '→' : '←'}
-                  </span>
-                </Button>
-              </div>
-            </SlabHead>
-            {vuelta.length === 0 ? (
-              <div className={styles.empty} data-testid="vuelta-empty">
-                <p className={styles.hint}>
-                  Sumá acordes con el +, o arrancá con una vuelta que ya funcionó y después cambiala.
-                </p>
-                <Button variant="primary" full onClick={() => setSheet('arrancar')}>
-                  Arrancar con una vuelta
-                </Button>
-              </div>
-            ) : (
-              <ol className={styles.chips} data-testid="vuelta" data-wide={wide || undefined}>
-                {shown.map((chord, index) => {
-                  const feeling = feelingOf(chord, key);
-                  const fingering = finger(chord);
-                  // La clave sigue al acorde (el primer C, el segundo C…), no al lugar: al moverlo, su botón y
-                  // el foco van con él.
-                  const token = chordToken(chord);
-                  const nth = shown.slice(0, index).filter((item) => chordToken(item) === token).length;
-                  return (
-                    <li
-                      key={`${token}#${nth}`}
-                      data-slot={index}
-                      data-dragging={drag?.to === index || undefined}
-                      className={styles.chip}
-                    >
-                      <button
-                        type="button"
-                        className={styles.chipMain}
-                        aria-pressed={active === index}
-                        aria-haspopup="dialog"
-                        data-playing={(!drag && player.current === index) || undefined}
-                        onClick={() => openEditor(index)}
-                      >
-                        <small>{degreeLabel(chord, key)}</small>
-                        <strong>{name(chord)}</strong>
-                        {feeling && <Feeling feeling={feeling} />}
-                        {wide && feeling && <span className={styles.words}>{feeling.words.join('. ')}.</span>}
-                        {wide && (
-                          <span className={styles.tab} data-missing={!fingering}>
-                            {fingering ? fingering.label : 'La mano no llega'}
-                          </span>
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.chipRemove}
-                        aria-label={`Sacar ${name(chord)}`}
-                        onClick={() => {
-                          removeAt(index);
-                          setSelected(null);
-                        }}
-                      >
-                        ✕
-                      </button>
-                      {/* La manija: se arrastra con el dedo o el mouse, o se mueve con las flechas. */}
-                      <button
-                        type="button"
-                        className={styles.chipGrip}
-                        aria-label={`Mover ${name(chord)}`}
-                        title="Arrastrá para cambiarlo de lugar"
-                        onPointerDown={(event) => {
-                          event.preventDefault();
-                          event.currentTarget.setPointerCapture(event.pointerId);
-                          setDrag({ from: index, to: index });
-                        }}
-                        onKeyDown={(event) => {
-                          const step = event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : 0;
-                          if (!step) return;
-                          event.preventDefault();
-                          shift(index, step);
-                        }}
-                      >
-                        ⠿
-                      </button>
-                    </li>
-                  );
-                })}
-              </ol>
-            )}
-
-            {pedal.length > 0 && (
-              <p className={styles.pedal} data-testid="pedal">
-                Al aire en toda la vuelta:{' '}
-                {pedal
-                  .map((index) => `${6 - index}.ª (${noteLabel(tuning.notes[index]!, notation)})`)
-                  .join(', ')}
-                . Dejalas sonar.
-              </p>
-            )}
-
-            {vuelta.length > 0 && (
-              <>
-                <div className={styles.controls}>
-                  <Button
-                    variant="primary"
-                    id="vuelta-toggle"
-                    on={player.running}
-                    onClick={() => (player.running ? player.stop() : player.start())}
-                  >
-                    {player.running ? '■ Parar' : '▶ Tocar la vuelta'}
-                  </Button>
-                  <label className={styles.field}>
-                    <span>Velocidad: {tempo} ppm</span>
-                    <input
-                      type="range"
-                      min={TEMPO_RANGE.min}
-                      max={TEMPO_RANGE.max}
-                      step={TEMPO_RANGE.step}
-                      value={tempo}
-                      onChange={(event) => setTempo(Number(event.target.value))}
-                    />
-                  </label>
-                </div>
-                <details className={styles.more}>
-                  <summary>Cómo se toca</summary>
-                  <div className={styles.controls}>
-                    <div className={styles.field}>
-                      <span>Pulsos por acorde</span>
-                      <Segmented
-                        label="Pulsos por acorde"
-                        value={String(beats)}
-                        options={[
-                          { value: '2', label: '2' },
-                          { value: '4', label: '4' },
-                          { value: '8', label: '8' },
-                        ]}
-                        onChange={(value) => setBeats(Number(value))}
-                      />
-                    </div>
-                    <div className={styles.field}>
-                      <span>Rasguido</span>
-                      <Segmented
-                        label="Rasguido"
-                        value={feel}
-                        options={[
-                          { value: 'pulso', label: 'Por pulso' },
-                          { value: 'acorde', label: 'Uno solo' },
-                        ]}
-                        onChange={setFeel}
-                      />
-                    </div>
-                  </div>
-                </details>
-
-                <p className={styles.label}>Transformar</p>
-                <div className={styles.pills} role="group" aria-label="Transformar la vuelta">
-                  {transforms.map((transform) => (
+        <aside className={`${styles.side} ${styles.right}`} data-open={rightOpen} aria-label="Tu vuelta">
+          <button
+            type="button"
+            className={styles.rail}
+            aria-expanded={false}
+            aria-label="Abrir tu vuelta"
+            onClick={() => openSide('right')}
+          >
+            <span aria-hidden="true">‹</span>
+            <span>Tu vuelta{vuelta.length > 0 && ` · ${vuelta.length}`}</span>
+          </button>
+          <div className={styles.sideBody}>
+            <Slab className={styles.vueltaSlab}>
+              <span id="vuelta" className={styles.anchor} />
+              <SlabHead title="Tu vuelta">
+                <div className={styles.vueltaTools}>
+                  <Fader compact />
+                  {/* En pantallas anchas, la vuelta también se pliega a un costado. Agrandada, primero se achica. */}
+                  {!wide && (
                     <button
-                      key={transform.id}
                       type="button"
-                      title={transform.why}
-                      disabled={sameChords(transform.apply(vuelta), vuelta)}
-                      onClick={() => setVuelta((current) => transform.apply(current))}
+                      className={styles.fold}
+                      aria-label="Cerrar la columna de tu vuelta"
+                      onClick={() => setRightOpen(false)}
                     >
-                      {transform.label}
+                      <span aria-hidden="true">›</span>
                     </button>
-                  ))}
-                </div>
-                <div className={styles.pills}>
-                  <button type="button" aria-haspopup="dialog" onClick={() => setSheet('cerrar')}>
-                    Cerrar con…
-                  </button>
-                  <button type="button" aria-haspopup="dialog" onClick={() => setSheet('arrancar')}>
-                    Otra vuelta…
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      player.stop();
-                      setVuelta([]);
-                    }}
+                  )}
+                  {/* La flecha estira la vuelta hacia el medio y la vuelve a su lugar; en el celular, abre para abajo. */}
+                  <Button
+                    variant="mini"
+                    ariaPressed={wide}
+                    ariaLabel={wide ? 'Achicar la vuelta' : 'Agrandar la vuelta'}
+                    title={
+                      wide ? 'Volver la vuelta a su lugar' : 'Estirar la vuelta: cada acorde con su figura'
+                    }
+                    onClick={() => setWide(!wide)}
                   >
-                    Vaciar
-                  </button>
+                    <span className={styles.widen} aria-hidden="true">
+                      {wide ? '→' : '←'}
+                    </span>
+                  </Button>
                 </div>
-              </>
-            )}
-          </Slab>
+              </SlabHead>
+              {vuelta.length === 0 ? (
+                <div className={styles.empty} data-testid="vuelta-empty">
+                  <p className={styles.hint}>
+                    Sumá acordes con el +, o arrancá con una vuelta que ya funcionó y después cambiala.
+                  </p>
+                  <Button variant="primary" full onClick={() => setSheet('arrancar')}>
+                    Arrancar con una vuelta
+                  </Button>
+                </div>
+              ) : (
+                <ol className={styles.chips} data-testid="vuelta" data-wide={wide || undefined}>
+                  {shown.map((chord, index) => {
+                    const feeling = feelingOf(chord, key);
+                    const fingering = finger(chord);
+                    // La clave sigue al acorde (el primer C, el segundo C…), no al lugar: al moverlo, su botón y
+                    // el foco van con él.
+                    const token = chordToken(chord);
+                    const nth = shown.slice(0, index).filter((item) => chordToken(item) === token).length;
+                    return (
+                      <li
+                        key={`${token}#${nth}`}
+                        data-slot={index}
+                        data-dragging={drag?.to === index || undefined}
+                        className={styles.chip}
+                      >
+                        <button
+                          type="button"
+                          className={styles.chipMain}
+                          aria-pressed={active === index}
+                          aria-haspopup="dialog"
+                          data-playing={(!drag && player.current === index) || undefined}
+                          onClick={() => openEditor(index)}
+                        >
+                          <small>{degreeLabel(chord, key)}</small>
+                          <strong>{name(chord)}</strong>
+                          {feeling && <Feeling feeling={feeling} />}
+                          {wide && feeling && (
+                            <span className={styles.words}>{feeling.words.join('. ')}.</span>
+                          )}
+                          {wide && (
+                            <span className={styles.tab} data-missing={!fingering}>
+                              {fingering ? fingering.label : 'La mano no llega'}
+                            </span>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.chipRemove}
+                          aria-label={`Sacar ${name(chord)}`}
+                          onClick={() => {
+                            removeAt(index);
+                            setSelected(null);
+                          }}
+                        >
+                          ✕
+                        </button>
+                        {/* La manija: se arrastra con el dedo o el mouse, o se mueve con las flechas. */}
+                        <button
+                          type="button"
+                          className={styles.chipGrip}
+                          aria-label={`Mover ${name(chord)}`}
+                          title="Arrastrá para cambiarlo de lugar"
+                          onPointerDown={(event) => {
+                            event.preventDefault();
+                            event.currentTarget.setPointerCapture(event.pointerId);
+                            setDrag({ from: index, to: index });
+                          }}
+                          onKeyDown={(event) => {
+                            const step = event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : 0;
+                            if (!step) return;
+                            event.preventDefault();
+                            shift(index, step);
+                          }}
+                        >
+                          ⠿
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ol>
+              )}
+
+              {pedal.length > 0 && (
+                <p className={styles.pedal} data-testid="pedal">
+                  Al aire en toda la vuelta:{' '}
+                  {pedal
+                    .map((index) => `${6 - index}.ª (${noteLabel(tuning.notes[index]!, notation)})`)
+                    .join(', ')}
+                  . Dejalas sonar.
+                </p>
+              )}
+
+              {vuelta.length > 0 && (
+                <>
+                  <div className={styles.controls}>
+                    <Button
+                      variant="primary"
+                      id="vuelta-toggle"
+                      on={player.running}
+                      onClick={() => (player.running ? player.stop() : player.start())}
+                    >
+                      {player.running ? '■ Parar' : '▶ Tocar la vuelta'}
+                    </Button>
+                    <label className={styles.field}>
+                      <span>Velocidad: {tempo} ppm</span>
+                      <input
+                        type="range"
+                        min={TEMPO_RANGE.min}
+                        max={TEMPO_RANGE.max}
+                        step={TEMPO_RANGE.step}
+                        value={tempo}
+                        onChange={(event) => setTempo(Number(event.target.value))}
+                      />
+                    </label>
+                  </div>
+                  <details className={styles.more}>
+                    <summary>Cómo se toca</summary>
+                    <div className={styles.controls}>
+                      <div className={styles.field}>
+                        <span>Pulsos por acorde</span>
+                        <Segmented
+                          label="Pulsos por acorde"
+                          value={String(beats)}
+                          options={[
+                            { value: '2', label: '2' },
+                            { value: '4', label: '4' },
+                            { value: '8', label: '8' },
+                          ]}
+                          onChange={(value) => setBeats(Number(value))}
+                        />
+                      </div>
+                      <div className={styles.field}>
+                        <span>Rasguido</span>
+                        <Segmented
+                          label="Rasguido"
+                          value={feel}
+                          options={[
+                            { value: 'pulso', label: 'Por pulso' },
+                            { value: 'acorde', label: 'Uno solo' },
+                          ]}
+                          onChange={setFeel}
+                        />
+                      </div>
+                    </div>
+                  </details>
+
+                  <p className={styles.label}>Transformar</p>
+                  <div className={styles.pills} role="group" aria-label="Transformar la vuelta">
+                    {transforms.map((transform) => (
+                      <button
+                        key={transform.id}
+                        type="button"
+                        title={transform.why}
+                        disabled={sameChords(transform.apply(vuelta), vuelta)}
+                        onClick={() => setVuelta((current) => transform.apply(current))}
+                      >
+                        {transform.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className={styles.pills}>
+                    <button type="button" aria-haspopup="dialog" onClick={() => setSheet('cerrar')}>
+                      Cerrar con…
+                    </button>
+                    <button type="button" aria-haspopup="dialog" onClick={() => setSheet('arrancar')}>
+                      Otra vuelta…
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        player.stop();
+                        setVuelta([]);
+                      }}
+                    >
+                      Vaciar
+                    </button>
+                  </div>
+                </>
+              )}
+            </Slab>
+          </div>
         </aside>
       </div>
 
@@ -910,28 +975,6 @@ export default function ArmoniaRoute() {
         tools={
           active !== null && (
             <div className={styles.editorTools}>
-              <Button
-                variant="mini"
-                ariaLabel="Mover a la izquierda"
-                disabled={active === 0}
-                onClick={() => {
-                  shift(active, -1);
-                  setSelected(active - 1);
-                }}
-              >
-                ←
-              </Button>
-              <Button
-                variant="mini"
-                ariaLabel="Mover a la derecha"
-                disabled={active === vuelta.length - 1}
-                onClick={() => {
-                  shift(active, 1);
-                  setSelected(active + 1);
-                }}
-              >
-                →
-              </Button>
               <Button
                 variant="mini"
                 ariaLabel="Sacar de la vuelta"
@@ -1137,8 +1180,8 @@ export default function ArmoniaRoute() {
 
       <Sheet open={sheet === 'arrancar'} title="Para arrancar" onClose={closeSheet} testId="starters">
         <p className={styles.hint}>
-          Vueltas de cuatro acordes que ya funcionaron, según Rikky Rooksby. Son para arrancar: después
-          movelas arrastrando, estiralas o cambiá un acorde por su relativo.
+          Vueltas de cuatro acordes que ya funcionaron. Son para arrancar: después movelas arrastrando,
+          estiralas o cambiá un acorde por su relativo.
         </p>
         {VUELTA_GROUPS.map((group, index) => {
           const items = VUELTAS.filter((item) => item.group === group.id);

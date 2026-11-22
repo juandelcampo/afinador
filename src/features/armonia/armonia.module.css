@@ -1,6 +1,7 @@
-/* Armonía: el mundo y sus acordes al medio; a la izquierda, de dónde sacar más color; a la derecha, tu
-   vuelta. Las dos laterales miden lo mismo y quedan fijas mientras el medio baja. En pantallas medianas la
-   izquierda pasa abajo del medio, y en el celular todo va en una columna: mundo, vuelta, más color. */
+/* Armonía: el mundo y sus acordes al medio; a la izquierda, de dónde sacar más acordes; a la derecha, tu
+   vuelta. En el celular todo va en una columna: mundo, vuelta, más acordes. Desde 860 px, tres columnas
+   como en el Afinador: los costados se pliegan a una franja con su nombre (más acordes arranca plegado),
+   quedan fijos y tienen su propio scroll mientras el medio baja. */
 .wrap {
   container: content / inline-size;
   min-width: 0;
@@ -28,53 +29,130 @@
   container: side / inline-size;
   min-width: 0;
 }
+/* En el celular no hay franjas ni cabecera de columna: se ve todo. */
+.rail,
+.sideHead,
+.vueltaTools .fold {
+  display: none;
+}
+
+/* Plegada: una franja con el nombre en vertical. */
+.rail {
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 0;
+  border: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 900 12px/1 var(--heavy);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.rail:hover {
+  background: var(--soft);
+}
+.rail > span:first-child {
+  font-size: 24px;
+  letter-spacing: 0;
+}
+.rail > span:last-child {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+.right .rail > span:last-child {
+  transform: none;
+}
+.sideHead {
+  align-items: center;
+  justify-content: space-between;
+  padding-left: var(--gutter);
+  border-bottom: var(--rule);
+  font: 900 expanded 13px/1.2 var(--heavy);
+  text-transform: uppercase;
+}
+.fold {
+  flex: none;
+  border: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 900 22px/1 var(--heavy);
+  cursor: pointer;
+}
+.fold:hover {
+  background: var(--soft);
+}
+.sideHead .fold {
+  width: var(--touch);
+  min-height: var(--touch);
+  border-left: var(--rule);
+}
+.vueltaTools .fold {
+  min-width: var(--touch-small);
+  min-height: var(--touch-small);
+  border: 2px solid var(--ink);
+  font: 900 16px/1 var(--ui);
+}
+
 @container content (min-width: 860px) {
   .page {
-    grid-template-areas:
-      'center right'
-      'left right';
-    grid-template-columns: minmax(0, 1fr) 340px;
-    grid-template-rows: auto 1fr;
+    grid-template-areas: 'left center right';
+    grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: start;
   }
-  .right {
+  .side {
     position: sticky;
     top: var(--bar);
-    max-height: calc(100dvh - var(--bar));
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    border-left: var(--rule);
-  }
-  .right > section {
-    border-bottom: 0;
-  }
-  /* Agrandada, la vuelta se estira hacia la izquierda y el mundo queda angosto, con su propio scroll. */
-  .page[data-wide] {
-    grid-template-columns: 360px minmax(0, 1fr);
-  }
-}
-@container content (min-width: 1180px) {
-  .page {
-    grid-template-areas: 'left center right';
-    grid-template-columns: 320px minmax(0, 1fr) 320px;
-    grid-template-rows: auto;
+    display: flex;
+    flex-direction: column;
+    width: 56px;
+    height: calc(100dvh - var(--bar));
   }
   .left {
-    position: sticky;
-    top: var(--bar);
-    max-height: calc(100dvh - var(--bar));
-    overflow-y: auto;
-    overscroll-behavior: contain;
     border-right: var(--rule);
   }
-  .left > section:last-child {
+  .right {
+    border-left: var(--rule);
+  }
+  .left[data-open='true'] {
+    width: 320px;
+  }
+  .right[data-open='true'] {
+    width: 340px;
+  }
+  .side:not([data-open='true']) .sideBody {
+    display: none;
+  }
+  .side:not([data-open='true']) .rail {
+    display: flex;
+  }
+  .sideHead {
+    display: flex;
+  }
+  .vueltaTools .fold {
+    display: inline-block;
+  }
+  .sideBody {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .sideBody > section:last-child {
     border-bottom: 0;
   }
   .center {
     min-height: calc(100dvh - var(--bar));
   }
+  /* Agrandada, la vuelta se estira hacia la izquierda y el mundo queda angosto, con su propio scroll. */
   .page[data-wide] {
-    grid-template-columns: 320px 360px minmax(0, 1fr);
+    grid-template-columns: auto 360px minmax(0, 1fr);
+  }
+  .page[data-wide] .right {
+    width: auto;
   }
   .page[data-wide] .center {
     position: sticky;

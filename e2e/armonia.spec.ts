@@ -79,6 +79,8 @@ test.describe('armonía', () => {
 
   test('los puntos cardinales suman acordes y avisan el paso por el mismo polo', async ({ page }) => {
     await goto(page, '/armonia');
+    // En pantalla ancha, más acordes arranca plegado a un costado.
+    await page.getByRole('button', { name: 'Abrir más acordes' }).click();
     await page.getByTestId('sin-centro').locator('summary').click();
     await page.getByRole('region', { name: 'Grupo 2' }).getByRole('button', { name: 'Escuchar Cm' }).click();
     // Escuchar no suma: lo suma el +.
@@ -131,6 +133,7 @@ test.describe('armonía', () => {
 
     // De dos en dos, desde el último acorde, a la izquierda.
     const moves = page.getByTestId('moves');
+    await page.getByRole('button', { name: 'Abrir más acordes' }).click();
     await moves.locator('summary').click();
     await expect(moves).toContainText('desde Am');
     await expect(moves.getByRole('button', { name: 'Sumar C a la vuelta' })).toBeVisible();
@@ -174,6 +177,20 @@ test.describe('armonía', () => {
     await page.getByRole('button', { name: 'Agrandar la vuelta' }).click();
     await expect(vuelta).toContainText('3 2 0 0 0 3');
     expect(errors).toEqual([]);
+  });
+
+  test('los costados se pliegan y, sin lugar para los tres, abrir uno pliega el otro', async ({ page }) => {
+    await page.setViewportSize({ width: 1000, height: 800 });
+    await goto(page, '/armonia?escala=mayor&tono=0&v=C_G');
+    await expect(page.getByTestId('sin-centro')).toBeHidden();
+    await page.getByRole('button', { name: 'Abrir más acordes' }).click();
+    await expect(page.getByTestId('sin-centro')).toBeVisible();
+    await expect(page.getByTestId('vuelta')).toBeHidden();
+    await page.getByRole('button', { name: 'Abrir tu vuelta' }).click();
+    await expect(page.getByTestId('vuelta')).toBeVisible();
+    await expect(page.getByTestId('sin-centro')).toBeHidden();
+    await page.getByRole('button', { name: 'Cerrar la columna de tu vuelta' }).click();
+    await expect(page.getByTestId('vuelta')).toBeHidden();
   });
 
   test('cada propuesta se escucha antes de ponerla', async ({ page }) => {
