@@ -35,10 +35,6 @@ export function romanChord(token: string, tonic: number, mode: VueltaMode): Chor
 
 // ---------------------------------------------------------------- transformar la vuelta
 
-/** Desplazar: el I deja el primer lugar y la vuelta arranca en el acorde siguiente. */
-export const displace = (chords: readonly Chord[]): Chord[] =>
-  chords.length < 2 ? [...chords] : [...chords.slice(1), chords[0]!];
-
 /** Estirar: repetir el primer cambio antes de seguir (I VI I VI IV V). */
 export const stretch = (chords: readonly Chord[]): Chord[] =>
   chords.length < 3 ? [...chords] : [chords[0]!, chords[1]!, ...chords];

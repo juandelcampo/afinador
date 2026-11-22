@@ -310,6 +310,9 @@ button:disabled {
   color: var(--ink);
   box-shadow: 8px 8px 0 var(--ink);
 }
+.sheet[data-fixed] {
+  height: min(88dvh, 680px);
+}
 .sheet::backdrop {
   background: rgb(0 0 0 / 0.5);
 }
@@ -350,5 +353,8 @@ button:disabled {
     margin: auto 0 0;
     border-width: 3px 0 0;
     box-shadow: none;
+  }
+  .sheet[data-fixed] {
+    height: 90dvh;
   }
 }

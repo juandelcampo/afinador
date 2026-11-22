@@ -90,7 +90,7 @@ export const VUELTAS: readonly Vuelta[] = [
     id: 'i-vi-iv-v',
     group: 'firmes',
     degrees: ['I', 'VI', 'IV', 'V'],
-    why: 'La madre de todas las vueltas pop. Hoy suena gastada: probala desplazada (IV V I VI).',
+    why: 'La madre de todas las vueltas pop. Hoy suena gastada: probala arrancando en el IV (IV V I VI).',
     songs: ['Stand By Me', 'Every Breath You Take'],
   },
   {

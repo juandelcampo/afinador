@@ -10,7 +10,6 @@ import {
   type Key,
 } from '~/core/harmony';
 import {
-  displace,
   polarityOf,
   relativeOf,
   romanChord,
@@ -85,10 +84,6 @@ describe('vueltas en grados', () => {
 
 describe('transformar la vuelta', () => {
   const pop = ['I', 'VI', 'IV', 'V'].map((token) => romanChord(token, 0, 'mayor'));
-
-  it('desplazar arranca en el segundo acorde', () => {
-    expect(names(displace(pop))).toEqual(['Am', 'F', 'G', 'C']);
-  });
 
   it('estirar repite el primer cambio', () => {
     expect(names(stretch(pop))).toEqual(['C', 'Am', 'C', 'Am', 'F', 'G']);

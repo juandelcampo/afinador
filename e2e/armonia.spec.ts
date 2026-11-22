@@ -85,7 +85,7 @@ test.describe('armonía', () => {
     await goto(page, '/armonia');
     await page.getByTestId('sin-centro').locator('summary').click();
     await page.getByRole('region', { name: 'Grupo 2' }).getByRole('button', { name: 'Escuchar Cm' }).click();
-    // Primero se escucha; recién después se suma.
+    // Escuchar no suma: lo suma el +.
     await expect(page.getByTestId('vuelta-empty')).toBeVisible();
     await page.getByRole('button', { name: 'Sumar Cm a la vuelta' }).click();
     await expect(page.getByTestId('same-pole')).toContainText('polo N');
@@ -106,8 +106,12 @@ test.describe('armonía', () => {
     await expect(page).toHaveURL(/v=C_Am_F_G/);
     await expect(page.getByTestId('starters')).toBeHidden();
     const transforms = page.getByRole('group', { name: 'Transformar la vuelta' });
-    await transforms.getByRole('button', { name: /^Desplazar/ }).click();
-    await expect(page).toHaveURL(/v=Am_F_G_C/);
+    // El C se lleva al final con la manija y las flechas del teclado.
+    const grip = page.getByTestId('vuelta').getByRole('button', { name: 'Mover C' });
+    for (const url of [/v=Am_C_F_G/, /v=Am_F_C_G/, /v=Am_F_G_C/]) {
+      await grip.press('ArrowRight');
+      await expect(page).toHaveURL(url);
+    }
     await transforms.getByRole('button', { name: /^Bajo que baja/ }).click();
     await expect(page.getByTestId('vuelta')).toContainText('F/A');
 

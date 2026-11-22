@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useEffectEvent, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useSearchParams, type MetaFunction } from 'react-router';
 import {
   BASS_ROLES,
@@ -39,7 +39,6 @@ import {
 import { INVERSION_CHORDS } from '~/core/inversions';
 import { noteLabel, noteToMidi } from '~/core/notes';
 import {
-  displace,
   polarityOf,
   relativeOf,
   romanChord,
@@ -276,8 +275,6 @@ export default function ArmoniaRoute() {
   const [wide, setWide] = useState(false);
   /** El acorde que se está arrastrando y dónde caería. */
   const [drag, setDrag] = useState<{ from: number; to: number } | null>(null);
-  /** El último acorde escuchado en los puntos cardinales, listo para sumar. */
-  const [heard, setHeard] = useState<Chord | null>(null);
   const [editorTab, setEditorTab] = useState<'color' | 'bajo' | 'cambiar' | 'cantar'>('color');
   /**
    * Desde qué acorde se arman las opciones del editor. Quedan quietas mientras probás: si no, cada
@@ -312,12 +309,33 @@ export default function ArmoniaRoute() {
     }));
   const extendVuelta = (chords: Chord[]) =>
     setVuelta((current) => (current.length + chords.length > MAX_CHORDS ? current : [...current, ...chords]));
-  const swap = (from: number, to: number) =>
+  /**
+   * Dónde está, en la última vuelta pedida, el acorde que se ve en `index`. Dos toques seguidos pueden
+   * llegar antes de que la pantalla se actualice: la posición que se ve ya no es la de la vuelta, así que
+   * se busca el mismo acorde (el primero, segundo… de su nombre) y no el que quedó en ese lugar.
+   */
+  const locate = (current: readonly Chord[], index: number) => {
+    const seen = vuelta[index];
+    if (!seen) return -1;
+    const token = chordToken(seen);
+    const nth = vuelta.slice(0, index).filter((item) => chordToken(item) === token).length;
+    let count = 0;
+    return current.findIndex((item) => chordToken(item) === token && count++ === nth);
+  };
+  /** Corre un acorde un lugar a la izquierda (-1) o a la derecha (1). */
+  const shift = (index: number, step: -1 | 1) =>
     setVuelta((current) => {
-      if (!current[from] || !current[to]) return current;
+      const from = locate(current, index);
+      const to = from + step;
+      if (from < 0 || !current[to]) return current;
       const next = [...current];
       [next[from], next[to]] = [next[to]!, next[from]!];
       return next;
+    });
+  const removeAt = (index: number) =>
+    setVuelta((current) => {
+      const at = locate(current, index);
+      return at < 0 ? current : current.filter((_, position) => position !== at);
     });
 
   const finger = (chord: Chord) =>
@@ -334,7 +352,10 @@ export default function ArmoniaRoute() {
   /** Cambia un acorde; si el cambio es una función, se aplica sobre el acorde pedido, no sobre el que se ve. */
   const replaceAt = (index: number, change: Chord | ((item: Chord) => Chord)) => {
     const apply = typeof change === 'function' ? change : () => change;
-    setVuelta((current) => current.map((item, position) => (position === index ? apply(item) : item)));
+    setVuelta((current) => {
+      const at = locate(current, index);
+      return current.map((item, position) => (position === at ? apply(item) : item));
+    });
     if (vuelta[index]) listen(apply(vuelta[index]));
   };
 
@@ -379,12 +400,6 @@ export default function ArmoniaRoute() {
     });
   };
   const transforms = [
-    {
-      id: 'desplazar',
-      label: 'Desplazar',
-      why: 'Arranca en el segundo acorde: el I deja de mandar.',
-      apply: displace,
-    },
     {
       id: 'estirar',
       label: 'Estirar',
@@ -432,12 +447,42 @@ export default function ArmoniaRoute() {
   };
   const previewChords = (chords: Chord[]) =>
     player.preview(chords.map((chord) => voicingOf(tuning, chord, finger(chord))));
-  /** Cómo suena un reemplazo en su lugar: el acorde de antes (la vuelta da la vuelta) y el nuevo. */
-  const previewInPlace = (index: number, chord: Chord) => {
-    const before = vuelta.length > 1 ? vuelta[(index - 1 + vuelta.length) % vuelta.length] : undefined;
-    previewChords(before ? [before, chord] : [chord]);
-  };
   const shown = drag ? moveItem(vuelta, drag.from, drag.to) : vuelta;
+  /** Soltar: el acorde arrastrado queda donde cayó. */
+  const drop = useEffectEvent((from: number, to: number) => {
+    if (from === to) return;
+    setVuelta((current) => {
+      const at = locate(current, from);
+      return at < 0 ? current : moveItem(current, at, Math.min(to, current.length - 1));
+    });
+  });
+  // El arrastre se sigue desde la ventana: al reordenarse la lista, la manija cambia de lugar en la página
+  // y el navegador deja de mandarle a ella los movimientos del dedo.
+  useEffect(() => {
+    if (!drag) return;
+    const onMove = (event: PointerEvent) => {
+      const slot = document
+        .elementsFromPoint(event.clientX, event.clientY)
+        .find(
+          (element): element is HTMLElement =>
+            element instanceof HTMLElement && element.dataset.slot !== undefined,
+        );
+      if (slot && Number(slot.dataset.slot) !== drag.to) setDrag({ ...drag, to: Number(slot.dataset.slot) });
+    };
+    const onUp = () => {
+      drop(drag.from, drag.to);
+      setDrag(null);
+    };
+    const onCancel = () => setDrag(null);
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onCancel);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onCancel);
+    };
+  }, [drag]);
   const neighbors =
     active === null ? [] : [active - 1, active + 1].filter((i) => i >= 0 && i < vuelta.length);
 
@@ -610,46 +655,35 @@ export default function ArmoniaRoute() {
                     <h3>Grupo {group.index + 1}</h3>
                     {group.points.map((point) => (
                       <div key={point.pole} className={styles.pole} data-pole={point.pole}>
-                        <span>{plainName(point.root, notation)}</span>
-                        <div>
-                          {(['', 'm'] as const).map((suffix) => {
-                            const chord: Chord = { root: point.root, suffix };
-                            const label = plainName(point.root, notation) + suffix;
-                            return (
+                        {(['', 'm'] as const).map((suffix) => {
+                          const chord: Chord = { root: point.root, suffix };
+                          const label = plainName(point.root, notation) + suffix;
+                          // Como las tarjetas: el recuadro suena, el + lo suma.
+                          return (
+                            <div key={suffix} className={styles.poleChord}>
                               <button
-                                key={suffix}
                                 type="button"
                                 aria-label={`Escuchar ${label}`}
-                                aria-pressed={heard !== null && chordToken(heard) === chordToken(chord)}
-                                onClick={() => {
-                                  listen(chord);
-                                  setHeard(chord);
-                                }}
+                                onClick={() => listen(chord)}
                               >
-                                {suffix === '' ? 'M' : 'm'}
+                                {label}
                               </button>
-                            );
-                          })}
-                        </div>
+                              <button
+                                type="button"
+                                className={styles.add}
+                                aria-label={`Sumar ${label} a la vuelta`}
+                                onClick={() => add(chord)}
+                              >
+                                +
+                              </button>
+                            </div>
+                          );
+                        })}
                       </div>
                     ))}
                   </section>
                 ))}
               </div>
-              {heard && (
-                <div className={styles.heard}>
-                  <span>
-                    Escuchaste <strong>{name(heard)}</strong>
-                  </span>
-                  <Button
-                    variant="primary"
-                    ariaLabel={`Sumar ${name(heard)} a la vuelta`}
-                    onClick={() => add(heard)}
-                  >
-                    + Sumar
-                  </Button>
-                </div>
-              )}
               {pole && (
                 <p className={styles.hint} data-testid="same-pole">
                   Tu último acorde está en el polo {pole.pole}. Por el mismo polo pasás a otro grupo:{' '}
@@ -701,9 +735,13 @@ export default function ArmoniaRoute() {
                 {shown.map((chord, index) => {
                   const feeling = feelingOf(chord, key);
                   const fingering = finger(chord);
+                  // La clave sigue al acorde (el primer C, el segundo C…), no al lugar: al moverlo, su botón y
+                  // el foco van con él.
+                  const token = chordToken(chord);
+                  const nth = shown.slice(0, index).filter((item) => chordToken(item) === token).length;
                   return (
                     <li
-                      key={index}
+                      key={`${token}#${nth}`}
                       data-slot={index}
                       data-dragging={drag?.to === index || undefined}
                       className={styles.chip}
@@ -731,7 +769,7 @@ export default function ArmoniaRoute() {
                         className={styles.chipRemove}
                         aria-label={`Sacar ${name(chord)}`}
                         onClick={() => {
-                          setVuelta((current) => current.filter((_, position) => position !== index));
+                          removeAt(index);
                           setSelected(null);
                         }}
                       >
@@ -748,30 +786,11 @@ export default function ArmoniaRoute() {
                           event.currentTarget.setPointerCapture(event.pointerId);
                           setDrag({ from: index, to: index });
                         }}
-                        onPointerMove={(event) => {
-                          if (!drag) return;
-                          const slot = document
-                            .elementsFromPoint(event.clientX, event.clientY)
-                            .find(
-                              (element): element is HTMLElement =>
-                                element instanceof HTMLElement && element.dataset.slot !== undefined,
-                            );
-                          if (slot && Number(slot.dataset.slot) !== drag.to)
-                            setDrag({ ...drag, to: Number(slot.dataset.slot) });
-                        }}
-                        onPointerUp={() => {
-                          if (drag && drag.from !== drag.to) {
-                            const { from, to } = drag;
-                            setVuelta((current) => moveItem(current, from, to));
-                          }
-                          setDrag(null);
-                        }}
-                        onPointerCancel={() => setDrag(null)}
                         onKeyDown={(event) => {
                           const step = event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : 0;
-                          if (!step || !vuelta[index + step]) return;
+                          if (!step) return;
                           event.preventDefault();
-                          swap(index, index + step);
+                          shift(index, step);
                         }}
                       >
                         ⠿
@@ -884,6 +903,7 @@ export default function ArmoniaRoute() {
       </div>
 
       <Sheet
+        fixed
         open={sheet === 'editor' && activeChord !== null}
         title={activeChord ? name(activeChord) : ''}
         onClose={closeSheet}
@@ -895,7 +915,7 @@ export default function ArmoniaRoute() {
                 ariaLabel="Mover a la izquierda"
                 disabled={active === 0}
                 onClick={() => {
-                  swap(active, active - 1);
+                  shift(active, -1);
                   setSelected(active - 1);
                 }}
               >
@@ -906,7 +926,7 @@ export default function ArmoniaRoute() {
                 ariaLabel="Mover a la derecha"
                 disabled={active === vuelta.length - 1}
                 onClick={() => {
-                  swap(active, active + 1);
+                  shift(active, 1);
                   setSelected(active + 1);
                 }}
               >
@@ -916,7 +936,7 @@ export default function ArmoniaRoute() {
                 variant="mini"
                 ariaLabel="Sacar de la vuelta"
                 onClick={() => {
-                  setVuelta((current) => current.filter((_, position) => position !== active));
+                  removeAt(active);
                   closeSheet();
                 }}
               >
@@ -956,7 +976,7 @@ export default function ArmoniaRoute() {
                         why={variant.why}
                         current={isActive(next)}
                         onApply={() => replaceAt(active, next)}
-                        onPreview={() => previewInPlace(active, next)}
+                        onPreview={() => previewChords([next])}
                       />
                     );
                   })}
@@ -986,7 +1006,7 @@ export default function ArmoniaRoute() {
                           return { ...item, bass: value === item.root ? undefined : value };
                         })
                       }
-                      onPreview={() => previewInPlace(active, next)}
+                      onPreview={() => previewChords([next])}
                     />
                   );
                 })}
@@ -1028,7 +1048,7 @@ export default function ArmoniaRoute() {
                           why={item.why}
                           current={isActive(item.chord)}
                           onApply={() => swapTo(active, item.chord)}
-                          onPreview={() => previewInPlace(active, item.chord)}
+                          onPreview={() => previewChords([item.chord])}
                         />
                       ))}
                     </ul>
@@ -1062,7 +1082,7 @@ export default function ArmoniaRoute() {
                           why={swapItem.why}
                           current={isActive(swapItem.chord)}
                           onApply={() => swapTo(active, swapItem.chord!)}
-                          onPreview={() => previewInPlace(active, swapItem.chord!)}
+                          onPreview={() => previewChords([swapItem.chord!])}
                         />
                       ),
                   )}
@@ -1118,7 +1138,7 @@ export default function ArmoniaRoute() {
       <Sheet open={sheet === 'arrancar'} title="Para arrancar" onClose={closeSheet} testId="starters">
         <p className={styles.hint}>
           Vueltas de cuatro acordes que ya funcionaron, según Rikky Rooksby. Son para arrancar: después
-          desplazalas, estiralas o cambiá un acorde por su relativo.
+          movelas arrastrando, estiralas o cambiá un acorde por su relativo.
         </p>
         {VUELTA_GROUPS.map((group, index) => {
           const items = VUELTAS.filter((item) => item.group === group.id);
@@ -1189,8 +1209,7 @@ export default function ArmoniaRoute() {
                   extendVuelta(chords);
                   closeSheet();
                 }}
-                // Suena como final: desde el último acorde de tu vuelta.
-                onPreview={() => previewChords(last ? [last, ...chords] : chords)}
+                onPreview={() => previewChords(chords)}
               />
             );
           })}

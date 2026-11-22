@@ -541,8 +541,8 @@
 }
 .pole {
   display: grid;
-  justify-items: center;
-  gap: 2px;
+  align-content: start;
+  gap: 4px;
 }
 .pole[data-pole='N'] {
   grid-area: n;
@@ -556,29 +556,37 @@
 .pole[data-pole='O'] {
   grid-area: o;
 }
-.pole > span {
-  font: 900 semi-expanded 17px/1.1 var(--heavy);
-}
-.pole > div {
+/* Como las tarjetas de acordes: el recuadro suena, el + lo suma. */
+.poleChord {
   display: flex;
-}
-.pole button {
-  min-width: var(--touch);
-  min-height: var(--touch);
+  min-width: 0;
   border: 2px solid var(--ink);
   background: var(--paper);
-  font: 800 14px/1 var(--mono);
 }
-.pole button + button {
-  border-left: 0;
+.poleChord > button:first-child {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--touch);
+  padding: 0 6px;
+  border: 0;
+  background: none;
+  font: 900 15px/1 var(--heavy);
+  text-align: left;
+  white-space: nowrap;
+  transition:
+    background-color 120ms var(--ease),
+    color 120ms var(--ease);
 }
-.pole button:hover {
-  background: var(--ink);
-  color: var(--paper);
+.poleChord > button:first-child:hover {
+  background: var(--soft);
 }
-.pole button:active {
+.poleChord > button:first-child:active {
   background: var(--accent);
   color: var(--on-accent);
+}
+.poleChord .add {
+  width: 30px;
+  font-size: 20px;
 }
 
 /* La barra de abajo: solo en el celular, donde la vuelta queda lejos. */
@@ -918,23 +926,4 @@
 .variants button:disabled {
   opacity: 0.4;
   cursor: default;
-}
-
-/* Puntos cardinales: lo escuchado, listo para sumar. */
-.pole button[aria-pressed='true'] {
-  background: var(--accent);
-  color: var(--on-accent);
-}
-.heard {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 10px;
-  padding: 8px 10px;
-  border: var(--rule);
-}
-.heard strong {
-  font: 900 semi-expanded 18px/1 var(--heavy);
 }

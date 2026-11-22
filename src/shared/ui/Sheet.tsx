@@ -10,6 +10,7 @@ export function Sheet({
   children,
   tools,
   testId,
+  fixed,
 }: {
   open: boolean;
   title: ReactNode;
@@ -18,6 +19,8 @@ export function Sheet({
   /** Botones chicos que van en la cabecera, junto al cierre. */
   tools?: ReactNode;
   testId?: string;
+  /** Siempre del mismo alto: para los que tienen pestañas, así no cambia de tamaño al pasar de una a otra. */
+  fixed?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -32,6 +35,7 @@ export function Sheet({
       ref={ref}
       className={styles.sheet}
       data-testid={testId}
+      data-fixed={fixed || undefined}
       onClose={onClose}
       // Tocar afuera de la hoja (el fondo oscuro) también la cierra.
       onClick={(event) => event.target === event.currentTarget && onClose()}
