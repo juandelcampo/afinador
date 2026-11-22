@@ -10,11 +10,22 @@
   margin-top: 12px;
 }
 .figure {
+  position: relative;
   display: grid;
   justify-items: center;
   align-content: start;
   gap: 10px;
   min-width: 0;
+}
+/* Los avisos de la figura flotan en el margen de arriba del dibujo: aparecer no corre la figura. */
+.figure > .figureNote {
+  position: absolute;
+  top: calc(var(--touch-small) + 4px);
+  right: 0;
+  left: 0;
+  margin: 0;
+  text-align: center;
+  pointer-events: none;
 }
 /* Arriba de la figura, cómo se dibuja y el paso a la batería: en el mismo lugar en todos los ritmos. */
 .figureBar {
@@ -473,8 +484,10 @@
   background: var(--accent);
   color: var(--on-accent);
 }
-/* La pista gris de siempre: el rótulo de arriba no le contagia su letra. */
+/* La pista gris de siempre: el rótulo de arriba no le contagia su letra. Guarda dos renglones: al
+   pasar de quieto a sonando cambia el texto, y lo de abajo no salta. */
 .rotation p {
+  min-height: 3em;
   margin: 0;
   font: 400 12px/1.5 var(--mono);
   letter-spacing: 0;

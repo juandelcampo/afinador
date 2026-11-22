@@ -589,8 +589,11 @@ export default function RitmoRoute() {
                   onChange={(value) => set({ rhythmFigure: value })}
                 />
               </div>
+              {/* Encima del margen de la figura, sin ocupar lugar: que aparezca no mueve nada. */}
               {figure === 'estrella' && fewHits && (
-                <p className={ui.hint}>Con menos de cinco golpes no hay estrella: queda el polígono.</p>
+                <p className={`${ui.hint} ${styles.figureNote}`}>
+                  Con menos de cinco golpes queda el polígono.
+                </p>
               )}
               <Wheel cycle={shown} kind={figure} />
             </section>

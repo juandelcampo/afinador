@@ -109,7 +109,7 @@ test.describe('ritmo', () => {
       .getByRole('group', { name: 'Figura del ritmo' })
       .getByRole('button', { name: 'Estrella' })
       .click();
-    await expect(page.getByText('Con menos de cinco golpes no hay estrella')).toBeVisible();
+    await expect(page.getByText('Con menos de cinco golpes queda el polígono')).toBeVisible();
 
     // Cinco golpes: el pentagrama adentro del pentágono.
     await page
