@@ -214,9 +214,12 @@ function Editor({
   config,
   onChange,
   sound,
+  playingIndex,
 }: {
   config: RhythmConfig;
   onChange: (config: RhythmConfig) => void;
+  /** En el mutante, qué vuelta está sonando: la rotación marca el compás de ahora. */
+  playingIndex: number | null;
   /** El sonido del metrónomo: una fila más, en los ritmos que suenan con un solo sonido. */
   sound: ReactNode;
 }) {
@@ -367,19 +370,23 @@ function Editor({
             })}
           </div>
           <div className={styles.rows}>
-            <Field label="Cambia cada" as="div">
+            <Field label="Cambia cada · compases" as="div">
               <Stepper
                 label="compases entre cambios"
-                value={`${barsEach} ${barsEach === 1 ? 'compás' : 'compases'}`}
+                value={barsEach}
                 onDown={() => onChange({ ...config, barsEach: clamp(barsEach - 1, 1, 16) })}
                 onUp={() => onChange({ ...config, barsEach: clamp(barsEach + 1, 1, 16) })}
               />
             </Field>
+            {/* La rotación va con los ajustes, como un ajuste más: la figura queda sola, igual que en los otros. */}
+            <Field label="Rotación" as="div" className={styles.span}>
+              <Rotation config={config} index={playingIndex} />
+            </Field>
             {sound}
           </div>
           <p className={ui.hint}>
-            Tocá los compases que entran en la rotación: suenan en el orden en que los elegís, y la figura
-            cambia con cada uno.
+            Arriba marcás los compases que entran en la rotación (podés marcar varios): suenan en el orden en
+            que los elegís, y la figura cambia con cada uno.
           </p>
         </div>
       );
@@ -586,7 +593,6 @@ export default function RitmoRoute() {
                 <p className={ui.hint}>Con menos de cinco golpes no hay estrella: queda el polígono.</p>
               )}
               <Wheel cycle={shown} kind={figure} />
-              {config.mode === 'mutante' && <Rotation config={config} index={playing?.index ?? null} />}
             </section>
           )}
 
@@ -602,6 +608,7 @@ export default function RitmoRoute() {
               <Editor
                 config={config}
                 onChange={apply}
+                playingIndex={playing?.index ?? null}
                 sound={
                   config.mode === 'poly' ? null : (
                     <Field label="Sonido" as="div" className={styles.span}>

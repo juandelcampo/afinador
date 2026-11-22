@@ -155,10 +155,6 @@
   .wheel {
     width: clamp(220px, calc(100dvh - 445px), 460px);
   }
-  /* En el mutante, debajo va la rotación de compases: la figura cede ese lugar. */
-  .figure[data-mode='mutante'] .wheel {
-    width: clamp(220px, calc(100dvh - 515px), 460px);
-  }
 }
 /* Los trazos miden lo mismo en píxeles aunque la figura crezca: siempre finos. */
 .shape,
@@ -449,31 +445,38 @@
   background: var(--accent);
 }
 
-/* --- Mutante: los compases que van rotando, con el que suena marcado --- */
+/* --- Mutante: los compases que van rotando, con el que suena marcado, en la columna de los ajustes --- */
 .rotation {
   display: grid;
-  justify-items: center;
   gap: 4px;
-  text-align: center;
 }
 .rotation ol {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
-  gap: 4px;
+  gap: 6px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
+/* Como los botones chicos, pero no se tocan; el que suena, en naranja como en toda la app. */
 .rotation li {
-  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  min-height: var(--touch-small);
+  padding: 2px 12px;
   border: 2px solid var(--ink);
-  font: 700 13px/1.2 var(--mono);
+  font: 700 12px/1.2 var(--mono);
+  letter-spacing: 0.04em;
+  text-transform: none;
 }
 .rotation li[data-now] {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--accent);
+  color: var(--on-accent);
 }
+/* La pista gris de siempre: el rótulo de arriba no le contagia su letra. */
 .rotation p {
   margin: 0;
+  font: 400 12px/1.5 var(--mono);
+  letter-spacing: 0;
+  text-transform: none;
 }
