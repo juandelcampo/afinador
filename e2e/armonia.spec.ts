@@ -205,6 +205,29 @@ test.describe('armonía', () => {
     await expect(page.getByTestId('vuelta')).toBeHidden();
   });
 
+  test('el círculo de quintas suena, suma y muda el mundo', async ({ page }) => {
+    const errors = watchErrors(page);
+    await goto(page, '/armonia?escala=mayor&tono=0&v=Am_Dm_G_C');
+    await page.getByTestId('circulo-fold').locator('summary').click();
+    const circle = page.getByTestId('circulo');
+    // Cada casilla se escribe en su tono: el relativo de E es C#m, no D♭m.
+    await expect(circle.getByRole('button', { name: 'Escuchar C#m' })).toBeVisible();
+    await expect(page.getByTestId('circulo-vuelta')).toContainText('3 de 4');
+
+    const before = await plucks(page);
+    await circle.getByRole('button', { name: 'Escuchar D', exact: true }).click();
+    await expect.poll(() => plucks(page)).toBeGreaterThan(before);
+    await expect(page.getByTestId('circulo-info')).toContainText('una nota de afuera');
+    await circle.getByRole('button', { name: 'Sumar D a la vuelta' }).click();
+    await expect(page).toHaveURL(/v=Am_Dm_G_C_D/);
+
+    await circle.getByRole('button', { name: 'Escuchar Em' }).click();
+    await page.getByRole('button', { name: 'Llevar el mundo a Em menor' }).click();
+    await expect(page).toHaveURL(/tono=4/);
+    await expect(page).toHaveURL(/escala=natural/);
+    expect(errors).toEqual([]);
+  });
+
   test('cada propuesta se escucha antes de ponerla', async ({ page }) => {
     await goto(page, '/armonia?escala=mayor&tono=0&v=C_G');
     await openVuelta(page);

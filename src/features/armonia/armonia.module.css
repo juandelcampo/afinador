@@ -1,7 +1,8 @@
 /* Armonía: el mundo y sus acordes al medio; a la izquierda, de dónde sacar más acordes; a la derecha, tu
    vuelta. En el celular todo va en una columna: mundo, vuelta, más acordes. Desde 860 px, tres columnas
    como en el Afinador: los costados se pliegan a una franja con su nombre (los dos arrancan plegados),
-   quedan fijos y tienen su propio scroll mientras el medio baja. */
+   y el mundo ocupa todo lo que queda en el medio. Los costados quedan fijos y tienen su propio scroll
+   mientras el medio baja. */
 .wrap {
   container: content / inline-size;
   min-width: 0;
@@ -146,11 +147,6 @@
   }
   .center {
     min-height: calc(100dvh - var(--bar));
-  }
-  /* Con los costados plegados el medio es muy ancho: las rayas van de lado a lado y el contenido queda
-     centrado, a lo sumo de 960 px. */
-  .center > section {
-    padding-inline: max(var(--gutter), calc((100% - 960px) / 2));
   }
   /* Agrandada, la vuelta se estira hacia la izquierda y el mundo queda angosto, con su propio scroll. */
   .page[data-wide] {
@@ -1011,4 +1007,115 @@
 .variants button:disabled {
   opacity: 0.4;
   cursor: default;
+}
+
+/* El círculo de quintas: la rueda ocupa el ancho que haya, hasta 420 px, y el acorde tocado va al medio. */
+.circle {
+  padding-bottom: 6px;
+}
+.wheel {
+  position: relative;
+  width: min(100%, 420px);
+  margin: 10px auto 0;
+}
+.wheel svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.cell {
+  cursor: pointer;
+  outline: none;
+}
+.cell path {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+.cell text {
+  fill: var(--muted);
+  font-family: var(--heavy);
+  font-weight: 700;
+  text-anchor: middle;
+  pointer-events: none;
+}
+.cell[data-state='world'] path {
+  fill: var(--accent);
+  fill-opacity: 0.28;
+}
+.cell[data-state='tonic'] path {
+  fill: var(--accent);
+}
+.cell[data-state='world'] text,
+.cell[data-state='tonic'] text {
+  fill: var(--ink);
+  font-weight: 900;
+}
+.cell[data-state='picked'] path {
+  fill: var(--ink);
+}
+.cell[data-state='picked'] text {
+  fill: var(--paper);
+  font-weight: 900;
+}
+.cell[data-state='away']:hover path {
+  fill: var(--soft);
+}
+.cell[data-state='world']:hover path {
+  fill-opacity: 0.5;
+}
+.cell:focus-visible path {
+  stroke: var(--accent);
+  stroke-width: 5;
+}
+.cell .cellMark {
+  font-family: var(--mono);
+  font-weight: 700;
+}
+.wheelCenter {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  width: 33%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+.wheelCenter strong {
+  font: 900 semi-expanded 22px/1.1 var(--heavy);
+}
+.wheelCenter span {
+  font: 600 12px/1.2 var(--mono);
+  color: var(--muted);
+}
+.wheelCenter .add {
+  width: var(--touch);
+  height: var(--touch);
+  margin-top: 4px;
+  border: var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  font: 900 22px/1 var(--heavy);
+  cursor: pointer;
+}
+.wheelCenter .add:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+.wheelCenter .add:active {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+/* Lo de abajo de la rueda va centrado con ella. */
+.wheelInfo {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  text-align: center;
+}
+.wheelNote {
+  text-align: center;
 }

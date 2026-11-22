@@ -56,6 +56,7 @@ import { useHydrated } from '~/shared/useHydrated';
 import { Sheet } from '~/shared/ui/Sheet';
 import { Button, PageTitle, Segmented, Slab, SlabHead, Tabs } from '~/shared/ui/ui';
 import styles from './armonia.module.css';
+import { CircleOfFifths } from './CircleOfFifths';
 import { useVuelta, type Feel, type Voicing } from './useVuelta';
 
 export const meta: MetaFunction = () => [
@@ -599,6 +600,36 @@ export default function ArmoniaRoute() {
                 }),
               )}
             </ul>
+            {/* Los vecinos del mundo: para ver de un vistazo qué queda cerca, qué es prestado y adónde mudarse. */}
+            <details className={styles.group} data-testid="circulo-fold">
+              <summary>
+                Círculo de quintas <span>· los vecinos del mundo</span>
+              </summary>
+              <CircleOfFifths
+                keyOf={key}
+                vuelta={vuelta}
+                name={(chord) =>
+                  // En la rueda, cada casilla se escribe en su propio tono: C#m y no D♭m, como el relativo de E.
+                  chordName(
+                    chord,
+                    {
+                      tonic: chord.root,
+                      scale: findScale(chordColor(chord.suffix) === 'minor' ? 'natural' : 'mayor')!,
+                    },
+                    notation,
+                  )
+                }
+                worldTonic={degrees[0]!.chord}
+                onListen={listen}
+                onAdd={add}
+                onMoveWorld={(chord) =>
+                  update({
+                    tono: String(chord.root),
+                    escala: chordColor(chord.suffix) === 'minor' ? 'natural' : 'mayor',
+                  })
+                }
+              />
+            </details>
           </Slab>
         </div>
 
