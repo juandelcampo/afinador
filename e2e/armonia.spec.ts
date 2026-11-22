@@ -1,5 +1,8 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { countSounds, goto, plucks, watchErrors } from './fixtures/helpers';
+
+// En pantalla ancha los dos costados arrancan plegados: tu vuelta se abre desde su franja.
+const openVuelta = (page: Page) => page.getByRole('button', { name: 'Abrir tu vuelta' }).click();
 
 test.describe('armonía', () => {
   test.beforeEach(async ({ page }) => {
@@ -39,6 +42,7 @@ test.describe('armonía', () => {
   test('arma la vuelta, la edita, la toca y queda en la URL', async ({ page }) => {
     const errors = watchErrors(page);
     await goto(page, '/armonia?escala=mayor&tono=0');
+    await openVuelta(page);
     await expect(page.getByTestId('vuelta-empty')).toBeVisible();
     const degrees = page.getByTestId('degrees');
     await degrees.getByRole('button', { name: 'Sumar C a la vuelta' }).click();
@@ -73,12 +77,14 @@ test.describe('armonía', () => {
 
     // Recargar la deja igual: la vuelta vive en la URL.
     await page.reload();
+    await openVuelta(page);
     await expect(page.getByTestId('vuelta').getByRole('listitem')).toHaveCount(4);
     expect(errors).toEqual([]);
   });
 
   test('los puntos cardinales suman acordes y avisan el paso por el mismo polo', async ({ page }) => {
     await goto(page, '/armonia');
+    await openVuelta(page);
     // En pantalla ancha, más acordes arranca plegado a un costado.
     await page.getByRole('button', { name: 'Abrir más acordes' }).click();
     await page.getByTestId('sin-centro').locator('summary').click();
@@ -93,6 +99,7 @@ test.describe('armonía', () => {
   test('una vuelta para arrancar se escucha, se usa y se transforma', async ({ page }) => {
     const errors = watchErrors(page);
     await goto(page, '/armonia?escala=mayor&tono=0');
+    await openVuelta(page);
     await page.getByRole('button', { name: 'Arrancar con una vuelta' }).click();
     const starter = page.getByTestId('vuelta-i-vi-iv-v');
     await expect(starter).toContainText('C · Am · F · G');
@@ -142,6 +149,7 @@ test.describe('armonía', () => {
 
   test('una vuelta en menor cambia el mundo a la menor natural', async ({ page }) => {
     await goto(page, '/armonia?escala=mayor&tono=9');
+    await openVuelta(page);
     await page.getByRole('button', { name: 'Arrancar con una vuelta' }).click();
     const starter = page.getByTestId('vuelta-m-i-vii-vi-vmaj');
     await starter.locator('xpath=ancestor::details').locator('summary').click();
@@ -154,6 +162,7 @@ test.describe('armonía', () => {
   test('la vuelta se reordena arrastrando, se saca con la ✕ y se agranda', async ({ page }) => {
     const errors = watchErrors(page);
     await goto(page, '/armonia?escala=mayor&tono=0&v=C_G_Am_F');
+    await openVuelta(page);
     const vuelta = page.getByTestId('vuelta');
 
     // Arrastrar la manija del C hasta el lugar del Am.
@@ -182,7 +191,10 @@ test.describe('armonía', () => {
   test('los costados se pliegan y, sin lugar para los tres, abrir uno pliega el otro', async ({ page }) => {
     await page.setViewportSize({ width: 1000, height: 800 });
     await goto(page, '/armonia?escala=mayor&tono=0&v=C_G');
+    // Los dos arrancan plegados; la franja de la vuelta dice cuántos acordes tiene.
     await expect(page.getByTestId('sin-centro')).toBeHidden();
+    await expect(page.getByTestId('vuelta')).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Abrir tu vuelta' })).toContainText('Tu vuelta · 2');
     await page.getByRole('button', { name: 'Abrir más acordes' }).click();
     await expect(page.getByTestId('sin-centro')).toBeVisible();
     await expect(page.getByTestId('vuelta')).toBeHidden();
@@ -195,6 +207,7 @@ test.describe('armonía', () => {
 
   test('cada propuesta se escucha antes de ponerla', async ({ page }) => {
     await goto(page, '/armonia?escala=mayor&tono=0&v=C_G');
+    await openVuelta(page);
     await page.getByTestId('vuelta').getByRole('button', { name: /^V G/ }).click();
     const editor = page.getByTestId('chord-editor');
     const before = await plucks(page);

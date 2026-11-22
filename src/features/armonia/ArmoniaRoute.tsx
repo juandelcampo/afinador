@@ -273,9 +273,9 @@ export default function ArmoniaRoute() {
   const [sheet, setSheet] = useState<'editor' | 'arrancar' | 'cerrar' | null>(null);
   /** La vuelta como vista principal: pasa al medio y el mundo se va a un costado. */
   const [wide, setWide] = useState(false);
-  /** En pantallas anchas, las columnas de los costados se pliegan como en el Afinador: más color arranca cerrado. */
+  /** En pantallas anchas, las columnas de los costados se pliegan como en el Afinador y arrancan cerradas: el mundo manda. */
   const [leftOpen, setLeftOpen] = useState(false);
-  const [rightOpen, setRightOpen] = useState(true);
+  const [rightOpen, setRightOpen] = useState(false);
   /** Sin lugar para las tres columnas, abrir un costado pliega el otro: el medio no se aplasta. */
   const openSide = (side: 'left' | 'right') => {
     const cramped = window.matchMedia('(max-width: 1179px)').matches;

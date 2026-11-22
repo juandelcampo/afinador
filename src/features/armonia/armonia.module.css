@@ -1,6 +1,6 @@
 /* Armonía: el mundo y sus acordes al medio; a la izquierda, de dónde sacar más acordes; a la derecha, tu
    vuelta. En el celular todo va en una columna: mundo, vuelta, más acordes. Desde 860 px, tres columnas
-   como en el Afinador: los costados se pliegan a una franja con su nombre (más acordes arranca plegado),
+   como en el Afinador: los costados se pliegan a una franja con su nombre (los dos arrancan plegados),
    quedan fijos y tienen su propio scroll mientras el medio baja. */
 .wrap {
   container: content / inline-size;
@@ -146,6 +146,11 @@
   }
   .center {
     min-height: calc(100dvh - var(--bar));
+  }
+  /* Con los costados plegados el medio es muy ancho: las rayas van de lado a lado y el contenido queda
+     centrado, a lo sumo de 960 px. */
+  .center > section {
+    padding-inline: max(var(--gutter), calc((100% - 960px) / 2));
   }
   /* Agrandada, la vuelta se estira hacia la izquierda y el mundo queda angosto, con su propio scroll. */
   .page[data-wide] {

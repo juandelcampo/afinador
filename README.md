@@ -24,7 +24,7 @@ En el celular es una tarea por pantalla, con cuatro pestañas abajo (Afinar, Aco
 
 Sale de Mauro De María, _Composición integral_ (capítulos 1 a 8), sin pentagramas ni escritura a cuatro voces. Las vueltas de cuatro acordes para arrancar, cómo transformarlas, los cambios de dos en dos, lo de cantar encima y el bajo que baja salen de Rikky Rooksby, _How to Write Songs on Guitar_.
 
-En el celular va todo en una columna. Desde 860 px son tres: más acordes a la izquierda (plegada al entrar), el mundo al medio y tu vuelta a la derecha; si no entran las tres abiertas, abrir un costado pliega el otro.
+En el celular va todo en una columna. Desde 860 px son tres: más acordes a la izquierda y tu vuelta a la derecha, las dos plegadas al entrar, y el mundo centrado al medio; si no entran las tres abiertas, abrir un costado pliega el otro.
 
 | Parte         | Qué hace                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
