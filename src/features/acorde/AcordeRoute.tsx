@@ -182,7 +182,12 @@ export default function AcordeRoute() {
     <div className={`${styles.page} ${ui.frame}`}>
       <Slab>
         <PageTitle eyebrow="Ponele nombre a lo que tocás" title="¿Qué acorde?">
-          <p>Poné los dedos donde te suena lindo y apagá las cuerdas que no van: te dice cómo se llama.</p>
+          {/* Cómo se usa va acá arriba: se lee al entrar, sin bajar hasta el pie. */}
+          <p>
+            Poné los dedos donde te suena lindo y te dice cómo se llama. Tocá un casillero para poner el dedo
+            y el dedo para sacarlo; el nombre de cada cuerda la apaga (×) o la vuelve a prender. En naranja,
+            el bajo.
+          </p>
         </PageTitle>
         <div className={ui.setup}>
           <TuningField
@@ -301,11 +306,6 @@ export default function AcordeRoute() {
             </Link>
           </p>
         )}
-
-        <p className={ui.hint}>
-          Tocá un casillero para poner el dedo; tocá el dedo para sacarlo y que la cuerda suene al aire. El
-          nombre de cada cuerda la apaga (×) o la vuelve a prender. En naranja, la nota del bajo.
-        </p>
       </Slab>
     </div>
   );
