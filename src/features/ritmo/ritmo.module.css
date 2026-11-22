@@ -231,14 +231,13 @@
 .textField input[aria-invalid='true'] {
   outline: 3px solid var(--accent);
 }
-.note {
+/* Las pistas grises son las de todas las herramientas (ui.hint); acá solo no se estiran de más. */
+.editor > p {
   max-width: 62ch;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.45;
 }
 .error {
-  font-size: 13px;
+  margin-top: 8px;
+  font-size: 12px;
   font-weight: 700;
 }
 .rule {

@@ -23,6 +23,7 @@ import { DRUM_PRESETS } from '~/data/drums';
 import { Fader } from '~/shared/Fader';
 import { useSettings } from '~/shared/settings';
 import { Button, Field, PageTitle, Segmented, Slab, Stepper, Tabs } from '~/shared/ui/ui';
+import ui from '~/shared/ui/ui.module.css';
 import { DrumMachine } from './DrumMachine';
 import { RhythmGrid } from './RhythmGrid';
 import { TapTempo } from './TapTempo';
@@ -146,7 +147,7 @@ function MeterEditor({ meter, onChange }: { meter: Meter; onChange: (meter: Mete
           />
         </Field>
       </div>
-      <p className={parsed ? styles.note : styles.error}>
+      <p className={parsed ? ui.hint : styles.error}>
         {parsed
           ? 'Cada número es un grupo: el primer golpe de cada grupo va acentuado. 2+2+3 suena distinto que 3+2+2.'
           : 'Escribí grupos como 2+2+3, de 1 a 9 cada uno.'}
@@ -213,7 +214,7 @@ function Editor({ config, onChange }: { config: RhythmConfig; onChange: (config:
               />
             </Field>
           </div>
-          <p className={styles.note}>
+          <p className={ui.hint}>
             Los golpes se reparten lo más parejo posible en los pulsos, y la figura que forman es el ritmo.
             Girarla cambia dónde arranca: la misma figura, otro groove.
           </p>
@@ -275,7 +276,7 @@ function Editor({ config, onChange }: { config: RhythmConfig; onChange: (config:
       const { meters, barsEach } = config;
       return (
         <div className={styles.editor}>
-          <p className={styles.note}>
+          <p className={ui.hint}>
             Tocá los compases que entran en la rueda. Suenan en el orden en que los elegís.
           </p>
           <div className={styles.presets} role="group" aria-label="Compases de la rotación">
@@ -365,7 +366,7 @@ export default function RitmoRoute() {
   const geometric = config.mode === 'euclid' || config.mode === 'poly';
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${ui.frame}`}>
       <Slab>
         <PageTitle eyebrow="Ritmo" title={name} />
 
