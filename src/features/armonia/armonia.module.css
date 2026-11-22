@@ -1181,3 +1181,58 @@
   gap: 8px;
   margin-top: 12px;
 }
+
+/* Cómo se arma el acorde: el nombre de cada cuerda arriba y su traste abajo, grande, para leerlo tocando. */
+.shape {
+  margin-bottom: 10px;
+}
+.shape table {
+  border-collapse: collapse;
+  margin: 4px 0 6px;
+}
+.shape th,
+.shape td {
+  min-width: 40px;
+  padding: 4px 0;
+  border: 2px solid var(--ink);
+  text-align: center;
+}
+.shape th {
+  font: 600 12px/1.2 var(--ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--soft);
+}
+.shape td {
+  font: 900 24px/1.1 var(--mono);
+}
+.shape td[data-muted] {
+  color: var(--muted);
+}
+@media (max-width: 380px) {
+  .shape th,
+  .shape td {
+    min-width: 36px;
+  }
+}
+
+/* Lo que dura el acorde en la vuelta: una rayita por pulso. */
+.pulses {
+  display: flex;
+  gap: 2px;
+  margin-top: 4px;
+}
+.pulses > span {
+  width: 8px;
+  height: 6px;
+  background: currentColor;
+}
+.editorBeats {
+  margin-bottom: 4px;
+}
+.controls > .fullRow {
+  flex-basis: 100%;
+}
+.chips .tab {
+  letter-spacing: 0.06em;
+}

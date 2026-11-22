@@ -97,18 +97,97 @@ function voicingOf(tuning: Tuning, chord: Chord, fingering: Fingering | null): V
   return [base - 12, ...steps.map((midi) => (midi < base ? midi + 12 : midi))];
 }
 
+/** Lo que dura cada acorde si no se dice otra cosa, y las duraciones que se ofrecen, en pulsos. */
+const DEFAULT_BEATS = 4;
+const BEAT_OPTIONS = [1, 2, 3, 4, 6, 8] as const;
+
+/** Un acorde puesto en la vuelta: el acorde y cuántos pulsos dura. */
+type Placed = Chord & { beats?: number };
+
+const beatsOf = (item: Placed) => item.beats ?? DEFAULT_BEATS;
+
+/** En la URL, la duración va pegada al acorde: "C*2" es C durante dos pulsos. Así se mueve con él. */
+function readPlaced(token: string): Placed | null {
+  const [text = '', count] = token.split('*');
+  const chord = parseChord(text);
+  if (!chord) return null;
+  const beats = Number(count);
+  return BEAT_OPTIONS.includes(beats as (typeof BEAT_OPTIONS)[number]) && beats !== DEFAULT_BEATS
+    ? { ...chord, beats }
+    : chord;
+}
+const placedToken = (item: Placed) =>
+  chordToken(item) + (beatsOf(item) === DEFAULT_BEATS ? '' : `*${beatsOf(item)}`);
+
 const readVuelta = (text: string) =>
   text
     .split('_')
-    .map(parseChord)
-    .filter((chord): chord is Chord => chord !== null)
+    .map(readPlaced)
+    .filter((item): item is Placed => item !== null)
     .slice(0, MAX_CHORDS);
+
+/** Cómo se arma el acorde: cada cuerda con su traste, de la 6.ª a la 1.ª. */
+function ShapeGrid({ names, fingering }: { names: string[]; fingering: Fingering | null }) {
+  if (!fingering) {
+    return (
+      <p className={ui.hint} data-testid="chord-shape">
+        La mano no llega a este acorde en esta afinación: suena cerrado.
+      </p>
+    );
+  }
+  const barre = /cejilla (\d+)/.exec(fingering.label)?.[1];
+  return (
+    <div className={styles.shape} data-testid="chord-shape">
+      <p className={styles.label}>Cómo se arma</p>
+      <table>
+        <tbody>
+          <tr>
+            {names.map((note, index) => (
+              <th key={index} scope="col">
+                {note}
+              </th>
+            ))}
+          </tr>
+          <tr>
+            {fingering.frets.map((fret, index) => (
+              <td key={index} data-muted={fret === MUTED || undefined}>
+                {fret === MUTED ? '×' : fret}
+              </td>
+            ))}
+          </tr>
+        </tbody>
+      </table>
+      <p className={ui.hint}>
+        El número es el traste de cada cuerda, de la más grave a la más aguda; 0 al aire, × no suena.
+        {barre && ` Cejilla en el ${barre}.`}
+        {fingering.noFifth && ' Sin la quinta: así entra en la mano.'}
+      </p>
+    </div>
+  );
+}
+
+/** La figura apretada, para la tarjeta chica de la vuelta: "×32010"; con trastes de dos cifras, separados. */
+const compactShape = (fingering: Fingering) =>
+  fingering.frets
+    .map((fret) => (fret === MUTED ? '×' : String(fret)))
+    .join(fingering.frets.some((fret) => fret > 9) ? '-' : '');
+
+/** Los pulsos que dura un acorde, como rayitas: se ve de un vistazo cuál dura más. */
+function Pulses({ beats }: { beats: number }) {
+  return (
+    <span className={styles.pulses} role="img" aria-label={`${beats} ${beats === 1 ? 'pulso' : 'pulsos'}`}>
+      {Array.from({ length: beats }, (_, index) => (
+        <span key={index} aria-hidden="true" />
+      ))}
+    </span>
+  );
+}
 
 /** El grado como lo escribe Rooksby, con el bemol de verdad: "♭VII", "II M", "IIm7♭5". */
 const romanLabel = (token: string) => token.replace(/^b/, '♭').replace(/maj$/, ' M').replace(/b(\d)/g, '♭$1');
 
-const sameChords = (a: readonly Chord[], b: readonly Chord[]) =>
-  a.length === b.length && a.every((chord, index) => chordToken(chord) === chordToken(b[index]!));
+const sameChords = (a: readonly Placed[], b: readonly Placed[]) =>
+  a.length === b.length && a.every((chord, index) => placedToken(chord) === placedToken(b[index]!));
 
 /** Lo que se apoya, lo que tensa y lo que choca al cantar sobre un acorde. */
 function SingOverList({ chord, keyOf, spell }: { chord: Chord; keyOf: Key; spell: (pc: number) => string }) {
@@ -271,7 +350,6 @@ export default function ArmoniaRoute() {
 
   const [selected, setSelected] = useState<number | null>(null);
   const [tempo, setTempo] = useState(80);
-  const [beats, setBeats] = useState(4);
   const [feel, setFeel] = useState<Feel>('pulso');
   const [geometry, setGeometry] = useState<Geometry>('cuadrado');
   /** Un modal por vez: el editor del acorde, las vueltas para arrancar o las cadencias. */
@@ -325,13 +403,13 @@ export default function ArmoniaRoute() {
     pending.current = next.toString();
     setSearchParams(next, { replace: true, preventScrollReset: true });
   };
-  const vueltaText = (chords: Chord[]) => chords.slice(0, MAX_CHORDS).map(chordToken).join('_');
+  const vueltaText = (chords: Placed[]) => chords.slice(0, MAX_CHORDS).map(placedToken).join('_');
   /** Cambia la vuelta a partir de la última pedida, no de la que se ve. */
-  const setVuelta = (change: Chord[] | ((current: Chord[]) => Chord[])) =>
+  const setVuelta = (change: Placed[] | ((current: Placed[]) => Placed[])) =>
     update((base) => ({
       v: vueltaText(typeof change === 'function' ? change(readVuelta(base.get('v') ?? '')) : change),
     }));
-  const extendVuelta = (chords: Chord[]) =>
+  const extendVuelta = (chords: Placed[]) =>
     setVuelta((current) => (current.length + chords.length > MAX_CHORDS ? current : [...current, ...chords]));
   /**
    * Dónde está, en la última vuelta pedida, el acorde que se ve en `index`. Dos toques seguidos pueden
@@ -364,24 +442,50 @@ export default function ArmoniaRoute() {
 
   const finger = (chord: Chord) =>
     fingeringFor(tuning.notes, chord.root, CHORD_STEPS[chord.suffix]!, chord.bass ?? chord.root);
-  const voicings = vuelta.map((chord) => voicingOf(tuning, chord, finger(chord)));
-  const player = useVuelta({ voicings, a4, tempo, beats, feel });
+  const steps = vuelta.map((chord) => ({
+    voicing: voicingOf(tuning, chord, finger(chord)),
+    beats: beatsOf(chord),
+  }));
+  const player = useVuelta({ steps, a4, tempo, feel });
 
   const name = (chord: Chord) => chordName(chord, key, notation);
   const listen = (chord: Chord) => player.strum(voicingOf(tuning, chord, finger(chord)));
+  /** Suma un acorde al final: dura lo mismo que el último, así una vuelta de dos pulsos sigue en dos. */
   const add = (chord: Chord) => {
     listen(chord);
-    extendVuelta([chord]);
+    setVuelta((current) => {
+      if (current.length >= MAX_CHORDS) return current;
+      const previous = current[current.length - 1];
+      return [...current, previous?.beats ? { ...chord, beats: previous.beats } : chord];
+    });
   };
   /** Cambia un acorde; si el cambio es una función, se aplica sobre el acorde pedido, no sobre el que se ve. */
   const replaceAt = (index: number, change: Chord | ((item: Chord) => Chord)) => {
     const apply = typeof change === 'function' ? change : () => change;
+    // El acorde cambia, lo que dura queda.
     setVuelta((current) => {
       const at = locate(current, index);
-      return current.map((item, position) => (position === at ? apply(item) : item));
+      return current.map((item, position) =>
+        position === at ? { ...apply(item), beats: item.beats } : item,
+      );
     });
     if (vuelta[index]) listen(apply(vuelta[index]));
   };
+
+  /** Cuántos pulsos dura un acorde, o todos si no se dice cuál. */
+  const setBeatsAt = (index: number | null, count: number) =>
+    setVuelta((current) => {
+      const at = index === null ? null : locate(current, index);
+      return current.map((item, position) =>
+        at === null || position === at
+          ? { ...item, beats: count === DEFAULT_BEATS ? undefined : count }
+          : item,
+      );
+    });
+  /** Si todos duran lo mismo, cuánto; si no, ninguno marcado. */
+  const durations = new Set(vuelta.map(beatsOf));
+  const allBeats = durations.size === 1 ? String([...durations][0]) : '';
+  const beatOptions = BEAT_OPTIONS.map((count) => ({ value: String(count), label: String(count) }));
 
   const degrees = scaleDegrees(key);
   const last = vuelta[vuelta.length - 1] ?? null;
@@ -428,13 +532,15 @@ export default function ArmoniaRoute() {
       id: 'estirar',
       label: 'Estirar',
       why: 'Repite el primer cambio antes de seguir: la vuelta respira.',
-      apply: (chords: readonly Chord[]) => stretch(chords).slice(0, MAX_CHORDS),
+      apply: (chords: readonly Placed[]) => stretch(chords).slice(0, MAX_CHORDS),
     },
     {
       id: 'bajo',
       label: 'Bajo que baja',
       why: 'Inversiones para que el bajo baje de a paso.',
-      apply: walkingBass,
+      // Cambia los bajos, no lo que dura cada acorde.
+      apply: (chords: readonly Placed[]) =>
+        walkingBass(chords).map((chord, index) => ({ ...chord, beats: chords[index]!.beats })),
     },
   ];
 
@@ -864,11 +970,15 @@ export default function ArmoniaRoute() {
                           {wide && feeling && (
                             <span className={styles.words}>{feeling.words.join('. ')}.</span>
                           )}
-                          {wide && (
-                            <span className={styles.tab} data-missing={!fingering}>
-                              {fingering ? fingering.label : 'La mano no llega'}
-                            </span>
-                          )}
+                          {/* Cómo se arma, siempre a la vista: se toca leyendo la vuelta. */}
+                          <span className={styles.tab} data-missing={!fingering}>
+                            {fingering
+                              ? wide
+                                ? fingering.label
+                                : compactShape(fingering)
+                              : 'La mano no llega'}
+                          </span>
+                          <Pulses beats={beatsOf(chord)} />
                         </button>
                         <button
                           type="button"
@@ -939,36 +1049,36 @@ export default function ArmoniaRoute() {
                         onChange={(event) => setTempo(Number(event.target.value))}
                       />
                     </label>
+                    <div className={`${ui.field} ${styles.fullRow}`}>
+                      <span>Cómo se toca</span>
+                      <Segmented
+                        label="Cómo se toca"
+                        stretch
+                        value={feel}
+                        options={[
+                          { value: 'pulso', label: 'Rasgueo' },
+                          { value: 'acorde', label: 'Un golpe' },
+                          { value: 'arpegio', label: 'Arpegio' },
+                        ]}
+                        onChange={setFeel}
+                      />
+                    </div>
                     <Fader />
                   </div>
                   <details className={styles.more}>
-                    <summary>Cómo se toca</summary>
-                    <div className={styles.controls}>
-                      <div className={ui.field}>
-                        <span>Pulsos por acorde</span>
-                        <Segmented
-                          label="Pulsos por acorde"
-                          value={String(beats)}
-                          options={[
-                            { value: '2', label: '2' },
-                            { value: '4', label: '4' },
-                            { value: '8', label: '8' },
-                          ]}
-                          onChange={(value) => setBeats(Number(value))}
-                        />
-                      </div>
-                      <div className={ui.field}>
-                        <span>Rasguido</span>
-                        <Segmented
-                          label="Rasguido"
-                          value={feel}
-                          options={[
-                            { value: 'pulso', label: 'Por pulso' },
-                            { value: 'acorde', label: 'Uno solo' },
-                          ]}
-                          onChange={setFeel}
-                        />
-                      </div>
+                    <summary>Cuánto dura cada acorde</summary>
+                    <p className={ui.hint}>
+                      Tocá un acorde de la vuelta para darle su propia duración. Acá los ponés todos iguales.
+                    </p>
+                    <div className={ui.field}>
+                      <span>Todos a (pulsos)</span>
+                      <Segmented
+                        label="Pulsos de todos los acordes"
+                        stretch
+                        value={allBeats}
+                        options={beatOptions}
+                        onChange={(value) => setBeatsAt(null, Number(value))}
+                      />
                     </div>
                   </details>
 
@@ -1034,6 +1144,20 @@ export default function ArmoniaRoute() {
       >
         {activeChord && active !== null && (
           <div data-testid="chord-editor">
+            <ShapeGrid
+              names={tuning.notes.map((note) => noteLabel(note, notation))}
+              fingering={finger(activeChord)}
+            />
+            <div className={`${ui.field} ${styles.editorBeats}`}>
+              <span>Dura (pulsos)</span>
+              <Segmented
+                label="Cuántos pulsos dura"
+                stretch
+                value={String(beatsOf(activeChord))}
+                options={beatOptions}
+                onChange={(value) => setBeatsAt(active, Number(value))}
+              />
+            </div>
             <div className={styles.editorTabs}>
               <Segmented
                 label="Qué cambiar"

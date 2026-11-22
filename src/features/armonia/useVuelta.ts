@@ -1,4 +1,4 @@
-// La vuelta suena: un rasguido por pulso (o uno por acorde), programado con el reloj de audio.
+// La vuelta suena: un rasguido por pulso, uno solo por acorde o un arpegio, programado con el reloj de audio.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getAudio } from '~/audio/engine';
 import { pluckString } from '~/audio/instrument';
@@ -9,7 +9,13 @@ const SCHEDULE_MS = 30;
 /** Lo que suena de un acorde: el MIDI de cada cuerda, o null si va apagada. */
 export type Voicing = Array<number | null>;
 
-export type Feel = 'pulso' | 'acorde';
+export type Feel = 'pulso' | 'acorde' | 'arpegio';
+
+/** Un acorde de la vuelta: lo que suena y cuántos pulsos dura. */
+export interface Step {
+  voicing: Voicing;
+  beats: number;
+}
 
 /** Un rasguido hacia abajo, de la cuerda más grave a la más aguda. */
 function strumVoicing(voicing: Voicing, a4: number, when: number, velocity: number, spread: number) {
@@ -21,18 +27,36 @@ function strumVoicing(voicing: Voicing, a4: number, when: number, velocity: numb
   });
 }
 
+/**
+ * Un pulso de arpegio, en dos corcheas: el bajo al entrar al acorde y después las otras cuerdas, subiendo y
+ * bajando (como p i m a m i). `pulse` es el pulso dentro del acorde, para seguir la cuenta donde quedó.
+ */
+function arpeggiate(voicing: Voicing, a4: number, when: number, beat: number, pulse: number) {
+  const sounding = voicing.flatMap((midi, stringIndex) => (midi === null ? [] : [{ midi, stringIndex }]));
+  if (!sounding.length) return;
+  const [bass, ...upper] = sounding;
+  const cycle = upper.length > 1 ? [...upper, ...upper.slice(1, -1).reverse()] : upper;
+  for (let half = 0; half < 2; half++) {
+    const eighth = pulse * 2 + half;
+    const note = eighth === 0 || !cycle.length ? bass! : cycle[(eighth - 1) % cycle.length]!;
+    pluckString(note.stringIndex, note.midi, {
+      a4,
+      when: when + (half * beat) / 2,
+      velocity: eighth === 0 ? 0.9 : 0.6,
+    });
+  }
+}
+
 export function useVuelta({
-  voicings,
+  steps,
   a4,
   tempo,
-  beats,
   feel,
 }: {
-  voicings: Voicing[];
+  /** Cada acorde con lo que dura: la duración va acorde por acorde. */
+  steps: Step[];
   a4: number;
   tempo: number;
-  /** Pulsos que dura cada acorde. */
-  beats: number;
   feel: Feel;
 }) {
   const [running, setRunning] = useState(false);
@@ -40,9 +64,9 @@ export function useVuelta({
   const [current, setCurrent] = useState<number | null>(null);
 
   // El secuenciador corre fuera de los renders: siempre lee lo último.
-  const latest = useRef({ voicings, a4, tempo, beats, feel });
+  const latest = useRef({ steps, a4, tempo, feel });
   useEffect(() => {
-    latest.current = { voicings, a4, tempo, beats, feel };
+    latest.current = { steps, a4, tempo, feel };
   });
   const timers = useRef<{
     interval: ReturnType<typeof setInterval> | null;
@@ -59,31 +83,43 @@ export function useVuelta({
 
   const start = useCallback(() => {
     stop();
-    if (!latest.current.voicings.length) return;
+    if (!latest.current.steps.length) return;
     const { ctx } = getAudio();
-    let beat = 0;
+    /** El acorde que suena y el pulso dentro de él. */
+    let index = 0;
+    let pulse = 0;
     let nextTime = ctx.currentTime + 0.06;
 
     const schedule = () => {
-      const { voicings: list, a4: pitch, tempo: bpm, beats: perChord, feel: mode } = latest.current;
+      const { steps: list, a4: pitch, tempo: bpm, feel: mode } = latest.current;
       if (!list.length) return stop();
       while (nextTime < ctx.currentTime + LOOKAHEAD) {
-        const total = list.length * perChord;
-        const position = beat % total;
-        const index = Math.floor(position / perChord);
-        const first = position % perChord === 0;
-        if (first || mode === 'pulso') {
-          strumVoicing(list[index]!, pitch, nextTime, first ? 0.9 : 0.5, first ? 0.03 : 0.018);
+        // Si mientras sonaba sacaste acordes, la cuenta vuelve al principio.
+        if (index >= list.length) {
+          index = 0;
+          pulse = 0;
+        }
+        const step = list[index]!;
+        const first = pulse === 0;
+        const beat = 60 / bpm;
+        if (mode === 'arpegio') arpeggiate(step.voicing, pitch, nextTime, beat, pulse);
+        else if (first || mode === 'pulso') {
+          strumVoicing(step.voicing, pitch, nextTime, first ? 0.9 : 0.5, first ? 0.03 : 0.018);
         }
         if (first) {
+          const playing = index;
           const delay = Math.max(0, (nextTime - ctx.currentTime) * 1000);
           timers.current.marks = [
             ...timers.current.marks.slice(-8),
-            setTimeout(() => setCurrent(index), delay),
+            setTimeout(() => setCurrent(playing), delay),
           ];
         }
-        nextTime += 60 / bpm;
-        beat += 1;
+        nextTime += beat;
+        pulse += 1;
+        if (pulse >= Math.max(1, step.beats)) {
+          pulse = 0;
+          index = (index + 1) % list.length;
+        }
       }
     };
 

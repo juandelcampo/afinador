@@ -246,6 +246,44 @@ test.describe('armonía', () => {
     expect(errors).toEqual([]);
   });
 
+  test('cada acorde de la vuelta dice cómo se arma y dura lo suyo', async ({ page }) => {
+    const errors = watchErrors(page);
+    await goto(page, '/armonia?escala=mayor&tono=0&v=C_G');
+    await openVuelta(page);
+    const vuelta = page.getByTestId('vuelta');
+    // La figura se lee en la vuelta, sin abrir nada.
+    await expect(vuelta.getByRole('listitem').first()).toContainText('×32010');
+    await expect(vuelta.getByRole('img', { name: '4 pulsos' })).toHaveCount(2);
+
+    // En el editor, cuerda por cuerda, y la duración propia del acorde queda en la URL.
+    await vuelta.getByRole('button', { name: /^I C/ }).click();
+    const editor = page.getByTestId('chord-editor');
+    await expect(page.getByTestId('chord-shape')).toContainText('Cómo se arma');
+    await editor
+      .getByRole('group', { name: 'Cuántos pulsos dura' })
+      .getByRole('button', { name: '2' })
+      .click();
+    await expect(page).toHaveURL(/v=C\*2_G/);
+    await expect(vuelta.getByRole('img', { name: '2 pulsos' })).toHaveCount(1);
+    // Cambiar el acorde no le cambia lo que dura.
+    await editor.getByRole('button', { name: 'Poner Cmaj7' }).click();
+    await expect(page).toHaveURL(/v=Cmaj7\*2_G/);
+    await page.keyboard.press('Escape');
+
+    // Todos iguales de una, y en arpegio suena nota por nota.
+    await page.getByText('Cuánto dura cada acorde').click();
+    await page
+      .getByRole('group', { name: 'Pulsos de todos los acordes' })
+      .getByRole('button', { name: '8' })
+      .click();
+    await expect(page).toHaveURL(/v=Cmaj7\*8_G\*8/);
+    await page.getByRole('button', { name: 'Arpegio' }).click();
+    await page.locator('#vuelta-toggle').click();
+    await expect.poll(() => plucks(page)).toBeGreaterThanOrEqual(3);
+    await page.locator('#vuelta-toggle').click();
+    expect(errors).toEqual([]);
+  });
+
   test('cada propuesta se escucha antes de ponerla', async ({ page }) => {
     await goto(page, '/armonia?escala=mayor&tono=0&v=C_G');
     await openVuelta(page);
