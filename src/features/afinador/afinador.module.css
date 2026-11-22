@@ -1004,21 +1004,6 @@
 .pair > button {
   padding-inline: 8px;
 }
-.check {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: var(--touch);
-  font: 700 semi-expanded 13px/1.2 var(--ui);
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  accent-color: var(--accent);
-  cursor: pointer;
-}
-.check input {
-  width: 22px;
-  height: 22px;
-}
 .heard ul {
   margin: 0;
   padding: 0;

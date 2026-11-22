@@ -12,9 +12,8 @@ import {
 } from '~/core/tuning';
 import { normalize, searchTunings } from '~/core/search';
 import { GROUPS, TUNINGS, type Tuning } from '~/data/tunings';
-import { Fader } from '~/shared/Fader';
 import { TEMPO_RANGE, useFavorites, useSettings } from '~/shared/settings';
-import { Button, PageTitle, Rail, Segmented, Slab, SlabHead, Stepper } from '~/shared/ui/ui';
+import { Button, PageTitle, Rail, Segmented, Slab, SlabHead, Stepper, Toggle } from '~/shared/ui/ui';
 import ui from '~/shared/ui/ui.module.css';
 import styles from './afinador.module.css';
 import { ChordDiagram } from './ChordDiagram';
@@ -646,7 +645,7 @@ function TuningPage({
                 {listener.running ? '■ Parar' : '▶ Tocar'}
               </Button>
               {/* Cómo suena, todo junto: la forma y el patrón de esa forma. */}
-              <Segmented
+              <Toggle
                 label="Forma de tocar"
                 value={listener.style}
                 options={[
@@ -697,15 +696,14 @@ function TuningPage({
                     onUp={() => listener.setCapo(listener.capo + 1)}
                   />
                 </div>
-                <label className={styles.check}>
-                  <input
-                    id="loop"
-                    type="checkbox"
-                    checked={listener.loop}
-                    onChange={(event) => listener.setLoop(event.target.checked)}
-                  />{' '}
-                  Repetir
-                </label>
+                <Button
+                  variant="ghost"
+                  id="loop"
+                  ariaPressed={listener.loop}
+                  onClick={() => listener.setLoop(!listener.loop)}
+                >
+                  {listener.loop ? '↻ Repite' : '↻ Repetir'}
+                </Button>
                 <Button
                   onClick={listener.clearFrets}
                   ariaLabel="Soltar trastes"
@@ -714,7 +712,6 @@ function TuningPage({
                 >
                   Soltar
                 </Button>
-                <Fader />
               </div>
             </div>
           </Slab>

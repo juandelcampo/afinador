@@ -22,7 +22,6 @@ import {
   type RhythmConfig,
 } from '~/core/rhythm';
 import { DRUM_PRESETS } from '~/data/drums';
-import { Fader } from '~/shared/Fader';
 import { useSettings } from '~/shared/settings';
 import { Button, Field, PageTitle, Slab, Stepper, Tabs } from '~/shared/ui/ui';
 import ui from '~/shared/ui/ui.module.css';
@@ -557,10 +556,6 @@ export default function RitmoRoute() {
               aria-label="Tempo, en pulsos por minuto"
               onChange={(event) => setBpm(Number(event.target.value))}
             />
-          </div>
-          {/* Un solo volumen, en el mismo lugar para todos los ritmos. */}
-          <div className={styles.volume}>
-            <Fader />
           </div>
           <TapTempo onTempo={setBpm} />
         </div>

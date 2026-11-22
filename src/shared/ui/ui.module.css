@@ -99,17 +99,24 @@
     background-color 120ms var(--ease),
     color 120ms var(--ease);
 }
+/* Todos los botones miden lo mismo: el principal se distingue por el naranja y la sombra, no por el tamaño. */
+.primary,
+.ghost,
+.mini,
+.toggle {
+  min-height: var(--touch);
+  padding: 6px 14px;
+  font-weight: 700;
+  font-stretch: 112.5%;
+  font-size: 13px;
+  line-height: 1.2;
+  letter-spacing: 0.03em;
+}
 .primary {
-  min-height: calc(var(--touch) + 4px);
-  padding: 8px 22px;
   background: var(--accent);
   color: var(--on-accent);
   box-shadow: var(--lift) var(--lift) 0 var(--ink);
   font-weight: 900;
-  font-stretch: 112.5%;
-  font-size: 17px;
-  line-height: 1.1;
-  letter-spacing: 0.01em;
 }
 .primary:hover {
   transform: translate(1px, 1px);
@@ -125,38 +132,118 @@
   color: var(--paper);
 }
 .ghost {
-  min-height: var(--touch);
-  padding: 6px 14px;
   background: var(--paper);
-  font-weight: 700;
-  font-stretch: 112.5%;
-  font-size: 13px;
-  letter-spacing: 0.03em;
 }
+/* El chico es el mismo botón con menos aire a los costados: para −1, +1, ×2 y los íconos. */
 .mini {
-  min-height: var(--touch-small);
-  min-width: var(--touch-small);
-  padding: 2px 12px;
-  border-width: 2px;
+  min-width: var(--touch);
+  padding-inline: 10px;
   background: var(--paper);
-  font-weight: 700;
-  font-stretch: 112.5%;
-  font-size: 12px;
-  letter-spacing: 0.04em;
 }
 /* En toda la app: gris al pasar por encima, tinta lo elegido, naranja lo que suena. */
 .ghost:hover,
-.mini:hover {
+.mini:hover,
+.toggle:hover {
   background: var(--soft);
 }
+.ghost[aria-pressed='true'],
 .mini[aria-expanded='true'],
 .mini[aria-pressed='true'] {
   background: var(--ink);
   color: var(--paper);
 }
+/* Un secundario que suena (el drone) va en naranja, como todo lo que suena. */
+.ghost[data-on='true'] {
+  background: var(--accent);
+  color: var(--on-accent);
+}
 .ghost:active,
-.mini:active {
+.mini:active,
+.toggle:active {
   transform: translate(2px, 2px);
+}
+/* Dos opciones en un botón: las dos ocupan el mismo lugar y se ve la elegida, así el ancho no cambia. */
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: var(--rule);
+  background: var(--paper);
+  font-family: var(--ui);
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition:
+    transform 90ms var(--ease),
+    background-color 120ms var(--ease);
+}
+.toggleText {
+  display: grid;
+}
+.toggleText > span {
+  grid-area: 1 / 1;
+}
+.toggleText > span[data-shown='false'] {
+  visibility: hidden;
+}
+.toggleMark {
+  font-size: 15px;
+  line-height: 1;
+}
+
+/* Recorrer de a uno: flecha, lo elegido y flecha. */
+.browse {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) 56px;
+  border: var(--rule);
+}
+.browseArrow {
+  padding: 0;
+  border: 0;
+  background: var(--paper);
+  font: 700 18px/1 var(--ui);
+}
+.browseArrow:first-child {
+  border-right: var(--rule);
+}
+.browseArrow:last-child {
+  border-left: var(--rule);
+}
+.browseArrow:hover:not(:disabled),
+.browseCurrent:hover {
+  background: var(--soft);
+}
+.browseArrow:disabled {
+  color: var(--muted);
+}
+.browseCurrent {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 6px;
+  border: 0;
+  background: var(--paper);
+}
+.browseCurrent:active {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.browseCount {
+  font: 600 12px/1.3 var(--ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.browseMain {
+  font: 700 18px/1.2 var(--mono);
+  white-space: nowrap;
+}
+.browseCurrent small {
+  font: 500 12px/1.3 var(--mono);
+  color: var(--muted);
+}
+.browseCurrent:active small {
+  color: inherit;
 }
 .full {
   width: 100%;

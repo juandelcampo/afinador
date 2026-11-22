@@ -105,8 +105,9 @@
   gap: 8px;
 }
 
-/* En el celular la marca y el botón de ajustes comparten la fila: los dos un poco más chicos. */
-@media (max-width: 719px) {
+/* En el celular y la tableta la marca y el botón de ajustes comparten la fila: los dos un poco más chicos.
+   Las seis herramientas en una fila miden unos 850 px: debajo de 960 no entran. */
+@media (max-width: 959px) {
   /* Cuatro herramientas no entran en una fila de 390 px: van de a dos, al lado de la marca, y con la
      letra normal en lugar de la ancha. */
   .tools {
@@ -158,8 +159,8 @@
   }
 }
 
-/* En pantallas anchas los ajustes entran en la misma fila y la barra queda fija arriba. */
-@media (min-width: 720px) {
+/* En pantallas anchas la barra queda fija arriba, en una sola fila. */
+@media (min-width: 960px) {
   .topBar {
     position: sticky;
     top: 0;
@@ -168,6 +169,26 @@
     height: var(--bar);
     padding-block: 0;
   }
+}
+/* Hasta 1440 los ajustes no entran al lado de las herramientas: se abren debajo del botón, encima de la
+   página, sin correrla. */
+@media (min-width: 960px) and (max-width: 1439px) {
+  .settings {
+    position: absolute;
+    top: calc(100% + var(--rule-width));
+    right: var(--gutter);
+    flex: none;
+    flex-wrap: wrap;
+    width: max-content;
+    max-width: calc(100% - 2 * var(--gutter));
+    padding: 12px;
+    border: var(--rule);
+    background: var(--paper);
+    box-shadow: 8px 8px 0 var(--ink);
+  }
+}
+/* Desde 1440 entra todo en la fila: el botón de ajustes sobra. */
+@media (min-width: 1440px) {
   .settingsToggle {
     display: none;
   }

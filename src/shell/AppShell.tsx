@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
 import { setVolume } from '~/audio/engine';
 import { useSettings } from '~/shared/settings';
-import { Segmented, Stepper } from '~/shared/ui/ui';
+import { Fader } from '~/shared/Fader';
+import { Stepper, Toggle } from '~/shared/ui/ui';
 import styles from './shell.module.css';
 
 /** Las herramientas, cada una por su lado. `match` dice qué rutas son de cada una. */
@@ -27,17 +28,35 @@ export default function AppShell() {
   const set = useSettings((s) => s.set);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { pathname } = useLocation();
+  const bar = useRef<HTMLElement>(null);
 
   useEffect(() => {
     document.documentElement.dataset.ready = 'true';
   }, []);
+
+  // Los ajustes abiertos se cierran al ir a otra herramienta, al tocar fuera de la barra o con Escape.
+  useEffect(() => {
+    if (!settingsOpen) return;
+    const onPointer = (event: PointerEvent) => {
+      if (!bar.current?.contains(event.target as Node)) setSettingsOpen(false);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSettingsOpen(false);
+    };
+    document.addEventListener('pointerdown', onPointer);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onPointer);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [settingsOpen]);
 
   // El audio no conoce las preferencias: se las pasa el marco de la app.
   useEffect(() => setVolume(volume), [volume]);
 
   return (
     <div className={styles.shell}>
-      <header className={styles.topBar} data-open={settingsOpen}>
+      <header ref={bar} className={styles.topBar} data-open={settingsOpen}>
         <nav className={styles.tools} aria-label="Herramientas">
           {/* La marca lleva a la portada, donde se elige la herramienta. */}
           <Link
@@ -51,19 +70,21 @@ export default function AppShell() {
               key={tool.to}
               to={tool.to}
               className={styles.tool}
+              onClick={() => setSettingsOpen(false)}
               aria-current={tool.match(pathname) ? 'page' : undefined}
             >
               {tool.label}
             </Link>
           ))}
         </nav>
-        {/* Solo se ve en pantallas chicas: los ajustes se tocan una vez y no tienen por qué ocupar lugar. */}
+        {/* Solo se ve en pantallas chicas: los ajustes se tocan poco (el volumen también está en los botones del
+            teléfono) y no tienen por qué ocupar lugar. */}
         <button
           type="button"
           className={styles.settingsToggle}
           aria-expanded={settingsOpen}
           aria-controls="ajustes"
-          aria-label={`Ajustes: notación y La ${a4}`}
+          aria-label={`Ajustes: notación, La ${a4} y volumen`}
           title="Ajustes"
           onClick={() => setSettingsOpen((open) => !open)}
         >
@@ -71,7 +92,7 @@ export default function AppShell() {
           <span aria-hidden="true">⚙︎ {settingsOpen ? '↑' : '↓'}</span>
         </button>
         <div className={styles.settings} id="ajustes">
-          <Segmented
+          <Toggle
             label="Nombres de las notas"
             value={notation}
             options={[
@@ -86,6 +107,8 @@ export default function AppShell() {
             onDown={() => set({ a4: Math.max(415, a4 - 1) })}
             onUp={() => set({ a4: Math.min(466, a4 + 1) })}
           />
+          {/* Un solo volumen para toda la app: el mismo en todas las herramientas, siempre en este lugar. */}
+          <Fader />
         </div>
       </header>
       <main className={styles.main}>

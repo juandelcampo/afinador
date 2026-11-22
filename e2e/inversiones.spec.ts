@@ -109,12 +109,10 @@ test.describe('inversiones', () => {
     await page.getByRole('button', { name: /Forma siguiente/ }).click();
     await expect(counter).toHaveText(`Forma 1 de ${total}`);
 
-    const style = page.getByRole('group', { name: 'Cómo suena el acorde' });
-    await style.getByRole('button', { name: 'Arpegio' }).click();
+    // Rasgueo o arpegio es un solo botón: tocarlo pasa a la otra forma, y se recuerda al recargar.
+    await page.getByRole('button', { name: 'Cómo suena el acorde: Rasgueo' }).click();
     await page.reload();
-    await expect(
-      page.getByRole('group', { name: 'Cómo suena el acorde' }).getByRole('button', { name: 'Arpegio' }),
-    ).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('button', { name: 'Cómo suena el acorde: Arpegio' })).toBeVisible();
     const before = await plucks(page);
     await page.getByRole('button', { name: /^Escuchar C: / }).click();
     await expect.poll(() => plucks(page)).toBeGreaterThanOrEqual(before + 3);

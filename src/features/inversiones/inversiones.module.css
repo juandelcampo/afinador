@@ -105,31 +105,9 @@
   font-size: 14px;
 }
 
-/* Recorrer las formas */
+/* Recorrer las formas: la pieza es la de ui (Browse). */
 .browse {
-  display: grid;
-  grid-template-columns: 56px minmax(0, 1fr) 56px;
   margin-top: 12px;
-  border: var(--rule);
-}
-.arrow {
-  padding: 0;
-  border: 0;
-  background: var(--paper);
-  font: 700 18px/1 var(--ui);
-}
-.arrow:first-child {
-  border-right: var(--rule);
-}
-.arrow:last-child {
-  border-left: var(--rule);
-}
-.arrow:hover:not(:disabled) {
-  background: var(--soft);
-}
-.arrow:disabled {
-  color: var(--muted);
-  cursor: not-allowed;
 }
 .current {
   display: grid;

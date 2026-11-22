@@ -27,6 +27,109 @@ export function Segmented<T extends string>({ label, value, options, onChange, s
   );
 }
 
+type Option<T extends string> = { value: T; label: string };
+
+/**
+ * Dos opciones en un solo botón: muestra la elegida y tocarlo pasa a la otra. El ancho es el de la opción
+ * más larga, así el botón no salta al cambiar.
+ */
+export function Toggle<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: T;
+  options: readonly [Option<T>, Option<T>];
+  onChange: (value: T) => void;
+}) {
+  const index = options[1].value === value ? 1 : 0;
+  const next = options[1 - index]!;
+  return (
+    <button
+      type="button"
+      className={styles.toggle}
+      aria-label={`${label}: ${options[index]!.label}`}
+      title={`Cambiar a ${next.label}`}
+      onClick={() => onChange(next.value)}
+    >
+      <span className={styles.toggleText}>
+        {options.map((option, i) => (
+          <span key={option.value} data-shown={i === index}>
+            {option.label}
+          </span>
+        ))}
+      </span>
+      <span className={styles.toggleMark} aria-hidden="true">
+        ⇄
+      </span>
+    </button>
+  );
+}
+
+/**
+ * Recorrer una lista de a uno: flecha, lo que está elegido (tocarlo lo hace sonar) y flecha. Lo usan las
+ * posiciones de Escalas y las formas de Inversiones.
+ */
+export function Browse({
+  count,
+  main,
+  note,
+  countTestId,
+  currentLabel,
+  prevLabel,
+  nextLabel,
+  disabled,
+  onStep,
+  onCurrent,
+  className = '',
+}: {
+  /** El rótulo chico de arriba: "Forma 2 de 5". */
+  count: ReactNode;
+  /** Lo importante, en grande: los trastes. */
+  main: ReactNode;
+  note?: ReactNode;
+  countTestId?: string;
+  currentLabel: string;
+  prevLabel: string;
+  nextLabel: string;
+  disabled?: boolean;
+  onStep: (direction: -1 | 1) => void;
+  onCurrent: () => void;
+  className?: string;
+}) {
+  return (
+    <div className={`${styles.browse} ${className}`}>
+      <button
+        type="button"
+        className={styles.browseArrow}
+        aria-label={prevLabel}
+        disabled={disabled}
+        onClick={() => onStep(-1)}
+      >
+        ◀
+      </button>
+      <button type="button" className={styles.browseCurrent} aria-label={currentLabel} onClick={onCurrent}>
+        <span className={styles.browseCount} data-testid={countTestId}>
+          {count}
+        </span>
+        <strong className={styles.browseMain}>{main}</strong>
+        {note && <small>{note}</small>}
+      </button>
+      <button
+        type="button"
+        className={styles.browseArrow}
+        aria-label={nextLabel}
+        disabled={disabled}
+        onClick={() => onStep(1)}
+      >
+        ▶
+      </button>
+    </div>
+  );
+}
+
 interface TabsProps<T extends string> {
   label: string;
   value: T;

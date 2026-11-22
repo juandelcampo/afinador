@@ -10,7 +10,6 @@ import { bassReading, encodeFrets, INVERSION_CHORDS, parseFrets, tabOf, toneName
 import { intervalName, noteToMidi } from '~/core/notes';
 import { MUTED } from '~/core/tuning';
 import { TUNINGS } from '~/data/tunings';
-import { Fader } from '~/shared/Fader';
 import { ShapeStyleToggle } from '~/shared/ShapeStyle';
 import { useSettings } from '~/shared/settings';
 import { useHydrated } from '~/shared/useHydrated';
@@ -229,7 +228,6 @@ export default function AcordeRoute() {
             Todas al aire
           </Button>
           <ShapeStyleToggle />
-          <Fader />
         </div>
 
         {sounding.length > 0 && (

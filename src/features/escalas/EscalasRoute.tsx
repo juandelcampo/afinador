@@ -22,10 +22,9 @@ import {
 } from '~/core/scales';
 import { TUNINGS } from '~/data/tunings';
 import { Diapason } from '~/shared/Diapason';
-import { Fader } from '~/shared/Fader';
 import { useSettings } from '~/shared/settings';
 import { TuneLink, TuningField } from '~/shared/TuningField';
-import { Button, Field, PageTitle, Segmented, Slab } from '~/shared/ui/ui';
+import { Browse, Button, Field, PageTitle, Slab, Toggle } from '~/shared/ui/ui';
 import ui from '~/shared/ui/ui.module.css';
 import { useHydrated } from '~/shared/useHydrated';
 import styles from './escalas.module.css';
@@ -291,54 +290,35 @@ export default function EscalasRoute() {
 
         {/* Las posiciones y lo que suena en una sola fila: así entra todo sin bajar. */}
         <div className={styles.play}>
-          <div className={styles.browse}>
-            <button
-              type="button"
-              className={styles.arrow}
-              aria-label="Posición anterior, más cerca de la cejuela"
-              disabled={positions.length === 0}
-              onClick={() => step(-1)}
-            >
-              ◀
-            </button>
-            <button
-              type="button"
-              className={styles.current}
-              aria-label={
-                position
-                  ? `Escuchar la posición ${positionIndex + 1}, trastes ${position.from} a ${position.to}`
-                  : 'Escuchar la escala en la primera posición'
-              }
-              onClick={playRun}
-            >
-              <span className={styles.counter} data-testid="position-counter">
-                {position ? `Posición ${positionIndex + 1} de ${positions.length}` : 'Todo el mástil'}
-              </span>
-              <strong className={styles.frets}>
-                {position
-                  ? position.from === 0
-                    ? `Del aire al ${position.to}`
-                    : `Trastes ${position.from} al ${position.to}`
-                  : `${positions.length} posiciones`}
-              </strong>
-            </button>
-            <button
-              type="button"
-              className={styles.arrow}
-              aria-label="Posición siguiente, más arriba en el mástil"
-              disabled={positions.length === 0}
-              onClick={() => step(1)}
-            >
-              ▶
-            </button>
-          </div>
+          <Browse
+            className={styles.browse}
+            countTestId="position-counter"
+            count={position ? `Posición ${positionIndex + 1} de ${positions.length}` : 'Todo el mástil'}
+            main={
+              position
+                ? position.from === 0
+                  ? `Del aire al ${position.to}`
+                  : `Trastes ${position.from} al ${position.to}`
+                : `${positions.length} posiciones`
+            }
+            currentLabel={
+              position
+                ? `Escuchar la posición ${positionIndex + 1}, trastes ${position.from} a ${position.to}`
+                : 'Escuchar la escala en la primera posición'
+            }
+            prevLabel="Posición anterior, más cerca de la cejuela"
+            nextLabel="Posición siguiente, más arriba en el mástil"
+            disabled={positions.length === 0}
+            onStep={step}
+            onCurrent={playRun}
+          />
           <Button variant="primary" on={playing} onClick={playRun}>
             {playing ? '■ Parar' : '▶ Escuchar'}
           </Button>
           <Button variant="ghost" on={droneOn} ariaPressed={droneOn} onClick={() => setDroneOn((on) => !on)}>
             {droneOn ? `■ Drone en ${name(tonic)}` : `▶ Drone en ${name(tonic)}`}
           </Button>
-          <Segmented
+          <Toggle
             label="Qué dice cada nota"
             value={labels}
             options={[
@@ -347,7 +327,6 @@ export default function EscalasRoute() {
             ]}
             onChange={setLabels}
           />
-          <Fader />
         </div>
 
         <p className={styles.why}>

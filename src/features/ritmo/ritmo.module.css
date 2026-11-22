@@ -55,8 +55,7 @@
   display: grid;
   grid-template-areas:
     'play tap'
-    'tempo tempo'
-    'volume volume';
+    'tempo tempo';
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 10px 12px;
   margin: 10px 0;
@@ -70,11 +69,6 @@
 .tempo {
   display: grid;
   grid-area: tempo;
-  min-width: 0;
-}
-.volume {
-  grid-area: volume;
-  align-self: center;
   min-width: 0;
 }
 .tempoHead {
@@ -143,8 +137,8 @@
 }
 @container ritmo (min-width: 560px) {
   .transport {
-    grid-template-areas: 'play tempo volume tap';
-    grid-template-columns: 160px minmax(0, 1fr) minmax(140px, 200px) 160px;
+    grid-template-areas: 'play tempo tap';
+    grid-template-columns: 160px minmax(0, 1fr) 160px;
     align-items: stretch;
   }
   .transport > button:first-child,

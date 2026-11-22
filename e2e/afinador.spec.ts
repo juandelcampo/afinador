@@ -24,12 +24,12 @@ test.describe('escuchador', () => {
     await expect(page.locator('#play-toggle')).toHaveAttribute('aria-label', 'Tocar', { timeout: 6000 });
     expect(await plucks(page)).toBe(6);
 
-    await page.getByRole('button', { name: 'Rasgueo' }).click();
+    await page.getByRole('button', { name: 'Forma de tocar: Arpegio' }).click();
     await page.locator('#play-toggle').click();
     await expect(page.locator('#play-toggle')).toHaveAttribute('aria-label', 'Tocar', { timeout: 6000 });
     expect(await plucks(page)).toBe(12);
 
-    await page.locator('#loop').check();
+    await page.locator('#loop').click();
     await patron(page, 'Folk').click();
     await page.locator('#play-toggle').click();
     await page.waitForTimeout(3500);
@@ -50,12 +50,12 @@ test.describe('escuchador', () => {
     await expect(steps).toHaveCount(6);
     await expect(steps.first()).toHaveText(/6/);
 
-    await page.getByRole('button', { name: 'Rasgueo' }).click();
+    await page.getByRole('button', { name: 'Forma de tocar: Arpegio' }).click();
     await patron(page, 'Folk').click();
     await expect(steps).toHaveCount(8);
     await expect(steps.first()).toContainText('↓');
 
-    await page.locator('#loop').check();
+    await page.locator('#loop').click();
     await page.locator('#play-toggle').click();
     await expect(page.locator('[data-step][data-active]')).toHaveCount(1);
     await page.locator('#play-toggle').click();
@@ -110,14 +110,14 @@ test.describe('escuchador', () => {
     const tempo = page.getByRole('slider', { name: /Velocidad/ });
     await goto(page, '/afinador/dadgad');
     await tocar(page);
-    await page.getByRole('button', { name: 'Rasgueo' }).click();
+    await page.getByRole('button', { name: 'Forma de tocar: Arpegio' }).click();
     await patron(page, 'Folk').click();
     await tempo.fill('120');
     await lista(page);
     await page.getByRole('button', { name: /^Drop/ }).click();
     await page.locator('[data-id="dropd"]').click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Drop D');
-    await expect(page.getByRole('button', { name: 'Rasgueo' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('button', { name: 'Forma de tocar: Rasgueo' })).toBeVisible();
     await expect(patron(page, 'Folk')).toHaveAttribute('aria-pressed', 'true');
     await expect(tempo).toHaveValue('120');
     await page.reload();
@@ -130,7 +130,7 @@ test.describe('escuchador', () => {
   test('los acordes suenan con el patrón elegido', async ({ page }) => {
     await goto(page, '/afinador/dadgad');
     await tocar(page);
-    await page.getByRole('button', { name: 'Rasgueo' }).click();
+    await page.getByRole('button', { name: 'Forma de tocar: Arpegio' }).click();
     await patron(page, 'Folk').click();
     await page.getByTestId('chord-shapes').getByRole('button').first().click();
     // Folk tiene seis rasguidos: con una sola bajada no se encendería la tira.
@@ -259,7 +259,9 @@ test.describe('afinación', () => {
   test('el solfeo cambia los nombres en toda la app', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await goto(page, '/afinador/dadgad');
-    await page.getByRole('button', { name: 'Mi La Re' }).click();
+    // Hasta 1440 px los ajustes se abren desde el botón de la barra.
+    await page.getByRole('button', { name: /^Ajustes/ }).click();
+    await page.getByRole('button', { name: 'Nombres de las notas: E A D' }).click();
     await expect(page.getByTestId('fact-chord')).toHaveText('Resus4');
     await tocar(page);
     await expect(page.getByTestId('chord-shapes').getByRole('button').first()).toContainText('Resus4');

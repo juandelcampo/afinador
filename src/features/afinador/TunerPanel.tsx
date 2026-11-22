@@ -3,7 +3,7 @@ import { pluckString, preloadGuitar } from '~/audio/instrument';
 import { noteToMidi, splitNote, noteLabel, type Notation } from '~/core/notes';
 import { isFarFromStandard, stringOffsets } from '~/core/tuning';
 import { useSettings } from '~/shared/settings';
-import { Button, Segmented, Slab, SlabHead } from '~/shared/ui/ui';
+import { Button, Slab, SlabHead, Toggle } from '~/shared/ui/ui';
 import styles from './afinador.module.css';
 import { needlePosition, tuningStatus, useTuner } from '~/shared/useTuner';
 
@@ -73,7 +73,7 @@ export function TunerPanel({ notes, onPlayOpen }: TunerPanelProps) {
             >
               ▶ Al aire
             </Button>
-            <Segmented
+            <Toggle
               label="Modo de afinación"
               value={mode}
               options={[

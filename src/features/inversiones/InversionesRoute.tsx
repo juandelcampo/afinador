@@ -17,13 +17,12 @@ import {
 import { noteToMidi } from '~/core/notes';
 import { MUTED, openChord } from '~/core/tuning';
 import { TUNINGS, type Tuning } from '~/data/tunings';
-import { Fader } from '~/shared/Fader';
 import { ShapeStyleToggle } from '~/shared/ShapeStyle';
 import { useSettings } from '~/shared/settings';
 import { useHydrated } from '~/shared/useHydrated';
 import { Diapason, LAST_FRET } from '~/shared/Diapason';
 import { TuneLink, TuningField } from '~/shared/TuningField';
-import { Button, Field, PageTitle, Slab } from '~/shared/ui/ui';
+import { Browse, Button, Field, PageTitle, Slab } from '~/shared/ui/ui';
 import ui from '~/shared/ui/ui.module.css';
 import styles from './inversiones.module.css';
 
@@ -372,38 +371,19 @@ export default function InversionesRoute() {
             )}
           </div>
         ) : voicing ? (
-          <div className={styles.browse}>
-            <button
-              type="button"
-              className={styles.arrow}
-              aria-label="Forma anterior, más cerca de la cejuela"
-              disabled={shapes.length < 2}
-              onClick={() => step(-1)}
-            >
-              ◀
-            </button>
-            <button
-              type="button"
-              className={styles.current}
-              aria-label={`Escuchar ${nameWithBass(group)}: ${tabOf(voicing.frets)}`}
-              onClick={() => play(voicing)}
-            >
-              <span className={styles.counter} data-testid="shape-counter">
-                Forma {index + 1} de {shapes.length}
-              </span>
-              <strong className={styles.tab}>{tabOf(voicing.frets)}</strong>
-              <small>{details.join(' · ')}</small>
-            </button>
-            <button
-              type="button"
-              className={styles.arrow}
-              aria-label="Forma siguiente, más arriba en el mástil"
-              disabled={shapes.length < 2}
-              onClick={() => step(1)}
-            >
-              ▶
-            </button>
-          </div>
+          <Browse
+            className={styles.browse}
+            countTestId="shape-counter"
+            count={`Forma ${index + 1} de ${shapes.length}`}
+            main={tabOf(voicing.frets)}
+            note={details.join(' · ')}
+            currentLabel={`Escuchar ${nameWithBass(group)}: ${tabOf(voicing.frets)}`}
+            prevLabel="Forma anterior, más cerca de la cejuela"
+            nextLabel="Forma siguiente, más arriba en el mástil"
+            disabled={shapes.length < 2}
+            onStep={step}
+            onCurrent={() => play(voicing)}
+          />
         ) : (
           <p className={styles.empty}>En esta afinación la mano no llega a ninguna forma de {name}.</p>
         )}
@@ -440,7 +420,6 @@ export default function InversionesRoute() {
             </Button>
           )}
           <ShapeStyleToggle />
-          <Fader />
         </div>
         <p className={ui.hint}>
           Lo tenue son las notas del acorde en todo el mástil; lo blanco, la forma elegida, con el bajo en
