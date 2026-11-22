@@ -27,6 +27,8 @@ import {
   sameChord,
   samePole,
   SCALES,
+  FAMILY_LABEL,
+  type Scale,
   scaleDegrees,
   spellIn,
   tonicNames,
@@ -557,12 +559,23 @@ export default function ArmoniaRoute() {
 
           <Slab>
             <SlabHead title="Mundo" />
-            <Tabs
-              label="Escala"
-              value={scale.id}
-              options={SCALES.map((item) => ({ value: item.id, label: item.name }))}
-              onChange={(value) => update({ escala: value })}
-            />
+            {/* Catorce mundos en una sola fila de pestañas no se leen: van en tres familias. */}
+            <div className={styles.families}>
+              {(Object.keys(FAMILY_LABEL) as Scale['family'][]).map((item) => (
+                <div key={item} className={styles.family} data-family={item}>
+                  <span className={styles.familyLabel}>{FAMILY_LABEL[item]}</span>
+                  <Tabs
+                    label={`Escala · ${FAMILY_LABEL[item]}`}
+                    value={scale.id}
+                    options={SCALES.filter((other) => other.family === item).map((other) => ({
+                      value: other.id,
+                      label: other.name,
+                    }))}
+                    onChange={(value) => update({ escala: value })}
+                  />
+                </div>
+              ))}
+            </div>
             {/* En pantalla ancha, la rueda va sola a la derecha, a la altura del mundo; a la izquierda, el mundo,
                 sus acordes y lo que se lee de la rueda. En el celular, todo en fila y la rueda se abre a pedido. */}
             <div className={styles.worldGrid} data-circle={circleOpen ? 'open' : 'closed'}>
@@ -575,10 +588,10 @@ export default function ArmoniaRoute() {
                   </span>
                 </p>
                 <p>{scale.character}</p>
-                {scale.family === 'modo' && (
+                {scale.family !== 'tonal' && (
                   <p className={ui.hint}>
-                    Para que el modo se sienta, usá los acordes marcados con ★: son los que lo distinguen de
-                    la escala mayor o menor de siempre.{' '}
+                    Para que {scale.family === 'modo' ? 'el modo' : 'la escala'} se sienta, usá los acordes
+                    marcados con ★: son los que la distinguen de la escala mayor o menor de siempre.{' '}
                     {scale.risky !== undefined &&
                       'El marcado con OJO tira hacia otra tónica: usalo poco o nada.'}
                   </p>

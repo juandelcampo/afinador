@@ -32,6 +32,9 @@ export const CHORD_STEPS: Record<string, readonly number[]> = {
   m6: [0, 3, 7, 9],
   'm(b6)': [0, 3, 7, 8],
   '(b3)': [0, 3, 4, 7],
+  // Las tríadas raras que salen de las escalas exóticas: mayor con la quinta baja, y una segunda con quinta baja.
+  '(b5)': [0, 4, 6],
+  'sus2(b5)': [0, 2, 6],
   // Los que aparecen al poner los dedos sin pensar, para nombrarlos en ¿Qué acorde?.
   maj9: [0, 4, 7, 11, 14],
   m9: [0, 3, 7, 10, 14],
@@ -75,6 +78,8 @@ const DEGREE_SUFFIX: Record<string, string> = {
   m6: 'm6',
   'm(b6)': 'm(♭6)',
   '(b3)': '(♭3)',
+  '(b5)': '(♭5)',
+  'sus2(b5)': 'sus2(♭5)',
   maj9: 'maj9',
   m9: 'm9',
   add11: 'add11',
@@ -151,7 +156,7 @@ export interface Scale {
   name: string;
   /** Otro nombre, el de su modo. */
   alias?: string;
-  family: 'tonal' | 'modo';
+  family: 'tonal' | 'modo' | 'exotica';
   point: Point;
   /** El carácter, en palabras de De María. */
   character: string;
@@ -316,7 +321,77 @@ export const SCALES: readonly Scale[] = [
     characteristic: [0],
     minorSpelling: true,
   },
+  {
+    id: 'simpson',
+    name: 'Simpson',
+    alias: 'Lidio dominante',
+    family: 'modo',
+    point: 'sin',
+    character:
+      'Lidio y mixolidio a la vez: mayor con el 4.º subido y el 7.º bajado. Soñador y solar, juguetón, de dibujo animado.',
+    steps: [0, 2, 4, 6, 7, 9, 10],
+    sevenths: [],
+    characteristic: [1, 4],
+    minorSpelling: false,
+  },
+  {
+    id: 'mayorArmonica',
+    name: 'Mayor armónica',
+    family: 'exotica',
+    point: 'con',
+    character:
+      'Mayor con el 6.º bajado: alegre, pero con una sombra. El IVm y el ♭VI5+ le ponen nostalgia a lo luminoso.',
+    steps: [0, 2, 4, 5, 7, 8, 11],
+    sevenths: [4, 6],
+    characteristic: [3, 5],
+    minorSpelling: false,
+  },
+  {
+    id: 'frigioDominante',
+    name: 'Frigio dominante',
+    alias: 'Española',
+    family: 'exotica',
+    point: 'con',
+    character:
+      'Flamenco, andaluz, de sangre caliente. El ♭II mayor cae por semitono sobre una tónica mayor, como al final de la cadencia andaluza.',
+    steps: [0, 1, 4, 5, 7, 8, 10],
+    sevenths: [],
+    characteristic: [0, 1],
+    minorSpelling: true,
+  },
+  {
+    id: 'arabe',
+    name: 'Árabe',
+    alias: 'Doble armónica',
+    family: 'exotica',
+    point: 'con',
+    character:
+      'De desierto y de mercado: dos segundas aumentadas, el ♭II arriba y la sensible abajo. Muy cargada: con dos acordes ya dice todo.',
+    steps: [0, 1, 4, 5, 7, 8, 11],
+    sevenths: [],
+    characteristic: [1, 3],
+    minorSpelling: false,
+  },
+  {
+    id: 'hungara',
+    name: 'Húngara',
+    alias: 'Gitana',
+    family: 'exotica',
+    point: 'con',
+    character:
+      'Gitana, dramática, de violín: la menor armónica con el 4.º subido. Dos segundas aumentadas que lloran.',
+    steps: [0, 2, 3, 6, 7, 8, 11],
+    sevenths: [],
+    characteristic: [1, 6],
+    minorSpelling: true,
+  },
 ];
+
+export const FAMILY_LABEL: Record<Scale['family'], string> = {
+  tonal: 'Tonales',
+  modo: 'Modos',
+  exotica: 'Exóticas',
+};
 
 export const POINT_LABEL: Record<Point, string> = {
   sin: 'Sin punta',
@@ -378,6 +453,9 @@ export function degreeChord(
   if (third === 4 && fifth === 7) suffix = withSeventh ? (seventh === 10 ? '7' : 'maj7') : '';
   else if (third === 3 && fifth === 7) suffix = withSeventh ? (seventh === 10 ? 'm7' : 'm(maj7)') : 'm';
   else if (third === 3 && fifth === 6) suffix = withSeventh ? (seventh === 9 ? 'dim7' : 'm7b5') : 'dim';
+  // En las exóticas (la árabe, la húngara) aparecen tríadas que no son ni mayores ni menores.
+  else if (third === 4 && fifth === 6) suffix = withSeventh && seventh === 10 ? '7b5' : '(b5)';
+  else if (third === 2 && fifth === 6) suffix = 'sus2(b5)';
   else suffix = 'aug';
   return { root: mod12(key.tonic + steps[degree]!), suffix };
 }

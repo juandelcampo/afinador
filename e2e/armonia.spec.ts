@@ -36,6 +36,14 @@ test.describe('armonía', () => {
     await expect(page).toHaveURL(/escala=dorico/);
     await expect(degrees.locator('text=★')).toHaveCount(2);
     await expect(degrees.locator('text=OJO')).toHaveCount(1);
+
+    await page
+      .getByRole('group', { name: 'Escala · Exóticas' })
+      .getByRole('button', { name: 'Árabe' })
+      .click();
+    await expect(page).toHaveURL(/escala=arabe/);
+    await expect(degrees.getByRole('button', { name: 'Escuchar Db' })).toBeVisible();
+    await expect(degrees.locator('text=★')).toHaveCount(2);
     expect(errors).toEqual([]);
   });
 

@@ -87,6 +87,20 @@ describe('escalas y grados', () => {
     }
     expect(scaleDegrees(key(11, 'locrio'))[0]!.chord.suffix).toBe('dim');
   });
+
+  it('arma los grados de los mundos exóticos, también las tríadas raras', () => {
+    expect(names(key(0, 'simpson'))).toEqual(['C', 'D', 'Edim', 'F#dim', 'Gm', 'Am', 'Bbaug']);
+    expect(names(key(0, 'mayorArmonica'))).toEqual(['C', 'Ddim', 'Em', 'Fm', 'G7', 'Abaug', 'Bdim7']);
+    expect(names(key(4, 'frigioDominante'))).toEqual(['E', 'F', 'G#dim', 'Am', 'Bdim', 'Caug', 'Dm']);
+    expect(names(key(0, 'arabe'))).toEqual(['C', 'Db', 'Em', 'Fm', 'G(♭5)', 'Abaug', 'Bsus2(♭5)']);
+    expect(names(key(9, 'hungara'))).toEqual(['Am', 'B(♭5)', 'Caug', 'D#sus2(♭5)', 'E', 'F', 'G#m']);
+    // Cada exótica marca lo que la distingue, y las tríadas raras van y vuelven por la URL.
+    for (const scale of SCALES.filter((item) => item.family === 'exotica')) {
+      expect(scale.characteristic?.length, scale.id).toBeGreaterThan(0);
+    }
+    expect(parseChord('G(b5)')).toEqual({ root: 7, suffix: '(b5)' });
+    expect(chordToken(parseChord('Bsus2(b5)')!)).toBe('Bsus2(b5)');
+  });
 });
 
 describe('color', () => {
