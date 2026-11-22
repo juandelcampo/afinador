@@ -1183,12 +1183,29 @@
 }
 
 /* Cómo se arma el acorde: el nombre de cada cuerda arriba y su traste abajo, grande, para leerlo tocando. */
+/* La tabla a la izquierda y lo que dura a la derecha, sin hueco al lado; sin lugar, uno abajo del otro. */
 .shape {
-  margin-bottom: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px 16px;
+}
+.shape .label {
+  margin: 0;
 }
 .shape table {
   border-collapse: collapse;
-  margin: 4px 0 6px;
+  margin-top: 4px;
+}
+.shapeSide {
+  display: grid;
+  flex: 1 1 260px;
+  gap: 4px;
+  min-width: 0;
+}
+.shapeSide .hint,
+.shapeSide p {
+  margin: 0;
 }
 .shape th,
 .shape td {
@@ -1226,9 +1243,6 @@
   width: 8px;
   height: 6px;
   background: currentColor;
-}
-.editorBeats {
-  margin-bottom: 4px;
 }
 .controls > .fullRow {
   flex-basis: 100%;

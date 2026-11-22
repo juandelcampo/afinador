@@ -126,43 +126,64 @@ const readVuelta = (text: string) =>
     .filter((item): item is Placed => item !== null)
     .slice(0, MAX_CHORDS);
 
-/** Cómo se arma el acorde: cada cuerda con su traste, de la 6.ª a la 1.ª. */
-function ShapeGrid({ names, fingering }: { names: string[]; fingering: Fingering | null }) {
-  if (!fingering) {
-    return (
-      <p className={ui.hint} data-testid="chord-shape">
-        La mano no llega a este acorde en esta afinación: suena cerrado.
-      </p>
-    );
-  }
-  const barre = /cejilla (\d+)/.exec(fingering.label)?.[1];
+/**
+ * Cómo se arma el acorde: cada cuerda con su traste, de la 6.ª a la 1.ª. Al lado, lo que se pase en
+ * `children` (lo que dura), para que el editor entre sin bajar.
+ */
+function ShapeGrid({
+  names,
+  fingering,
+  children,
+}: {
+  names: string[];
+  fingering: Fingering | null;
+  children: ReactNode;
+}) {
+  const barre = fingering && /cejilla (\d+)/.exec(fingering.label)?.[1];
   return (
     <div className={styles.shape} data-testid="chord-shape">
-      <p className={styles.label}>Cómo se arma</p>
-      <table>
-        <tbody>
-          <tr>
-            {names.map((note, index) => (
-              <th key={index} scope="col">
-                {note}
-              </th>
-            ))}
-          </tr>
-          <tr>
-            {fingering.frets.map((fret, index) => (
-              <td key={index} data-muted={fret === MUTED || undefined}>
-                {fret === MUTED ? '×' : fret}
-              </td>
-            ))}
-          </tr>
-        </tbody>
-      </table>
-      <p className={ui.hint}>
-        El número es el traste de cada cuerda, de la más grave a la más aguda; 0 al aire, × no suena.
-        {barre && ` Cejilla en el ${barre}.`}
-        {fingering.noFifth && ' Sin la quinta: así entra en la mano.'}
-      </p>
+      {fingering ? (
+        <div>
+          <p className={styles.label}>Cómo se arma</p>
+          <ShapeTable names={names} frets={fingering.frets} />
+        </div>
+      ) : (
+        <p className={ui.hint}>La mano no llega a este acorde en esta afinación: suena cerrado.</p>
+      )}
+      <div className={styles.shapeSide}>
+        {children}
+        {fingering && (
+          <p className={ui.hint}>
+            Traste de cada cuerda, de grave a aguda: 0 al aire, × no suena.
+            {barre && ` Cejilla en el ${barre}.`}
+            {fingering.noFifth && ' Sin la quinta.'}
+          </p>
+        )}
+      </div>
     </div>
+  );
+}
+
+function ShapeTable({ names, frets }: { names: string[]; frets: number[] }) {
+  return (
+    <table>
+      <tbody>
+        <tr>
+          {names.map((note, index) => (
+            <th key={index} scope="col">
+              {note}
+            </th>
+          ))}
+        </tr>
+        <tr>
+          {frets.map((fret, index) => (
+            <td key={index} data-muted={fret === MUTED || undefined}>
+              {fret === MUTED ? '×' : fret}
+            </td>
+          ))}
+        </tr>
+      </tbody>
+    </table>
   );
 }
 
@@ -1147,17 +1168,18 @@ export default function ArmoniaRoute() {
             <ShapeGrid
               names={tuning.notes.map((note) => noteLabel(note, notation))}
               fingering={finger(activeChord)}
-            />
-            <div className={`${ui.field} ${styles.editorBeats}`}>
-              <span>Dura (pulsos)</span>
-              <Segmented
-                label="Cuántos pulsos dura"
-                stretch
-                value={String(beatsOf(activeChord))}
-                options={beatOptions}
-                onChange={(value) => setBeatsAt(active, Number(value))}
-              />
-            </div>
+            >
+              <div className={ui.field}>
+                <span>Dura (pulsos)</span>
+                <Segmented
+                  label="Cuántos pulsos dura"
+                  stretch
+                  value={String(beatsOf(activeChord))}
+                  options={beatOptions}
+                  onChange={(value) => setBeatsAt(active, Number(value))}
+                />
+              </div>
+            </ShapeGrid>
             <div className={styles.editorTabs}>
               <Segmented
                 label="Qué cambiar"
