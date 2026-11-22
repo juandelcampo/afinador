@@ -123,8 +123,13 @@ test.describe('armonía', () => {
     await editor.getByRole('button', { name: 'Cambiar', exact: true }).click();
     await expect(page.getByTestId('editor-moves')).toContainText('I → VI');
     await expect(page.getByTestId('same-function')).toContainText('IIIm');
-    await editor.getByRole('button', { name: /relativo/ }).click();
+    await editor.getByRole('button', { name: /· relativo/ }).click();
     await expect(vuelta.getByRole('listitem').last()).toContainText('Am');
+    // Las opciones quedan quietas: el que tenías sigue arriba y el elegido queda marcado.
+    await expect(page.getByTestId('same-function').getByRole('listitem').first()).toContainText(
+      'El que tenías',
+    );
+    await expect(editor.getByRole('button', { name: /· relativo/ })).toHaveAttribute('aria-pressed', 'true');
     await page.getByRole('button', { name: 'Cerrar', exact: true }).click();
 
     // De dos en dos, desde el último acorde, a la izquierda.

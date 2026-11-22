@@ -272,6 +272,13 @@ export default function ArmoniaRoute() {
   /** El último acorde escuchado en los puntos cardinales, listo para sumar. */
   const [heard, setHeard] = useState<Chord | null>(null);
   const [editorTab, setEditorTab] = useState<'color' | 'bajo' | 'cambiar' | 'cantar'>('color');
+  /**
+   * Desde qué acorde se arman las opciones del editor. Quedan quietas mientras probás: si no, cada
+   * cambio rearmaría las listas y todo saltaría de lugar. `origin` es el acorde con que se abrió (para
+   * Cambiar); `colorFrom`, el último que salió de Cambiar (para Color).
+   */
+  const [origin, setOrigin] = useState<Chord | null>(null);
+  const [colorFrom, setColorFrom] = useState<Chord | null>(null);
 
   // Dos toques seguidos no esperan a que la URL se actualice: cada cambio parte del último pedido.
   const pending = useRef<string | null>(null);
@@ -333,9 +340,24 @@ export default function ArmoniaRoute() {
   );
   const active = selected !== null && selected < vuelta.length ? selected : null;
   const activeChord = active === null ? null : vuelta[active]!;
-  const activeRole = activeChord && functionOf(activeChord, key);
-  const activeSubstitutes = activeChord ? functionSubstitutes(activeChord, key) : [];
-  const activeRelative = activeChord && relativeOf(activeChord);
+  const base = origin ?? activeChord;
+  const baseColor = colorFrom ?? activeChord;
+  const baseRole = base && functionOf(base, key);
+  const baseRelative = base && relativeOf(base);
+  /** La familia del acorde de partida, con él mismo adentro: el que está puesto se marca. */
+  const family =
+    base && baseRole
+      ? [
+          {
+            chord: { root: base.root, suffix: base.suffix },
+            label: degreeLabel(base, key),
+            why: 'El que tenías.',
+          },
+          ...functionSubstitutes(base, key),
+        ]
+      : [];
+  const isActive = (chord: Chord) =>
+    !!activeChord && activeChord.root === chord.root && activeChord.suffix === chord.suffix;
   const pole = last && !last.bass ? samePole(last.root) : null;
   const mode: VueltaMode = chordColor(degrees[0]!.chord.suffix) === 'minor' ? 'menor' : 'mayor';
   const starter = (degreesOf: readonly string[], vueltaMode: VueltaMode) =>
@@ -384,12 +406,19 @@ export default function ArmoniaRoute() {
     />
   );
 
+  /** Pone otro acorde desde Cambiar: las listas de Cambiar no se mueven, Color pasa a ser el del nuevo. */
+  const swapTo = (index: number, chord: Chord) => {
+    replaceAt(index, chord);
+    setColorFrom(chord);
+  };
   const closeSheet = () => {
     setSheet(null);
     setSelected(null);
   };
   const openEditor = (index: number) => {
     setSelected(index);
+    setOrigin(vuelta[index]!);
+    setColorFrom(vuelta[index]!);
     setEditorTab('color');
     setSheet('editor');
     listen(vuelta[index]!);
@@ -884,19 +913,6 @@ export default function ArmoniaRoute() {
       >
         {activeChord && active !== null && (
           <div data-testid="chord-editor">
-            {neighbors.length > 0 && (
-              <p className={styles.hint} data-testid="common-tones">
-                {neighbors
-                  .map((index) => {
-                    const common = commonTones(activeChord, vuelta[index]!);
-                    const other = name(vuelta[index]!);
-                    return common.length
-                      ? `Con ${other} comparte ${common.map((pc) => pitchName(spellIn(pc, key), notation)).join(' y ')}: esa voz se puede quedar quieta.`
-                      : `Con ${other} no comparte notas: el cambio se nota más.`;
-                  })
-                  .join(' ')}
-              </p>
-            )}
             <div className={styles.editorTabs}>
               <Segmented
                 label="Qué cambiar"
@@ -913,20 +929,21 @@ export default function ArmoniaRoute() {
             </div>
             {editorTab === 'color' && (
               <ul className={styles.variants}>
-                {variantsOf(activeChord).map((variant) => {
-                  const next: Chord = { root: activeChord.root, suffix: variant.suffix };
-                  return (
-                    <Option
-                      key={variant.suffix}
-                      title={variant.label}
-                      detail={name(next)}
-                      why={variant.why}
-                      pressed={activeChord.suffix === variant.suffix}
-                      onApply={() => replaceAt(active, next)}
-                      onPreview={() => previewInPlace(active, next)}
-                    />
-                  );
-                })}
+                {baseColor &&
+                  variantsOf(baseColor).map((variant) => {
+                    const next: Chord = { root: baseColor.root, suffix: variant.suffix };
+                    return (
+                      <Option
+                        key={variant.suffix}
+                        title={variant.label}
+                        detail={name(next)}
+                        why={variant.why}
+                        pressed={isActive(next)}
+                        onApply={() => replaceAt(active, next)}
+                        onPreview={() => previewInPlace(active, next)}
+                      />
+                    );
+                  })}
               </ul>
             )}
             {editorTab === 'bajo' && (
@@ -971,27 +988,28 @@ export default function ArmoniaRoute() {
             )}
             {editorTab === 'cambiar' && (
               <>
-                {activeRole && (
+                {base && baseRole && (
                   <>
                     <p className={styles.label}>
-                      Misma función: {name(activeChord)} hace de {activeRole.label.toLowerCase()}
+                      Misma función: {name(base)} hace de {baseRole.label.toLowerCase()}
                     </p>
                     <p className={styles.hint}>
-                      {activeRole.label}: {activeRole.why}. Cambialo por otro del mismo papel y la vuelta
-                      sigue yendo al mismo lado, con otro color.
+                      {baseRole.label}: {baseRole.why}. Cambialo por otro del mismo papel y la vuelta sigue
+                      yendo al mismo lado, con otro color.
                     </p>
                     <ul className={styles.variants} data-testid="same-function">
-                      {activeSubstitutes.map((item) => (
+                      {family.map((item) => (
                         <Option
                           key={chordToken(item.chord)}
                           title={
-                            activeRelative && sameChord(item.chord, activeRelative)
+                            baseRelative && sameChord(item.chord, baseRelative)
                               ? `${item.label} · relativo`
                               : item.label
                           }
                           detail={name(item.chord)}
                           why={item.why}
-                          onApply={() => replaceAt(active, item.chord)}
+                          pressed={isActive(item.chord)}
+                          onApply={() => swapTo(active, item.chord)}
                           onPreview={() => previewInPlace(active, item.chord)}
                         />
                       ))}
@@ -1004,17 +1022,15 @@ export default function ArmoniaRoute() {
                     {
                       id: 'relativo',
                       label: 'Relativo',
-                      chord: activeSubstitutes.some(
-                        (item) => activeRelative && sameChord(item.chord, activeRelative),
-                      )
+                      chord: family.some((item) => baseRelative && sameChord(item.chord, baseRelative))
                         ? null
-                        : activeRelative,
+                        : baseRelative,
                       why: 'Comparten dos notas: el cambio es suave y cambia el clima.',
                     },
                     {
                       id: 'polaridad',
                       label: 'Al revés',
-                      chord: polarityOf(activeChord),
+                      chord: base && polarityOf(base),
                       why: 'Misma raíz, de mayor a menor o al revés: sorprende.',
                     },
                   ].map(
@@ -1025,7 +1041,8 @@ export default function ArmoniaRoute() {
                           title={swapItem.label}
                           detail={name(swapItem.chord)}
                           why={swapItem.why}
-                          onApply={() => replaceAt(active, swapItem.chord!)}
+                          pressed={isActive(swapItem.chord)}
+                          onApply={() => swapTo(active, swapItem.chord!)}
                           onPreview={() => previewInPlace(active, swapItem.chord!)}
                         />
                       ),
@@ -1060,6 +1077,19 @@ export default function ArmoniaRoute() {
                 keyOf={key}
                 spell={(pc) => pitchName(spellIn(pc, key), notation)}
               />
+            )}
+            {neighbors.length > 0 && (
+              <p className={styles.hint} data-testid="common-tones">
+                {neighbors
+                  .map((index) => {
+                    const common = commonTones(activeChord, vuelta[index]!);
+                    const other = name(vuelta[index]!);
+                    return common.length
+                      ? `Con ${other} comparte ${common.map((pc) => pitchName(spellIn(pc, key), notation)).join(' y ')}: esa voz se puede quedar quieta.`
+                      : `Con ${other} no comparte notas: el cambio se nota más.`;
+                  })
+                  .join(' ')}
+              </p>
             )}
           </div>
         )}
