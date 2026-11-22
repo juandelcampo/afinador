@@ -1,5 +1,14 @@
 import { expect, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { countSounds, goto, plucks, waitForApp, watchErrors } from './fixtures/helpers';
+
+// En pantalla ancha el centro arranca en Afinar y las columnas de los costados, cerradas.
+const tocar = (page: Page) => page.getByRole('tab', { name: 'Tocar' }).click();
+const lista = (page: Page) => page.getByRole('button', { name: 'Abrir la lista de afinaciones' }).click();
+const temas = (page: Page) =>
+  page.getByRole('button', { name: 'Abrir los temas y las afinaciones cercanas' }).click();
+const patron = (page: Page, name: string) =>
+  page.getByRole('group', { name: 'Patrón' }).getByRole('button', { name, exact: true });
 
 test.describe('escuchador', () => {
   test.beforeEach(async ({ page }) => {
@@ -9,20 +18,21 @@ test.describe('escuchador', () => {
   test('toca arpegios, rasgueos y repeticiones, y se detiene', async ({ page }) => {
     const errors = watchErrors(page);
     await goto(page, '/afinador/dadgad');
+    await tocar(page);
     await page.locator('#play-toggle').click();
-    await expect(page.locator('#play-toggle')).toHaveText('▶ Tocar', { timeout: 6000 });
+    await expect(page.locator('#play-toggle')).toHaveAttribute('aria-label', 'Tocar', { timeout: 6000 });
     expect(await plucks(page)).toBe(6);
 
     await page.getByRole('button', { name: 'Rasgueado' }).click();
     await page.locator('#play-toggle').click();
-    await expect(page.locator('#play-toggle')).toHaveText('▶ Tocar', { timeout: 6000 });
+    await expect(page.locator('#play-toggle')).toHaveAttribute('aria-label', 'Tocar', { timeout: 6000 });
     expect(await plucks(page)).toBe(12);
 
     await page.locator('#loop').check();
-    await page.locator('#pattern').selectOption('folk');
+    await patron(page, 'Folk').click();
     await page.locator('#play-toggle').click();
     await page.waitForTimeout(3500);
-    await expect(page.locator('#play-toggle')).toHaveText('■ Parar');
+    await expect(page.locator('#play-toggle')).toHaveAttribute('aria-label', 'Parar');
     await page.locator('#play-toggle').click();
     await page.waitForTimeout(300);
     const stopped = await plucks(page);
@@ -34,12 +44,13 @@ test.describe('escuchador', () => {
 
   test('la tira del patrón muestra los pasos y enciende el que suena', async ({ page }) => {
     await goto(page, '/afinador/dadgad');
+    await tocar(page);
     const steps = page.locator('[data-step]');
     await expect(steps).toHaveCount(6);
     await expect(steps.first()).toHaveText(/6/);
 
     await page.getByRole('button', { name: 'Rasgueado' }).click();
-    await page.locator('#pattern').selectOption('folk');
+    await patron(page, 'Folk').click();
     await expect(steps).toHaveCount(8);
     await expect(steps.first()).toContainText('↓');
 
@@ -54,6 +65,7 @@ test.describe('escuchador', () => {
 
   test('el rasgueo a mano cruza las seis cuerdas aunque el gesto sea rápido', async ({ page }) => {
     await goto(page, '/afinador/dadgad');
+    await tocar(page);
     const box = (await page.getByTestId('strum-zone').boundingBox())!;
     await page.getByTestId('strum-zone').scrollIntoViewIfNeeded();
     const zone = (await page.getByTestId('strum-zone').boundingBox()) ?? box;
@@ -67,6 +79,7 @@ test.describe('escuchador', () => {
 
   test('pisar un traste y poner capo cambian las notas', async ({ page }) => {
     await goto(page, '/afinador/dadgad');
+    await tocar(page);
     const labels = page.locator('[data-label]');
     await expect(labels.nth(0)).toHaveText('D');
     await page.locator('[data-fret="5:2"]').click();
@@ -78,8 +91,10 @@ test.describe('escuchador', () => {
 
   test('un cambio de afinación reinicia trastes y capo', async ({ page }) => {
     await goto(page, '/afinador/dadgad');
+    await tocar(page);
     await page.getByRole('button', { name: 'Subir capo' }).click();
     await expect(page.getByTestId('capo-value')).toHaveText('Traste 1');
+    await lista(page);
     await page.getByRole('button', { name: /^Drop/ }).click();
     await page.locator('[data-id="dropd"]').click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Drop D');
@@ -89,25 +104,29 @@ test.describe('escuchador', () => {
   test('el patrón y el tempo elegidos quedan al cambiar de afinación y al recargar', async ({ page }) => {
     const tempo = page.getByRole('slider', { name: /Velocidad/ });
     await goto(page, '/afinador/dadgad');
+    await tocar(page);
     await page.getByRole('button', { name: 'Rasgueado' }).click();
-    await page.locator('#pattern').selectOption('folk');
+    await patron(page, 'Folk').click();
     await tempo.fill('120');
+    await lista(page);
     await page.getByRole('button', { name: /^Drop/ }).click();
     await page.locator('[data-id="dropd"]').click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Drop D');
     await expect(page.getByRole('button', { name: 'Rasgueado' })).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('#pattern')).toHaveValue('folk');
+    await expect(patron(page, 'Folk')).toHaveAttribute('aria-pressed', 'true');
     await expect(tempo).toHaveValue('120');
     await page.reload();
     await waitForApp(page);
-    await expect(page.locator('#pattern')).toHaveValue('folk');
+    await tocar(page);
+    await expect(patron(page, 'Folk')).toHaveAttribute('aria-pressed', 'true');
     await expect(tempo).toHaveValue('120');
   });
 
   test('los acordes suenan con el patrón elegido', async ({ page }) => {
     await goto(page, '/afinador/dadgad');
+    await tocar(page);
     await page.getByRole('button', { name: 'Rasgueado' }).click();
-    await page.locator('#pattern').selectOption('folk');
+    await patron(page, 'Folk').click();
     await page.getByTestId('chord-shapes').getByRole('button').first().click();
     // Folk tiene seis rasguidos: con una sola bajada no se encendería la tira.
     await expect(page.locator('[data-step][data-active]')).toHaveCount(1);
@@ -117,6 +136,7 @@ test.describe('escuchador', () => {
 
   test('con capo los acordes se nombran por lo que suena', async ({ page }) => {
     await goto(page, '/afinador/dadgad');
+    await tocar(page);
     const first = page.getByTestId('chord-shapes').getByRole('button').first();
     await expect(first).toContainText('Dsus4');
     await expect(page.getByTestId('capo-note')).toHaveCount(0);
@@ -128,7 +148,10 @@ test.describe('escuchador', () => {
 
   test('el capo de un tema se aplica y empieza a tocar', async ({ page }) => {
     await goto(page, '/afinador/dgddad');
+    await temas(page);
     await page.getByRole('button', { name: /capo en el traste 3/ }).click();
+    // Poner el capo de un tema lleva a Tocar.
+    await expect(page.getByRole('tab', { name: 'Tocar' })).toHaveAttribute('aria-selected', 'true');
     await expect(page.getByTestId('capo-value')).toHaveText('Traste 3');
     await page.waitForTimeout(400);
     expect(await plucks(page)).toBeGreaterThan(0);
@@ -158,6 +181,7 @@ test.describe('afinación', () => {
   test('la búsqueda encuentra por tema y por notas', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await goto(page, '/afinador');
+    await lista(page);
     await page.getByPlaceholder('BUSCAR').fill('kool thing');
     await expect(page.locator('[data-id]')).toHaveCount(1);
     await expect(page.locator('[data-id="fsharp"]')).toBeVisible();
@@ -176,6 +200,8 @@ test.describe('afinación', () => {
   test('las secciones de la lista arrancan cerradas y se abren al tocarlas', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await goto(page, '/afinador/dadgad');
+    await lista(page);
+    // Todas arrancan cerradas, Favoritas también.
     await expect(page.locator('[data-id="dadgad"]')).toBeHidden();
     const modales = page.getByRole('button', { name: /^Modales y suspendidas/ });
     await expect(modales).toHaveAttribute('aria-expanded', 'false');
@@ -193,23 +219,27 @@ test.describe('afinación', () => {
     const errors = watchErrors(page);
     await page.setViewportSize({ width: 1280, height: 800 });
     await goto(page, '/afinador/dadgad');
-    await expect(page.getByTestId('favorite-mark')).toHaveCount(0);
+    const mark = page.getByTestId('favorite-mark');
+    await expect(mark).toHaveAttribute('aria-pressed', 'false');
+    await lista(page);
     await expect(page.getByRole('button', { name: /^Favoritas/ })).toHaveCount(0);
     await page.getByRole('button', { name: /^Modales y suspendidas/ }).click();
     const star = page.locator('#grupo-modales').getByRole('button', { name: 'Favorita: DADGAD' });
     await star.click();
     await expect(star).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.getByTestId('favorite-mark')).toHaveText('★ Favorita');
-    // Favoritas aparece arriba y abierta.
+    await expect(mark).toHaveAttribute('aria-pressed', 'true');
+    // Favoritas aparece arriba, cerrada como las demás.
+    await page.getByRole('button', { name: /^Favoritas/ }).click();
     await expect(page.locator('[data-favorite-id="dadgad"]')).toBeVisible();
 
     await page.reload();
     await waitForApp(page);
-    await expect(page.getByTestId('favorite-mark')).toBeVisible();
-    await expect(page.locator('[data-favorite-id="dadgad"]')).toBeVisible();
-    // Se saca desde Favoritas: la sección desaparece.
-    await page.locator('#grupo-favoritas').getByRole('button', { name: 'Favorita: DADGAD' }).click();
-    await expect(page.getByTestId('favorite-mark')).toHaveCount(0);
+    await expect(mark).toHaveAttribute('aria-pressed', 'true');
+    // La estrella de la ficha también la saca: Favoritas desaparece de la lista.
+    await mark.click();
+    await expect(mark).toHaveAttribute('aria-pressed', 'false');
+    await lista(page);
+    await expect(page.getByRole('button', { name: /^Favoritas/ })).toHaveCount(0);
     await expect(page.locator('[data-favorite-id]')).toHaveCount(0);
     expect(errors).toEqual([]);
   });
@@ -219,6 +249,7 @@ test.describe('afinación', () => {
     await goto(page, '/afinador/dadgad');
     await page.getByRole('button', { name: 'Mi La Re' }).click();
     await expect(page.getByTestId('fact-chord')).toHaveText('Resus4');
+    await tocar(page);
     await expect(page.getByTestId('chord-shapes').getByRole('button').first()).toContainText('Resus4');
     await expect(page.locator('[data-label]').first()).toHaveText('Re');
   });
@@ -235,6 +266,7 @@ test.describe('videos', () => {
     // segundo video podía caer mientras la página todavía se movía.
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await goto(page, '/afinador/cgcfce');
+    await temas(page);
     await page.waitForTimeout(200);
     expect(requests).toEqual([]);
     await expect(page.locator('iframe')).toHaveCount(0);
@@ -261,5 +293,50 @@ test.describe('páginas para buscadores', () => {
     expect(html).toContain('<title>DADGAD: afinación de guitarra');
     expect(html).toContain('Re suspendido');
     expect(html).toContain('Dsus4');
+  });
+});
+
+test.describe('celular', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test('una tarea por pantalla: las pestañas de abajo cambian lo que se ve', async ({ page }) => {
+    const errors = watchErrors(page);
+    await countSounds(page);
+    await goto(page, '/afinador/dadgad');
+    const secciones = page.getByRole('navigation', { name: 'Secciones del afinador' });
+    await expect(page.locator('#mic-toggle')).toBeVisible();
+    await expect(page.getByTestId('strum-zone')).toBeHidden();
+    // Los datos de la afinación se abren con ⓘ.
+    await expect(page.getByTestId('fact-chord')).toBeHidden();
+    await page.getByRole('button', { name: 'Cómo es DADGAD' }).click();
+    await expect(page.getByTestId('fact-chord')).toHaveText('Dsus4');
+
+    await secciones.getByRole('button', { name: 'Tocar' }).click();
+    await expect(page.getByTestId('strum-zone')).toBeVisible();
+    await expect(page.locator('#mic-toggle')).toBeHidden();
+    // Entran nueve acordes; el resto está en Acordes.
+    await page.getByRole('button', { name: /^Ver los otros \d+ acordes$/ }).click();
+    await expect(secciones.getByRole('button', { name: 'Acordes' })).toHaveAttribute('aria-pressed', 'true');
+    await page
+      .getByRole('group', { name: 'Filtrar acordes' })
+      .getByRole('button', { name: 'Menores' })
+      .click();
+    await page.getByRole('button', { name: /^Em:/ }).click();
+    await expect.poll(() => plucks(page)).toBeGreaterThan(0);
+
+    await secciones.getByRole('button', { name: 'Temas' }).click();
+    await expect(page.getByRole('button', { name: /Escuchar Kashmir/ })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Re abierta/ })).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+
+  test('el nombre de la afinación abre la lista, y elegir la cierra', async ({ page }) => {
+    await goto(page, '/afinador/dadgad');
+    await page.getByRole('heading', { level: 1 }).getByRole('button').click();
+    await expect(page.getByPlaceholder('BUSCAR')).toBeVisible();
+    await page.getByRole('button', { name: /^Drop/ }).click();
+    await page.locator('[data-id="dropd"]').click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Drop D');
+    await expect(page.getByPlaceholder('BUSCAR')).toBeHidden();
   });
 });

@@ -1,13 +1,22 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent, type RefObject } from 'react';
 import { Link, NavLink, useNavigate, useParams, type MetaFunction } from 'react-router';
-import { midiToNote, noteLabel, noteToMidi } from '~/core/notes';
-import { changeSummary, openChordName, chordShapes, stringIntervals, tensionWarning } from '~/core/tuning';
+import { midiToNote, noteLabel, noteToMidi, splitNote } from '~/core/notes';
+import {
+  changeSummary,
+  chordShapes,
+  neighborTunings,
+  openChordName,
+  stringIntervals,
+  tensionWarning,
+  type ChordKind,
+} from '~/core/tuning';
 import { normalize, searchTunings } from '~/core/search';
 import { GROUPS, TUNINGS, type Tuning } from '~/data/tunings';
 import { Fader } from '~/shared/Fader';
 import { TEMPO_RANGE, useFavorites, useSettings } from '~/shared/settings';
 import { Button, PageTitle, Segmented, Slab, SlabHead, Stepper } from '~/shared/ui/ui';
 import styles from './afinador.module.css';
+import { ChordDiagram } from './ChordDiagram';
 import { Neck, type NeckHandle } from './Neck';
 import { markStep, PatternStrip } from './PatternStrip';
 import { TunerPanel } from './TunerPanel';
@@ -17,6 +26,20 @@ import { ARP_PATTERNS, STRUM_PATTERNS, useListener } from './useListener';
 const DEFAULT_ID = 'estandar';
 
 const findTuning = (id: string | undefined) => TUNINGS.find((tuning) => tuning.id === (id ?? DEFAULT_ID));
+
+/** Desde este ancho entran las tres columnas; debajo, una tarea por pantalla con pestañas abajo. */
+const WIDE = '(min-width: 900px)';
+const isWide = () => typeof window !== 'undefined' && window.matchMedia(WIDE).matches;
+
+/** Qué se ve. En el celular son las cuatro pestañas de abajo; en pantallas anchas Afinar o Tocar van
+ *  en el centro, los acordes dentro de Tocar y los temas en la columna de la derecha. */
+type View = 'afinar' | 'tocar' | 'acordes' | 'temas';
+const VIEWS: ReadonlyArray<{ value: View; label: string }> = [
+  { value: 'afinar', label: 'Afinar' },
+  { value: 'tocar', label: 'Tocar' },
+  { value: 'acordes', label: 'Acordes' },
+  { value: 'temas', label: 'Temas' },
+];
 
 export const meta: MetaFunction = ({ params }) => {
   const tuning = findTuning(params.tuningId);
@@ -41,12 +64,24 @@ export const meta: MetaFunction = ({ params }) => {
 
 const FAVORITES_ID = 'favoritas';
 
-function TuningList({ currentId, onSelect }: { currentId: string; onSelect: (id: string) => void }) {
-  const [open, setOpen] = useState(false);
+function TuningList({
+  currentId,
+  open,
+  onOpen,
+  onClose,
+  onSelect,
+}: {
+  currentId: string;
+  open: boolean;
+  onOpen: () => void;
+  onClose: () => void;
+  onSelect: (id: string) => void;
+}) {
   const [search, setSearch] = useState('');
   const notation = useSettings((s) => s.notation);
   const query = normalize(search.trim());
   const matcher = useMemo(() => searchTunings(query), [query]);
+  const input = useRef<HTMLInputElement>(null);
 
   const describe = (notes: string[]) =>
     notes.map((note) => noteLabel(note, notation)).join(notation === 'solfege' ? ' ' : '');
@@ -67,60 +102,90 @@ function TuningList({ currentId, onSelect }: { currentId: string; onSelect: (id:
   const resultCount = new Set(sections.flatMap((section) => section.items.map(({ tuning }) => tuning.id)))
     .size;
   const navigate = useNavigate();
-  // Las secciones arrancan cerradas, menos Favoritas. Mientras se busca se abren todas las que tienen
-  // resultados.
-  const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set([FAVORITES_ID]));
+  // Las secciones arrancan todas cerradas, Favoritas también. Mientras se busca se abren todas las que
+  // tienen resultados.
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
   const toggleSection = (id: string) =>
     setExpanded((current) => {
       const next = new Set(current);
       if (!next.delete(id)) next.add(id);
       return next;
     });
+  // En el celular la lista tapa la pantalla: al elegir se cierra. En una pantalla ancha queda abierta.
+  const picked = () => {
+    if (!isWide()) onClose();
+  };
   const select = (event: MouseEvent, id: string) => {
-    setOpen(false);
+    picked();
     // Abrir en otra pestaña no cuenta como elegir en esta.
     if (!event.metaKey && !event.ctrlKey && !event.shiftKey) onSelect(id);
   };
 
+  // Al abrirse, el cursor va al buscador: se abre para buscar.
+  useEffect(() => {
+    if (open && isWide()) input.current?.focus({ preventScroll: true });
+  }, [open]);
+
   return (
-    <aside className={styles.catalog} data-open={open}>
+    <aside className={styles.catalog} data-open={open} aria-label="Afinaciones">
+      {/* Cerrada, en pantallas anchas queda una franja con su nombre para volver a abrirla. */}
       <button
         type="button"
-        className={styles.catalogToggle}
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
+        className={styles.rail}
+        aria-expanded={false}
+        aria-label="Abrir la lista de afinaciones"
+        onClick={onOpen}
       >
-        <span>{open ? 'Cerrar lista' : `Elegir entre ${TUNINGS.length} afinaciones`}</span>
-        <span aria-hidden="true">{open ? '↑' : '↓'}</span>
+        <span aria-hidden="true">›</span>
+        <span>Afinaciones</span>
       </button>
       <div className={styles.catalogBody}>
-        <label className={styles.search}>
-          <span className="sr-only">Buscar por afinación, nota, artista o canción</span>
-          <input
-            type="search"
-            value={search}
-            placeholder="BUSCAR"
-            autoComplete="off"
-            onChange={(event) => setSearch(event.target.value)}
-            onKeyDown={(event) => {
-              // Enter abre el primer resultado; Escape borra la búsqueda.
-              if (event.key === 'Escape' && search) {
-                event.preventDefault();
-                setSearch('');
-              }
-              const first = sections[0]?.items[0]?.tuning;
-              if (event.key === 'Enter' && query && first) {
-                event.preventDefault();
-                setOpen(false);
-                navigate(`/afinador/${first.id}`);
-                onSelect(first.id);
-              }
-            }}
-          />
-        </label>
+        <div className={styles.searchRow}>
+          <label className={styles.search}>
+            <span className="sr-only">Buscar por afinación, nota, artista o canción</span>
+            <input
+              ref={input}
+              type="search"
+              value={search}
+              placeholder="BUSCAR"
+              autoComplete="off"
+              onChange={(event) => setSearch(event.target.value)}
+              onKeyDown={(event) => {
+                // Enter abre el primer resultado; Escape borra la búsqueda y, vacía, cierra la lista.
+                if (event.key === 'Escape') {
+                  event.preventDefault();
+                  if (search) setSearch('');
+                  else onClose();
+                }
+                const first = sections[0]?.items[0]?.tuning;
+                if (event.key === 'Enter' && query && first) {
+                  event.preventDefault();
+                  picked();
+                  navigate(`/afinador/${first.id}`);
+                  onSelect(first.id);
+                }
+              }}
+            />
+          </label>
+          <button
+            type="button"
+            className={styles.closeButton}
+            aria-label="Cerrar la lista de afinaciones"
+            onClick={onClose}
+          >
+            <span aria-hidden="true" data-wide>
+              ‹
+            </span>
+            <span aria-hidden="true" data-narrow>
+              ✕
+            </span>
+          </button>
+        </div>
         {/* Siempre en el HTML, para que el lector de pantalla anuncie cuando cambia. */}
         <p className={styles.searchCount} aria-live="polite" data-testid="search-count">
-          {query && !empty && (resultCount === 1 ? '1 afinación' : `${resultCount} afinaciones`)}
+          {query
+            ? !empty && (resultCount === 1 ? '1 afinación' : `${resultCount} afinaciones`)
+            : `${TUNINGS.length} afinaciones`}
         </p>
         <nav className={styles.catalogList} aria-label="Afinaciones">
           {sections.map((section) => {
@@ -192,53 +257,84 @@ function TuningList({ currentId, onSelect }: { currentId: string; onSelect: (id:
   );
 }
 
-function Hero({ tuning }: { tuning: Tuning }) {
+/** La ficha de la afinación. El nombre es el botón para cambiarla; en el celular los datos se abren
+ *  con ⓘ, en pantallas anchas están siempre a la vista. */
+function Hero({ tuning, onChange }: { tuning: Tuning; onChange: () => void }) {
   const notation = useSettings((s) => s.notation);
+  const toggleFavorite = useSettings((s) => s.toggleFavorite);
   const { changed, semitones } = changeSummary(tuning.notes);
   const warning = tensionWarning(tuning);
   const group = GROUPS.find((item) => item.id === tuning.group);
   const favorite = useFavorites().includes(tuning.id);
+  const [info, setInfo] = useState(false);
   return (
-    <Slab>
-      <PageTitle
-        eyebrow={group?.name}
-        title={tuning.name}
-        mark={
-          favorite && (
-            <span className={styles.favoriteMark} data-testid="favorite-mark">
-              ★ Favorita
-            </span>
-          )
-        }
-      >
-        <p>{tuning.desc}</p>
-      </PageTitle>
-      <dl className={styles.facts}>
-        <div>
-          <dt>Al aire</dt>
-          <dd data-testid="fact-chord">{openChordName(tuning.notes, notation)}</dd>
+    <Slab className={styles.hero}>
+      <div className={styles.heroHead}>
+        <header className={styles.heroTitle}>
+          {group && <p>{group.name}</p>}
+          <h1>
+            <button type="button" onClick={onChange} aria-haspopup="true" title="Cambiar de afinación">
+              {tuning.name}
+            </button>
+          </h1>
+        </header>
+        <div className={styles.heroTools}>
+          <button
+            type="button"
+            className={styles.heroStar}
+            aria-pressed={favorite}
+            aria-label={`Favorita: ${tuning.name}`}
+            title={favorite ? 'Sacar de favoritas' : 'Guardar en favoritas'}
+            data-testid="favorite-mark"
+            onClick={() => toggleFavorite(tuning.id)}
+          >
+            <span aria-hidden="true">{favorite ? '★' : '☆'}</span>
+          </button>
+          <button
+            type="button"
+            className={styles.infoToggle}
+            aria-expanded={info}
+            aria-controls="ficha"
+            aria-label={`Cómo es ${tuning.name}`}
+            onClick={() => setInfo((value) => !value)}
+          >
+            <span aria-hidden="true">i</span>
+          </button>
         </div>
-        <div>
-          <dt>Intervalos</dt>
-          <dd data-testid="fact-intervals">{stringIntervals(tuning.notes).join(' ')}</dd>
-        </div>
-        <div>
-          <dt>Cambian</dt>
-          <dd data-testid="fact-changes">
-            {changed === 0 ? (
-              'Ninguna'
-            ) : (
-              <>
-                <span>{changed} de 6</span> ·{' '}
-                <span>
-                  {semitones} {semitones === 1 ? 'semitono' : 'semitonos'}
-                </span>
-              </>
-            )}
-          </dd>
-        </div>
-      </dl>
-      {warning && <p className={styles.warning}>{warning}</p>}
+      </div>
+      <div className={styles.heroInfo} id="ficha" data-open={info}>
+        <p className={styles.desc}>{tuning.desc}</p>
+        <dl className={styles.facts}>
+          <div>
+            <dt>Al aire</dt>
+            <dd data-testid="fact-chord">{openChordName(tuning.notes, notation)}</dd>
+          </div>
+          <div>
+            <dt>Intervalos</dt>
+            <dd data-testid="fact-intervals">{stringIntervals(tuning.notes).join(' ')}</dd>
+          </div>
+          <div>
+            <dt>Cambian</dt>
+            <dd data-testid="fact-changes">
+              {changed === 0 ? (
+                'Ninguna'
+              ) : (
+                <>
+                  <span>{changed} de 6</span> ·{' '}
+                  <span>
+                    {semitones} {semitones === 1 ? 'semitono' : 'semitonos'}
+                  </span>
+                </>
+              )}
+            </dd>
+          </div>
+        </dl>
+        {warning && <p className={styles.warning}>{warning}</p>}
+        {/* Armonía es otra herramienta: se llega por la URL, con esta misma afinación. */}
+        <Link className={styles.bridge} to={`/armonia?afinacion=${tuning.id}`}>
+          Armar una vuelta →
+        </Link>
+      </div>
     </Slab>
   );
 }
@@ -267,8 +363,12 @@ function Heard({
 
   if (items.length === 0 && tuning.octaves !== 'est') return null;
   return (
-    <Slab className={styles.heard} label="Dónde se escuchó">
-      {items.length > 0 && <h2 className={styles.heardTitle}>Se escuchó en</h2>}
+    <section className={styles.heard} aria-label="Dónde se escuchó">
+      {items.length > 0 && (
+        <h2 className={styles.asideTitle}>
+          Se escuchó en <span>{items.length}</span>
+        </h2>
+      )}
       <ul>
         {items.map((item, index) => {
           const open = openIndex === index;
@@ -288,36 +388,30 @@ function Heard({
                     </small>
                   )}
                 </div>
-                {(item.capo || item.video) && (
-                  <div className={styles.heardActions}>
-                    {item.capo && (
-                      <Button
-                        variant="mini"
-                        ariaLabel={`Poner el capo en el traste ${item.capo} y tocar`}
-                        onClick={() => onCapo(item.capo!)}
-                      >
-                        Capo {item.capo}
-                      </Button>
-                    )}
-                    {item.video && (
-                      <Button
-                        variant="mini"
-                        ariaExpanded={open}
-                        ariaControls={open ? 'video' : undefined}
-                        ariaLabel={`${open ? 'Cerrar' : 'Escuchar'} ${item.song}, de ${item.artist}`}
-                        onClick={() => {
-                          if (!open) onVideoOpen();
-                          setOpenIndex(open ? null : index);
-                        }}
-                      >
-                        {/* Los dos textos ocupan la misma celda: el botón no cambia de ancho al abrir. */}
-                        <span className={styles.swap}>
-                          <span data-on={!open}>▶ Escuchar</span>
-                          <span data-on={open}>■ Cerrar</span>
-                        </span>
-                      </Button>
-                    )}
-                  </div>
+                {item.capo && (
+                  <button
+                    type="button"
+                    className={styles.heardCapo}
+                    aria-label={`Poner el capo en el traste ${item.capo} y tocar`}
+                    onClick={() => onCapo(item.capo!)}
+                  >
+                    Capo <span>{item.capo}</span>
+                  </button>
+                )}
+                {item.video && (
+                  <button
+                    type="button"
+                    className={styles.heardPlay}
+                    aria-expanded={open}
+                    aria-controls={open ? 'video' : undefined}
+                    aria-label={`${open ? 'Cerrar' : 'Escuchar'} ${item.song}, de ${item.artist}`}
+                    onClick={() => {
+                      if (!open) onVideoOpen();
+                      setOpenIndex(open ? null : index);
+                    }}
+                  >
+                    <span aria-hidden="true">{open ? '✕' : '▶'}</span>
+                  </button>
                 )}
               </div>
             </li>
@@ -329,8 +423,7 @@ function Heard({
           Las fuentes dan estas notas sin octava: las octavas de esta afinación son una estimación.
         </p>
       )}
-      {/* El reproductor se crea recién al abrirlo: hasta entonces no se contacta a YouTube. Va debajo de
-          la lista y en pantallas anchas ocupa todo el alto que le queda a la columna. */}
+      {/* El reproductor se crea recién al abrirlo: hasta entonces no se contacta a YouTube. */}
       {playing?.video && (
         <div className={styles.video} id="video" ref={video}>
           <div className={styles.videoBar}>
@@ -355,18 +448,73 @@ function Heard({
           />
         </div>
       )}
-    </Slab>
+    </section>
   );
 }
+
+/** Las afinaciones a las que se llega cambiando una sola cuerda. */
+function Neighbors({ tuning, onPick }: { tuning: Tuning; onPick: (id: string) => void }) {
+  const notation = useSettings((s) => s.notation);
+  const near = useMemo(() => neighborTunings(tuning, TUNINGS), [tuning]);
+  if (near.length === 0) return null;
+  const name = (note: string, other: string) =>
+    // Si cambia solo la octava, la octava es lo que hay que leer.
+    noteToMidi(note) % 12 === noteToMidi(other) % 12
+      ? noteLabel(note, notation) + splitNote(note).octave
+      : noteLabel(note, notation);
+  return (
+    <section className={styles.near} aria-label="A una cuerda de distancia">
+      <h2 className={styles.asideTitle}>A una cuerda de distancia</h2>
+      <p className={styles.hint}>Cambiando una sola cuerda llegás a estas.</p>
+      <ul>
+        {near.map(({ tuning: other, index, from, to }) => (
+          <li key={other.id}>
+            <Link to={`/afinador/${other.id}`} onClick={() => onPick(other.id)}>
+              <strong>{other.name}</strong>
+              <span>
+                <small>{tuning.notes.length - index}.ª</small>
+                <b>
+                  {name(from, to)}→{name(to, from)}
+                </b>
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+const KIND_FILTERS: ReadonlyArray<{ value: ChordKind | 'todos'; label: string }> = [
+  { value: 'todos', label: 'Todos' },
+  { value: 'mayor', label: 'Mayores' },
+  { value: 'menor', label: 'Menores' },
+  { value: 'otro', label: 'Otros' },
+];
+/** Cuántos acordes entran en Tocar antes del botón con el resto: dos filas en cada ancho. */
+const CHIPS_NARROW = 9;
+const CHIPS_WIDE = 15;
 
 function TuningPage({
   tuning,
   pendingPlayRef,
   playTick,
+  view,
+  setView,
+  asideOpen,
+  setAsideOpen,
+  onChange,
+  onPick,
 }: {
   tuning: Tuning;
   pendingPlayRef: RefObject<string | null>;
   playTick: number;
+  view: View;
+  setView: (view: View) => void;
+  asideOpen: boolean;
+  setAsideOpen: (open: boolean) => void;
+  onChange: () => void;
+  onPick: (id: string) => void;
 }) {
   const notation = useSettings((s) => s.notation);
   const a4 = useSettings((s) => s.a4);
@@ -378,9 +526,10 @@ function TuningPage({
     (stringIndex, velocity) => neck.current?.excite(stringIndex, velocity),
     (step) => markStep(strip.current, step),
   );
-  const listenerTitle = useRef<HTMLDivElement>(null);
   const patterns = listener.style === 'arp' ? ARP_PATTERNS : STRUM_PATTERNS;
   const { playAscending } = listener;
+  const [moreChords, setMoreChords] = useState(false);
+  const [kind, setKind] = useState<ChordKind | 'todos'>('todos');
   // Con capo, las figuras se cuentan desde el capo y los nombres son los de lo que suena.
   const shapes = useMemo(
     () =>
@@ -390,6 +539,15 @@ function TuningPage({
       ),
     [tuning.notes, listener.capo, notation],
   );
+  const isOn = (frets: number[]) => frets.every((fret, index) => fret === listener.frets[index]);
+  // La misma aclaración en Tocar y en Acordes; la de Tocar es la que miran las pruebas.
+  const capoNote = (testId?: string) =>
+    listener.capo > 0 && (
+      <p className={styles.hint} data-testid={testId}>
+        Con capo en el traste {listener.capo}: los trastes se cuentan desde el capo y el nombre es el del
+        acorde que suena.
+      </p>
+    );
 
   // Al elegir una afinación de la lista suena su arpegio ascendente, una sola vez.
   useEffect(() => {
@@ -403,29 +561,50 @@ function TuningPage({
     return () => clearTimeout(timer);
   }, [playTick, tuning.id, pendingPlayRef, playAscending]);
 
-  // Dos columnas en pantallas anchas: afinar a la izquierda, escuchar a la derecha. En las angostas las
-  // columnas se disuelven y los temas pasan al final (ver .board en el CSS).
+  // En pantallas anchas Acordes va dentro de Tocar y Temas en su columna: en el centro hay dos pestañas.
+  const center = view === 'tocar' || view === 'acordes' ? 'tocar' : 'afinar';
+
   return (
-    <div className={styles.board}>
-      <div className={styles.column}>
-        <Hero tuning={tuning} />
-        <TunerPanel notes={tuning.notes} />
-        <Heard
-          tuning={tuning}
-          onVideoOpen={listener.stop}
-          onCapo={(capo) => {
-            listener.setCapo(capo);
-            listenerTitle.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setTimeout(listener.start, 0);
-          }}
-        />
-      </div>
-      <div className={styles.column}>
-        <Slab>
-          <div ref={listenerTitle}>
-            <SlabHead number="02" title="Escuchar">
+    <>
+      <div className={styles.center}>
+        <Hero tuning={tuning} onChange={onChange} />
+        <div className={styles.tabs} role="tablist" aria-label="Qué hacer con esta afinación">
+          {VIEWS.slice(0, 2).map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              role="tab"
+              id={`tab-${option.value}`}
+              aria-selected={center === option.value}
+              aria-controls={`panel-${option.value}`}
+              onClick={() => setView(option.value)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+
+        <div
+          className={styles.panel}
+          data-panel="afinar"
+          id="panel-afinar"
+          role="tabpanel"
+          aria-labelledby="tab-afinar"
+        >
+          <TunerPanel notes={tuning.notes} />
+        </div>
+
+        <div
+          className={styles.panel}
+          data-panel="tocar"
+          id="panel-tocar"
+          role="tabpanel"
+          aria-labelledby="tab-tocar"
+        >
+          <Slab className={styles.play}>
+            <SlabHead title="Tocar">
               <div className={styles.headTools}>
-                <Fader />
+                <Fader compact />
                 <Segmented
                   label="Forma de tocar"
                   value={listener.style}
@@ -437,70 +616,122 @@ function TuningPage({
                 />
               </div>
             </SlabHead>
-          </div>
-          <Neck
-            ref={neck}
-            notes={tuning.notes}
-            capo={listener.capo}
-            frets={listener.frets}
-            notation={notation}
-            onPluck={(stringIndex, velocity) => listener.playString(stringIndex, undefined, velocity)}
-            onToggleFret={listener.toggleFret}
-          />
-          <p className={styles.hint}>
-            Tocá un traste para pisarlo; pasá el dedo por la zona gris para rasguear.
-          </p>
 
-          <PatternStrip ref={strip} style={listener.style} patternId={listener.patternId[listener.style]} />
-
-          <div className={styles.controls}>
-            <Button
-              variant="primary"
-              on={listener.running}
-              onClick={() => (listener.running ? listener.stop() : listener.start())}
-              id="play-toggle"
+            <div
+              className={styles.chips}
+              data-testid="chord-shapes"
+              data-more={moreChords || undefined}
+              role="group"
+              aria-label="Acordes: tocá uno para ponerlo en el mástil y escucharlo"
             >
-              {listener.running ? '■ Parar' : '▶ Tocar'}
-            </Button>
-            <label className={styles.field}>
-              <span>Patrón</span>
-              <select
-                id="pattern"
-                value={listener.patternId[listener.style]}
-                onChange={(event) => listener.choosePattern(event.target.value)}
-              >
-                {patterns.map((pattern) => (
-                  <option key={pattern.id} value={pattern.id}>
-                    {pattern.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className={styles.field}>
-              <span>Velocidad: {listener.tempo} ppm</span>
-              <input
-                type="range"
-                min={TEMPO_RANGE.min}
-                max={TEMPO_RANGE.max}
-                step={TEMPO_RANGE.step}
-                value={listener.tempo}
-                onChange={(event) => listener.setTempo(Number(event.target.value))}
-              />
-            </label>
-            <div className={styles.field}>
-              <span>Capo</span>
-              <Stepper
-                label="capo"
-                value={
-                  <span data-testid="capo-value">
-                    {listener.capo ? `Traste ${listener.capo}` : 'Sin capo'}
-                  </span>
-                }
-                onDown={() => listener.setCapo(listener.capo - 1)}
-                onUp={() => listener.setCapo(listener.capo + 1)}
-              />
+              {shapes.map((shape) => (
+                <button
+                  key={shape.frets.join()}
+                  type="button"
+                  aria-label={`${shape.label}: ${shape.chord}`}
+                  aria-pressed={isOn(shape.frets)}
+                  onClick={() => listener.applyShape(shape.frets)}
+                >
+                  <strong>{shape.chord}</strong>
+                  <small>{shape.label}</small>
+                </button>
+              ))}
+              {shapes.length > CHIPS_NARROW && (
+                <button
+                  type="button"
+                  className={styles.more}
+                  data-narrow
+                  aria-label={`Ver los otros ${shapes.length - CHIPS_NARROW} acordes`}
+                  onClick={() => setView('acordes')}
+                >
+                  +{shapes.length - CHIPS_NARROW}
+                </button>
+              )}
+              {shapes.length > CHIPS_WIDE && (
+                <button
+                  type="button"
+                  className={styles.more}
+                  data-wide
+                  aria-expanded={moreChords}
+                  onClick={() => setMoreChords((value) => !value)}
+                >
+                  {moreChords ? 'Menos' : `+${shapes.length - CHIPS_WIDE}`}
+                </button>
+              )}
             </div>
-            <div className={styles.pair}>
+            {capoNote('capo-note')}
+
+            <Neck
+              ref={neck}
+              notes={tuning.notes}
+              capo={listener.capo}
+              frets={listener.frets}
+              notation={notation}
+              onPluck={(stringIndex, velocity) => listener.playString(stringIndex, undefined, velocity)}
+              onToggleFret={listener.toggleFret}
+            />
+            <div className={styles.neckFoot}>
+              <p className={styles.hint}>
+                Tocá un traste para pisarlo; pasá el dedo por la zona gris para rasguear.
+              </p>
+              <Button
+                onClick={listener.clearFrets}
+                ariaLabel="Soltar trastes"
+                title="Soltar los trastes pisados"
+                variant="mini"
+              >
+                Soltar
+              </Button>
+            </div>
+
+            <div className={styles.playRow}>
+              <button
+                type="button"
+                id="play-toggle"
+                className={styles.playButton}
+                data-on={listener.running}
+                aria-label={listener.running ? 'Parar' : 'Tocar'}
+                onClick={() => (listener.running ? listener.stop() : listener.start())}
+              >
+                <span aria-hidden="true">{listener.running ? '■' : '▶'}</span>
+              </button>
+              <div className={styles.patterns}>
+                <Segmented
+                  label="Patrón"
+                  value={listener.patternId[listener.style]}
+                  options={patterns.map((pattern) => ({ value: pattern.id, label: pattern.name }))}
+                  onChange={listener.choosePattern}
+                  stretch
+                />
+              </div>
+            </div>
+            <PatternStrip ref={strip} style={listener.style} patternId={listener.patternId[listener.style]} />
+
+            <div className={styles.controls}>
+              <label className={styles.field}>
+                <span>Velocidad: {listener.tempo} ppm</span>
+                <input
+                  type="range"
+                  min={TEMPO_RANGE.min}
+                  max={TEMPO_RANGE.max}
+                  step={TEMPO_RANGE.step}
+                  value={listener.tempo}
+                  onChange={(event) => listener.setTempo(Number(event.target.value))}
+                />
+              </label>
+              <div className={styles.field}>
+                <span>Capo</span>
+                <Stepper
+                  label="capo"
+                  value={
+                    <span data-testid="capo-value">
+                      {listener.capo ? `Traste ${listener.capo}` : 'Sin capo'}
+                    </span>
+                  }
+                  onDown={() => listener.setCapo(listener.capo - 1)}
+                  onUp={() => listener.setCapo(listener.capo + 1)}
+                />
+              </div>
               <label className={styles.check}>
                 <input
                   id="loop"
@@ -510,51 +741,107 @@ function TuningPage({
                 />{' '}
                 Repetir
               </label>
-              <Button
-                onClick={listener.clearFrets}
-                ariaLabel="Soltar trastes"
-                title="Soltar los trastes pisados"
-              >
-                Soltar
-              </Button>
             </div>
-          </div>
-        </Slab>
+          </Slab>
+        </div>
 
-        <Slab>
-          <SlabHead number="03" title="Acordes">
-            {/* Armonía es otra herramienta: se llega por la URL, con esta misma afinación. */}
-            <Link className={styles.bridge} to={`/armonia?afinacion=${tuning.id}`}>
-              Armar una vuelta →
-            </Link>
-          </SlabHead>
-          <p className={styles.hint}>
-            Figuras para la mano, cuerda por cuerda de la 6.ª a la 1.ª; × es cuerda apagada. Tocá una para
-            escucharla en el mástil, con el patrón elegido en Escuchar.
-          </p>
-          {listener.capo > 0 && (
-            <p className={styles.hint} data-testid="capo-note">
-              Con capo en el traste {listener.capo}: los trastes se cuentan desde el capo y el nombre es el
-              del acorde que suena.
+        {/* Solo en el celular: en pantallas anchas los acordes están en Tocar. */}
+        <div className={styles.panel} data-panel="acordes">
+          <Slab>
+            <SlabHead title="Acordes">
+              <span className={styles.count}>
+                {shapes.filter((shape) => kind === 'todos' || shape.kind === kind).length} de {shapes.length}
+              </span>
+            </SlabHead>
+            <div className={styles.filters}>
+              <Segmented
+                label="Filtrar acordes"
+                value={kind}
+                options={KIND_FILTERS}
+                onChange={setKind}
+                stretch
+              />
+            </div>
+            <div className={styles.diagrams}>
+              {shapes
+                .filter((shape) => kind === 'todos' || shape.kind === kind)
+                .map((shape) => (
+                  <button
+                    key={shape.frets.join()}
+                    type="button"
+                    aria-label={`${shape.chord}: ${shape.label}`}
+                    aria-pressed={isOn(shape.frets)}
+                    onClick={() => listener.applyShape(shape.frets)}
+                  >
+                    <strong>{shape.chord}</strong>
+                    <ChordDiagram frets={shape.frets} />
+                  </button>
+                ))}
+            </div>
+            <p className={styles.hint}>
+              Figuras para la mano, de la 6.ª cuerda a la 1.ª; × es cuerda apagada. Tocá una para escucharla
+              con el patrón de Tocar: queda pisada en el mástil.
             </p>
-          )}
-          <div className={styles.shapes} data-testid="chord-shapes">
-            {shapes.map((shape) => (
-              <button
-                key={shape.frets.join()}
-                type="button"
-                aria-label={`${shape.label}: ${shape.chord}`}
-                aria-pressed={shape.frets.every((fret, index) => fret === listener.frets[index])}
-                onClick={() => listener.applyShape(shape.frets)}
-              >
-                <strong>{shape.chord}</strong>
-                <small>{shape.label}</small>
-              </button>
-            ))}
-          </div>
-        </Slab>
+            {capoNote()}
+          </Slab>
+        </div>
       </div>
-    </div>
+
+      <aside className={styles.aside} data-open={asideOpen} data-panel="temas" aria-label="Temas">
+        <button
+          type="button"
+          className={styles.rail}
+          aria-expanded={false}
+          aria-label="Abrir los temas y las afinaciones cercanas"
+          onClick={() => setAsideOpen(true)}
+        >
+          <span aria-hidden="true">‹</span>
+          <span>Se escuchó en</span>
+        </button>
+        <div className={styles.asideBody}>
+          <div className={styles.asideHead}>
+            <span>{tuning.name}</span>
+            <button
+              type="button"
+              className={styles.closeButton}
+              aria-label="Cerrar la columna de temas"
+              onClick={() => setAsideOpen(false)}
+            >
+              <span aria-hidden="true">›</span>
+            </button>
+          </div>
+          <Heard
+            tuning={tuning}
+            onVideoOpen={listener.stop}
+            onCapo={(capo) => {
+              listener.setCapo(capo);
+              setView('tocar');
+              setTimeout(listener.start, 0);
+            }}
+          />
+          <Neighbors tuning={tuning} onPick={onPick} />
+          {!tuning.heard?.length && neighborTunings(tuning, TUNINGS).length === 0 && (
+            <p className={styles.empty}>Todavía no hay temas registrados con esta afinación.</p>
+          )}
+        </div>
+      </aside>
+
+      <nav className={styles.tabbar} aria-label="Secciones del afinador">
+        {VIEWS.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            aria-pressed={view === option.value}
+            onClick={() => {
+              setView(option.value);
+              window.scrollTo({ top: 0 });
+            }}
+          >
+            {option.label}
+          </button>
+        ))}
+      </nav>
+    </>
   );
 }
 
@@ -563,8 +850,16 @@ export default function AfinadorRoute() {
   // Elegir de la lista pide un arpegio; la página de esa afinación lo toca al aparecer.
   const pendingPlayRef = useRef<string | null>(null);
   const [playTick, setPlayTick] = useState(0);
+  // Las columnas de los costados arrancan cerradas: el centro manda y lo demás se abre a pedido.
+  const [catalogOpen, setCatalogOpen] = useState(false);
+  const [asideOpen, setAsideOpen] = useState(false);
+  const [view, setView] = useState<View>('afinar');
 
   const tuning = findTuning(tuningId);
+  const pick = (id: string) => {
+    pendingPlayRef.current = id;
+    setPlayTick((tick) => tick + 1);
+  };
 
   if (!tuning) {
     return (
@@ -576,17 +871,27 @@ export default function AfinadorRoute() {
   }
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} data-view={view} data-catalog={catalogOpen} data-aside={asideOpen}>
       <TuningList
         currentId={tuning.id}
-        onSelect={(id) => {
-          pendingPlayRef.current = id;
-          setPlayTick((tick) => tick + 1);
-        }}
+        open={catalogOpen}
+        onOpen={() => setCatalogOpen(true)}
+        onClose={() => setCatalogOpen(false)}
+        onSelect={pick}
       />
       {/* La clave reinicia trastes, capo y lectura al cambiar de afinación; el patrón queda. */}
       <div className={styles.content} key={tuning.id}>
-        <TuningPage tuning={tuning} pendingPlayRef={pendingPlayRef} playTick={playTick} />
+        <TuningPage
+          tuning={tuning}
+          pendingPlayRef={pendingPlayRef}
+          playTick={playTick}
+          view={view}
+          setView={setView}
+          asideOpen={asideOpen}
+          setAsideOpen={setAsideOpen}
+          onChange={() => setCatalogOpen(true)}
+          onPick={pick}
+        />
       </div>
     </div>
   );

@@ -1,83 +1,261 @@
-/* Se adapta al ancho de `main`, no al de la pantalla: la barra lateral también cuenta. */
+/* En el celular, una tarea por pantalla: la ficha arriba, lo elegido debajo y cuatro pestañas abajo,
+   al alcance del pulgar. Desde 900 px, tres columnas: la lista y los temas a los costados, plegadas
+   al entrar, y en el centro la ficha con Afinar o Tocar. Lo que no se ve sigue en el HTML: la página
+   estática lleva todo para los buscadores. */
 .page {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-items: start;
+  --tabbar: 60px;
+  padding-bottom: calc(var(--tabbar) + env(safe-area-inset-bottom));
 }
 .content {
-  container: content / inline-size;
-  min-width: 0;
-}
-
-/* En pantallas angostas las columnas no existen: los bloques van uno abajo del otro y los temas al
-   final. En las anchas, afinar a la izquierda y escuchar a la derecha, para que entre sin scrollear.
-   Cada columna se llama `main` para que el mástil y los títulos se midan con su ancho, no con el de
-   la pantalla. */
-.board {
-  display: flex;
-  flex-direction: column;
-}
-.column {
   display: contents;
 }
-.board .heard {
-  order: 1;
+/* El centro se mide a sí mismo: el mástil y los datos se adaptan a su ancho, no al de la pantalla. */
+.center {
+  container: column / inline-size;
+  min-width: 0;
 }
-@container content (min-width: 760px) {
-  /* Ocupa la pantalla entera, de la barra hasta abajo: el último bloque de cada columna se estira y
-     las dos terminan juntas en el borde. Las filas del mástil crecen con el alto de la ventana. */
-  .board {
-    /* 36 px con 800 de alto, 48 con 900, y no más de 56. */
-    --row: clamp(var(--touch), calc((100dvh - var(--bar)) * 0.13 - 62px), 56px);
-    display: grid;
-    grid-template-columns: minmax(340px, 5fr) minmax(0, 7fr);
-    min-height: calc(100dvh - var(--bar));
-  }
-  .column {
-    container: main / inline-size;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-  }
-  .column + .column {
-    border-left: var(--rule);
-  }
-  .column > section:last-child {
-    flex: 1;
-    border-bottom: 0;
+.panel,
+.aside {
+  display: none;
+}
+.page[data-view='afinar'] [data-panel='afinar'],
+.page[data-view='tocar'] [data-panel='tocar'],
+.page[data-view='acordes'] [data-panel='acordes'],
+.page[data-view='temas'] [data-panel='temas'] {
+  display: block;
+}
+.tabs,
+.rail,
+.asideHead,
+.page [data-wide] {
+  display: none;
+}
+
+/* Las cuatro pestañas de abajo. */
+.tabbar {
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 15;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  height: calc(var(--tabbar) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  border-top: var(--rule);
+  background: var(--paper);
+}
+.tabbar button {
+  min-width: 0;
+  border: 0;
+  border-left: var(--rule);
+  background: none;
+  color: inherit;
+  font: 700 13px/1 var(--heavy);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.tabbar button:first-child {
+  border-left: 0;
+}
+.tabbar button[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 900;
+}
+@media print {
+  .tabbar {
+    display: none;
   }
 }
 
-/* Lista de afinaciones: desplegable en pantallas chicas, panel fijo en las grandes. */
+/* La lista de afinaciones. En el celular, cerrada no se ve; abierta tapa la pantalla. */
 .catalog {
+  display: none;
   min-width: 0;
-  border-bottom: var(--rule);
 }
-.catalogToggle {
+.catalog[data-open='true'] {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
   display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  width: 100%;
-  min-height: var(--touch);
-  padding: 8px var(--gutter);
-  border: 0;
-  background: var(--ink);
-  color: var(--paper);
-  font: 900 semi-expanded 15px/1.2 var(--heavy);
-  text-align: left;
-  text-transform: uppercase;
+  flex-direction: column;
+  padding-top: 48px;
+  background: rgb(0 0 0 / 0.6);
 }
 .catalogBody {
-  display: none;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--paper);
+  border-top: var(--rule);
 }
-.catalog[data-open='true'] .catalogBody {
-  display: block;
-}
-.catalog[data-open='true'] .catalogList {
-  max-height: 60dvh;
+.catalogList {
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
+.searchRow {
+  display: flex;
+  border-bottom: var(--rule);
+}
+.searchRow .search {
+  flex: 1;
+  min-width: 0;
+  border-bottom: 0;
+}
+.closeButton {
+  flex: none;
+  width: var(--touch);
+  min-height: var(--touch);
+  border: 0;
+  border-left: var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  font: 900 22px/1 var(--heavy);
+}
+.closeButton:hover {
+  background: var(--soft);
+}
+
+/* Cerrada en pantalla ancha: una franja con el nombre en vertical. */
+.rail {
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 0;
+  border: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 900 12px/1 var(--heavy);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.rail:hover {
+  background: var(--soft);
+}
+.rail > span:first-child {
+  font-size: 24px;
+  letter-spacing: 0;
+}
+.rail > span:last-child {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+.aside .rail > span:last-child {
+  transform: none;
+}
+
+@container main (min-width: 900px) {
+  .page {
+    /* Las filas del mástil crecen con el alto de la ventana: 44 px con 800 de alto, hasta 52. */
+    --row: clamp(var(--touch), calc((100dvh - var(--bar)) * 0.11 - 44px), 52px);
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    height: calc(100dvh - var(--bar));
+    padding-bottom: 0;
+  }
+  .tabbar,
+  .page [data-narrow] {
+    display: none;
+  }
+  .page [data-wide] {
+    display: revert;
+  }
+  .center {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  .tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-bottom: var(--rule);
+  }
+  .tabs button {
+    min-height: var(--touch);
+    border: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 900 14px/1 var(--heavy);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .tabs button + button {
+    border-left: var(--rule);
+  }
+  .tabs button:hover {
+    background: var(--soft);
+  }
+  .tabs button[aria-selected='true'] {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  /* En el centro, Afinar o Tocar; Acordes va dentro de Tocar y Temas en su columna. */
+  .page[data-view='temas'] [data-panel='afinar'],
+  .page[data-view='acordes'] [data-panel='tocar'] {
+    display: block;
+  }
+  .page[data-view='acordes'] [data-panel='acordes'] {
+    display: none;
+  }
+
+  .catalog,
+  .catalog[data-open='true'] {
+    position: static;
+    display: flex;
+    flex-direction: column;
+    width: 56px;
+    min-height: 0;
+    padding: 0;
+    border-right: var(--rule);
+    background: none;
+  }
+  .catalog[data-open='true'] {
+    width: 300px;
+  }
+  .catalogBody {
+    border-top: 0;
+  }
+  .catalog:not([data-open='true']) .catalogBody,
+  .aside:not([data-open='true']) .asideBody {
+    display: none;
+  }
+  .catalog:not([data-open='true']) .rail,
+  .page[data-view] .aside:not([data-open='true']) .rail {
+    display: flex;
+  }
+
+  .page[data-view] .aside {
+    display: flex;
+    flex-direction: column;
+    width: 56px;
+    min-height: 0;
+    border-left: var(--rule);
+  }
+  .page[data-view] .aside[data-open='true'] {
+    width: 340px;
+  }
+  .asideBody {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  .asideHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-left: var(--gutter);
+    border-bottom: var(--rule);
+    font: 900 expanded 13px/1.2 var(--heavy);
+    text-transform: uppercase;
+  }
+}
+
 .search {
   display: block;
   border-bottom: var(--rule);
@@ -248,39 +426,6 @@
   color: var(--muted);
 }
 
-@container main (min-width: 820px) {
-  .page {
-    grid-template-columns: 220px minmax(0, 1fr);
-  }
-  .content {
-    border-left: var(--rule);
-  }
-  .catalog {
-    position: sticky;
-    top: var(--bar);
-    display: flex;
-    flex-direction: column;
-    height: calc(100dvh - var(--bar));
-    border-bottom: 0;
-  }
-  .catalogToggle {
-    display: none;
-  }
-  .catalogBody,
-  .catalog[data-open='true'] .catalogBody {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    min-height: 0;
-  }
-  .catalogList,
-  .catalog[data-open='true'] .catalogList {
-    flex: 1;
-    max-height: none;
-    overflow-y: auto;
-  }
-}
-
 /* Datos de la afinación: una fila de tres, también en el celular. */
 .facts {
   display: grid;
@@ -313,7 +458,7 @@
 .facts dd span {
   white-space: nowrap;
 }
-@container main (min-width: 560px) {
+@container column (min-width: 560px) {
   .facts > div {
     padding: 5px 12px 6px;
   }
@@ -715,7 +860,7 @@
 }
 /* Los trastes no se estiran más de la cuenta: con menos ancho se muestran menos, pero más anchos
    para el dedo. 12 en una columna ancha, 9, 7 y 5 en el celular. */
-@container main (max-width: 900px) {
+@container column (max-width: 900px) {
   .neckGrid {
     --visible: 9;
   }
@@ -725,7 +870,7 @@
     display: none;
   }
 }
-@container main (max-width: 700px) {
+@container column (max-width: 700px) {
   .neckGrid {
     --visible: 7;
   }
@@ -734,7 +879,7 @@
     display: none;
   }
 }
-@container main (max-width: 480px) {
+@container column (max-width: 480px) {
   .neckGrid {
     --visible: 5;
   }
@@ -743,7 +888,7 @@
     display: none;
   }
 }
-@container main (min-width: 640px) {
+@container column (min-width: 640px) {
   .neckGrid {
     grid-template-columns: 56px repeat(var(--visible), minmax(0, 1fr)) clamp(56px, 20cqi, 200px);
   }
@@ -909,7 +1054,7 @@
   width: 110px;
 }
 /* En pantallas angostas: título y volumen en una fila, la forma de tocar a lo ancho debajo. */
-@container main (max-width: 560px) {
+@container column (max-width: 560px) {
   .headTools {
     display: contents;
   }
@@ -928,13 +1073,6 @@
   }
 }
 
-/* Temas: dato secundario */
-.heardTitle {
-  margin-bottom: 8px;
-  font: 900 expanded 15px/1.2 var(--heavy);
-  letter-spacing: -0.01em;
-  text-transform: uppercase;
-}
 .heard ul {
   margin: 0;
   padding: 0;
@@ -946,10 +1084,9 @@
 }
 .heardRow {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 4px 12px;
+  gap: 6px;
   /* Todas las filas con el mismo alto, tengan botones o no. */
   min-height: calc(var(--touch) + 6px);
   padding: 3px 0;
@@ -972,19 +1109,6 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   vertical-align: 1px;
-}
-.heardActions {
-  display: flex;
-  gap: 6px;
-}
-.swap {
-  display: inline-grid;
-}
-.swap > span {
-  grid-area: 1 / 1;
-}
-.swap > span[data-on='false'] {
-  visibility: hidden;
 }
 /* Reproductor: debajo de la lista, siempre en 16:9 y con un tamaño que no cambia mientras suena (si
    cambiara, YouTube reacomoda sus controles y cierra el volumen). Nunca pegado al borde de la ventana. */
@@ -1045,49 +1169,6 @@
   }
 }
 
-.shapes {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 104px), 1fr));
-  gap: 4px;
-  margin-top: 8px;
-}
-.shapes button {
-  display: grid;
-  align-content: start;
-  gap: 2px;
-  min-height: var(--touch);
-  min-width: 0;
-  padding: 5px 7px 6px;
-  border: 2px solid var(--ink);
-  background: var(--paper);
-  text-align: left;
-  transition:
-    transform 90ms var(--ease),
-    background-color 120ms var(--ease),
-    color 120ms var(--ease);
-}
-.shapes button:hover {
-  background: var(--ink);
-  color: var(--paper);
-}
-.shapes button:active {
-  transform: translate(2px, 2px);
-}
-/* La forma que está puesta en el mástil. */
-.shapes button[aria-pressed='true'] {
-  background: var(--accent);
-  color: var(--on-accent);
-  box-shadow: 3px 3px 0 var(--ink);
-}
-.shapes strong {
-  font: 800 16px/1.15 var(--ui);
-  overflow-wrap: anywhere;
-}
-.shapes small {
-  font-size: 12px;
-  line-height: 1.3;
-}
-
 /* El link a otra herramienta, en la cabecera de Acordes. */
 .bridge {
   display: inline-flex;
@@ -1097,4 +1178,409 @@
   letter-spacing: 0.03em;
   text-transform: uppercase;
   text-underline-offset: 3px;
+}
+
+/* La ficha: el nombre es el botón para cambiar de afinación. */
+.heroHead {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+.heroTitle {
+  flex: 1;
+  min-width: 0;
+}
+.heroTitle p {
+  margin-bottom: 4px;
+  font: 600 12px/1.5 var(--ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.heroTitle button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 56px;
+  padding: 6px 12px;
+  border: var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--lift) var(--lift) 0 var(--ink);
+  font: 900 expanded clamp(26px, 7cqi, 44px)/1 var(--heavy);
+  letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
+  text-align: left;
+  cursor: pointer;
+}
+.heroTitle button::after {
+  content: '▾';
+  flex: none;
+  font-size: 0.6em;
+}
+.heroTitle button:hover {
+  background: var(--soft);
+}
+.heroTools {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 6px;
+  align-self: flex-end;
+}
+.heroStar,
+.infoToggle {
+  width: 52px;
+  height: 52px;
+  border: var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  font: 900 24px/1 var(--heavy);
+  cursor: pointer;
+}
+.heroStar[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.infoToggle {
+  font: 700 22px/1 var(--mono);
+}
+.infoToggle[aria-expanded='true'] {
+  background: var(--ink);
+  color: var(--paper);
+}
+.heroInfo {
+  display: none;
+}
+.heroInfo[data-open='true'] {
+  display: block;
+}
+.desc {
+  margin-top: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+@container main (min-width: 900px) {
+  .heroTools {
+    flex-direction: row;
+  }
+  .heroTools .infoToggle {
+    display: none;
+  }
+  .heroTitle button {
+    width: auto;
+    max-width: 100%;
+    gap: 24px;
+  }
+  .heroInfo,
+  .heroInfo[data-open='true'] {
+    display: block;
+  }
+}
+
+/* Acordes en Tocar: dos filas y un botón con el resto. */
+.chips {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 10px;
+}
+.chips button {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 1px;
+  min-width: 0;
+  min-height: var(--touch);
+  padding: 3px 4px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  transition:
+    transform 90ms var(--ease),
+    background-color 120ms var(--ease);
+}
+.chips button:hover {
+  background: var(--soft);
+}
+.chips button:active {
+  transform: translate(2px, 2px);
+}
+.chips button[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.chips strong,
+.chips small {
+  max-width: 100%;
+  overflow: hidden;
+  font: 800 15px/1.15 var(--ui);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chips small {
+  display: none;
+  overflow: hidden;
+  font: 11px/1.2 var(--mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chips .more {
+  background: var(--ink);
+  color: var(--paper);
+  font: 700 14px/1 var(--mono);
+}
+.chips .more:hover {
+  background: var(--muted);
+}
+.chips > button:nth-child(n + 10):not(.more) {
+  display: none;
+}
+@container main (min-width: 900px) {
+  .chips {
+    grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  }
+  .chips small {
+    display: block;
+  }
+  .chips > button:nth-child(n + 10):not(.more) {
+    display: grid;
+  }
+  .chips:not([data-more]) > button:nth-child(n + 16):not(.more) {
+    display: none;
+  }
+}
+
+.neckFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+}
+.neckFoot .hint {
+  margin: 0;
+}
+.neckFoot button {
+  flex: none;
+  white-space: nowrap;
+}
+.filters button {
+  font-size: 12px;
+  font-stretch: 100%;
+}
+.playRow {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  margin-top: 12px;
+}
+.playButton {
+  flex: none;
+  width: 60px;
+  min-height: 48px;
+  border: var(--rule);
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: 3px 3px 0 var(--ink);
+  font: 900 20px/1 var(--heavy);
+  cursor: pointer;
+}
+.playButton[data-on='true'] {
+  background: var(--ink);
+  color: var(--paper);
+}
+.playButton:active {
+  transform: translate(3px, 3px);
+  box-shadow: none;
+}
+.patterns {
+  flex: 1;
+  min-width: 0;
+}
+.patterns [role='group'] {
+  height: 100%;
+}
+/* En el celular los cuatro patrones van de a dos: "Pulgar alternado" no entra en un cuarto. */
+@container column (max-width: 560px) {
+  .patterns [role='group'] {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .patterns [role='group'] button {
+    border-left: 0;
+    border-top: var(--rule);
+  }
+  .patterns [role='group'] button:nth-child(even) {
+    border-left: var(--rule);
+  }
+  .patterns [role='group'] button:nth-child(-n + 2) {
+    border-top: 0;
+  }
+}
+
+.count {
+  font: 700 12px/1 var(--mono);
+}
+/* Figuras en Acordes, como en un cancionero. */
+.diagrams {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+.diagrams button {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0;
+  border: var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
+}
+.diagrams strong {
+  padding: 4px 8px;
+  border-bottom: var(--rule);
+  font: 900 16px/1.2 var(--heavy);
+  overflow-wrap: anywhere;
+}
+.diagrams button[aria-pressed='true'] strong {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.diagram {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-rows: 14px repeat(4, 18px);
+  padding: 6px 10px 10px 20px;
+}
+.diagramTop {
+  border-bottom: 2px solid var(--ink);
+  font: 700 11px/12px var(--mono);
+  text-align: center;
+}
+.diagram[data-nut='true'] .diagramTop {
+  border-bottom-width: 4px;
+}
+.diagramCell {
+  position: relative;
+  border-bottom: 2px solid var(--ink);
+}
+.diagramCell::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--ink);
+}
+.diagramCell[data-dot='true']::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--ink);
+  transform: translate(-50%, -50%);
+}
+.diagramStart {
+  position: absolute;
+  top: 22px;
+  left: 2px;
+  font: 600 10px/1 var(--mono);
+}
+
+/* Temas y afinaciones cercanas: en el celular su pestaña, en pantalla ancha la columna derecha. */
+.heard,
+.near {
+  padding: 12px var(--gutter) 16px;
+  border-bottom: var(--rule);
+}
+.asideTitle {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  font: 900 expanded 15px/1.2 var(--heavy);
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+.asideTitle span {
+  font: 700 14px/1.2 var(--mono);
+}
+.heardCapo,
+.heardPlay {
+  flex: none;
+  min-width: var(--touch);
+  min-height: var(--touch);
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+}
+.heardCapo {
+  display: grid;
+  place-content: center;
+  padding: 0 6px;
+  font: 700 10px/1.1 var(--ui);
+  text-transform: uppercase;
+}
+.heardCapo span {
+  font: 700 15px/1 var(--mono);
+}
+.heardPlay {
+  font: 900 16px/1 var(--heavy);
+}
+.heardCapo:hover,
+.heardPlay:hover,
+.heardPlay[aria-expanded='true'] {
+  background: var(--ink);
+  color: var(--paper);
+}
+.near ul {
+  margin: 8px calc(-1 * var(--gutter)) -16px;
+  padding: 0;
+  list-style: none;
+}
+.near a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 var(--gutter);
+  border-top: var(--rule);
+  text-decoration: none;
+}
+.near a:hover {
+  background: var(--soft);
+}
+.near strong {
+  min-width: 0;
+  font: 700 14px/1.3 var(--ui);
+  overflow-wrap: anywhere;
+}
+.near a > span {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  font: 700 12px/1 var(--mono);
+}
+.near small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.near b {
+  padding: 3px 6px;
+  background: var(--ink);
+  color: var(--paper);
 }

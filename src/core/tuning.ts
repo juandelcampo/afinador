@@ -113,6 +113,36 @@ export interface ChordShape {
   frets: number[];
   chord: string;
   label: string;
+  /** Para filtrar: con tercera mayor, con tercera menor, o ni una ni otra (sus, quintas, dim, aum). */
+  kind: ChordKind;
+}
+
+export type ChordKind = 'mayor' | 'menor' | 'otro';
+
+/** Qué clase de acorde es, mirando solo lo que va después de la fundamental (m7, sus4, add9…). */
+export function chordKind(suffix: string): ChordKind {
+  if (/sus|^5|dim|aug|°|\+/.test(suffix)) return 'otro';
+  return /^m(?!aj)/.test(suffix) ? 'menor' : 'mayor';
+}
+
+export interface Neighbor {
+  tuning: Tuning;
+  /** La cuerda que cambia, de 0 (la 6.ª) a 5 (la 1.ª). */
+  index: number;
+  from: string;
+  to: string;
+}
+
+/** Las afinaciones a las que se llega cambiando una sola cuerda. */
+export function neighborTunings(tuning: Pick<Tuning, 'id' | 'notes'>, all: Tuning[]): Neighbor[] {
+  const midis = tuning.notes.map(noteToMidi);
+  return all.flatMap((other) => {
+    if (other.id === tuning.id || other.notes.length !== midis.length) return [];
+    const diff = other.notes.flatMap((note, index) => (noteToMidi(note) === midis[index] ? [] : [index]));
+    if (diff.length !== 1) return [];
+    const index = diff[0]!;
+    return [{ tuning: other, index, from: tuning.notes[index]!, to: other.notes[index]! }];
+  });
 }
 
 /** Cuerda apagada: la mano la toca apenas para que no suene. */
@@ -210,14 +240,27 @@ export function chordShapes(
   });
 
   const openName = openChordName(notes, notation);
-  const shapes: ChordShape[] = [{ frets: open.map(() => 0), chord: openName, label: 'Al aire' }];
+  // Al aire: si no forma un acorde reconocible, va con los "otros".
+  const shapes: ChordShape[] = [
+    {
+      frets: open.map(() => 0),
+      chord: openName,
+      label: 'Al aire',
+      kind: home && !home.single ? chordKind(home.suffix) : 'otro',
+    },
+  ];
   [...best.values()]
     .map((shape) => ({ ...shape, chord: noteLabel(midiToNote(shape.root), notation) + shape.suffix }))
     .filter((shape) => shape.chord !== openName)
     .sort((a, b) => a.score - b.score)
     .slice(0, limit - 1)
     .forEach((shape) =>
-      shapes.push({ frets: shape.frets, chord: shape.chord, label: shapeLabel(shape.frets) }),
+      shapes.push({
+        frets: shape.frets,
+        chord: shape.chord,
+        label: shapeLabel(shape.frets),
+        kind: chordKind(shape.suffix),
+      }),
     );
   return shapes;
 }

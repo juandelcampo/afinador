@@ -15,8 +15,10 @@ import { sanitize } from '~/shared/settings';
 import { detectPitch, PitchTracker } from '~/core/pitch';
 import { pluck } from '~/core/pluck';
 import {
+  chordKind,
   chordShapes,
   MUTED,
+  neighborTunings,
   openChordName,
   stringIntervals,
   stringOffsets,
@@ -314,6 +316,45 @@ describe('acordes', () => {
     expect(shapes[0]).toMatchObject({ chord: 'D', label: 'Al aire' });
     expect(shapes.some((shape) => shape.chord === 'G')).toBe(true);
     expect(new Set(shapes.map((shape) => shape.chord)).size).toBe(shapes.length);
+  });
+});
+
+describe('filtros de acordes', () => {
+  const notesOf = (id: string) => TUNINGS.find((tuning) => tuning.id === id)!.notes;
+
+  it('separa mayores, menores y los que no tienen tercera', () => {
+    expect(['', 'maj7', '7', '6', 'add9'].map(chordKind)).toEqual(Array(5).fill('mayor'));
+    expect(['m', 'm7', 'm6', 'madd9'].map(chordKind)).toEqual(Array(4).fill('menor'));
+    expect(['sus2', 'sus4', '7sus4', '5', 'dim', 'aug'].map(chordKind)).toEqual(Array(6).fill('otro'));
+  });
+
+  it('cada figura dice de qué clase es, también la de al aire', () => {
+    const shapes = chordShapes(notesOf('dadgad'));
+    expect(shapes[0]).toMatchObject({ chord: 'Dsus4', kind: 'otro' });
+    expect(chordShapes(notesOf('opend'))[0]).toMatchObject({ chord: 'D', kind: 'mayor' });
+    expect(shapes.find((shape) => shape.chord === 'Em')?.kind).toBe('menor');
+  });
+});
+
+describe('afinaciones a una cuerda de distancia', () => {
+  it('de DADGAD a Re abierta cambia solo la 3.ª, de Sol a Fa#', () => {
+    const near = neighborTunings(
+      TUNINGS.find((tuning) => tuning.id === 'dadgad')!,
+      TUNINGS,
+    );
+    const opend = near.find((item) => item.tuning.id === 'opend');
+    expect(opend).toMatchObject({ index: 3, from: 'G3', to: 'F#3' });
+    expect(near.some((item) => item.tuning.id === 'dadgad')).toBe(false);
+  });
+
+  it('todas difieren de la original en una sola cuerda', () => {
+    for (const tuning of TUNINGS)
+      for (const { tuning: other } of neighborTunings(tuning, TUNINGS)) {
+        const diff = tuning.notes.filter(
+          (note, index) => noteToMidi(note) !== noteToMidi(other.notes[index]!),
+        );
+        expect(diff, `${tuning.id} → ${other.id}`).toHaveLength(1);
+      }
   });
 });
 

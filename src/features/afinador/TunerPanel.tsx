@@ -59,7 +59,7 @@ export function TunerPanel({ notes }: TunerPanelProps) {
 
   return (
     <Slab>
-      <SlabHead number="01" title="Afinar">
+      <SlabHead title="Afinar">
         <Segmented
           label="Modo de afinación"
           value={mode}
