@@ -556,12 +556,15 @@
 .meter {
   margin-top: 12px;
 }
+/* La nota va en el centro; las lecturas, a la derecha. */
 .meterReadout {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
   gap: 10px 12px;
+}
+.meterReadout::before {
+  content: '';
 }
 .meterDial {
   display: flex;
@@ -605,6 +608,7 @@
   vertical-align: baseline;
 }
 .meterActions {
+  justify-self: end;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -1660,4 +1664,54 @@
   padding: 3px 6px;
   background: var(--ink);
   color: var(--paper);
+}
+
+/* Escuchar la afinación al aire, al lado del modo de afinar. */
+.tunerTools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.openPlay {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--touch);
+  padding: 6px 14px;
+  border: var(--rule);
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: 3px 3px 0 var(--ink);
+  font: 700 semi-expanded 13px/1.2 var(--ui);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.openPlay:active {
+  transform: translate(3px, 3px);
+  box-shadow: none;
+}
+/* En el celular, Al aire y el modo comparten una fila debajo del título. */
+@container column (max-width: 560px) {
+  .tunerTools {
+    flex: 1 0 100%;
+    flex-wrap: nowrap;
+  }
+  .openPlay {
+    flex: none;
+    padding-inline: 10px;
+  }
+  .tunerTools > [role='group'] {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+  }
+  .tunerTools > [role='group'] button {
+    flex: 1 1 0;
+    min-width: 0;
+    padding-inline: 6px;
+    font-size: 12px;
+  }
 }

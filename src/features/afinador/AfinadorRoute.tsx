@@ -579,7 +579,7 @@ function TuningPage({
           role="tabpanel"
           aria-labelledby="tab-afinar"
         >
-          <TunerPanel notes={tuning.notes} />
+          <TunerPanel notes={tuning.notes} onPlayOpen={playAscending} />
         </div>
 
         <div

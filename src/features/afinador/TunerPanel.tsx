@@ -28,9 +28,11 @@ export function flash(element: HTMLElement) {
 
 interface TunerPanelProps {
   notes: string[];
+  /** Hace sonar las seis cuerdas al aire, de grave a aguda: para volver a escuchar cómo es la afinación. */
+  onPlayOpen: () => void;
 }
 
-export function TunerPanel({ notes }: TunerPanelProps) {
+export function TunerPanel({ notes, onPlayOpen }: TunerPanelProps) {
   const notation = useSettings((s) => s.notation);
   const a4 = useSettings((s) => s.a4);
   const mode = useSettings((s) => s.tunerMode);
@@ -60,15 +62,26 @@ export function TunerPanel({ notes }: TunerPanelProps) {
   return (
     <Slab>
       <SlabHead title="Afinar">
-        <Segmented
-          label="Modo de afinación"
-          value={mode}
-          options={[
-            { value: 'guided', label: 'Una a una' },
-            { value: 'auto', label: 'Automático' },
-          ]}
-          onChange={(value) => set({ tunerMode: value })}
-        />
+        <div className={styles.tunerTools}>
+          <button
+            type="button"
+            className={styles.openPlay}
+            aria-label="Escuchar la afinación al aire"
+            title="Las seis cuerdas al aire, de grave a aguda"
+            onClick={onPlayOpen}
+          >
+            <span aria-hidden="true">▶</span> Al aire
+          </button>
+          <Segmented
+            label="Modo de afinación"
+            value={mode}
+            options={[
+              { value: 'guided', label: 'Una a una' },
+              { value: 'auto', label: 'Automático' },
+            ]}
+            onChange={(value) => set({ tunerMode: value })}
+          />
+        </div>
       </SlabHead>
 
       <div className={styles.pills}>

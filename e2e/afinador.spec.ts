@@ -160,6 +160,13 @@ test.describe('escuchador', () => {
 });
 
 test.describe('afinación', () => {
+  test('Al aire vuelve a hacer sonar las seis cuerdas de la afinación', async ({ page }) => {
+    await countSounds(page);
+    await goto(page, '/afinador/dadgad');
+    await page.getByRole('button', { name: 'Escuchar la afinación al aire' }).click();
+    await expect.poll(() => plucks(page), { timeout: 6000 }).toBe(6);
+  });
+
   test('muestra los datos que se deducen de las notas', async ({ page }) => {
     await goto(page, '/afinador/dadgad');
     await expect(page.getByTestId('fact-chord')).toHaveText('Dsus4');
