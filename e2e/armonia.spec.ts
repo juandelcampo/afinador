@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { countSounds, goto, plucks, watchErrors } from './fixtures/helpers';
+import { countSounds, goto, pick, plucks, watchErrors } from './fixtures/helpers';
 
 // En pantalla ancha los dos costados arrancan plegados: tu vuelta se abre desde su franja.
 const openVuelta = (page: Page) => page.getByRole('button', { name: 'Abrir tu vuelta' }).click();
@@ -12,9 +12,9 @@ test.describe('armonía', () => {
   test('se abre con la afinación de la URL y la tónica de sus cuerdas al aire', async ({ page }) => {
     const errors = watchErrors(page);
     await goto(page, '/armonia?afinacion=dadgad');
-    await expect(page.locator('#afinacion')).toHaveValue('dadgad');
+    await expect(page.locator('#afinacion')).toHaveAttribute('data-value', 'dadgad');
     // DADGAD al aire es un Dsus4: la tónica es Re.
-    await expect(page.locator('#tonica')).toHaveValue('2');
+    await expect(page.locator('#tonica')).toHaveAttribute('data-value', '2');
     await expect(
       page.getByRole('navigation', { name: 'Herramientas' }).getByRole('link', { name: 'Armonía' }),
     ).toHaveAttribute('aria-current', 'page');
@@ -32,12 +32,12 @@ test.describe('armonía', () => {
     await degrees.getByRole('button', { name: 'Escuchar C' }).click();
     await expect.poll(() => plucks(page)).toBeGreaterThanOrEqual(5);
 
-    await page.getByRole('combobox', { name: 'Mundo' }).selectOption('dorico');
+    await pick(page, 'mundo', 'dorico');
     await expect(page).toHaveURL(/escala=dorico/);
     await expect(degrees.locator('text=★')).toHaveCount(2);
     await expect(degrees.locator('text=OJO')).toHaveCount(1);
 
-    await page.getByRole('combobox', { name: 'Mundo' }).selectOption('arabe');
+    await pick(page, 'mundo', 'arabe');
     await expect(page).toHaveURL(/escala=arabe/);
     await expect(degrees.getByRole('button', { name: 'Escuchar Db' })).toBeVisible();
     await expect(degrees.locator('text=★')).toHaveCount(2);
@@ -250,8 +250,8 @@ test.describe('armonía', () => {
     const tonic = degrees.getByRole('listitem').first();
 
     // Otro color: la tarjeta pasa a ser ese acorde y dice qué le suma.
-    await tonic.getByRole('combobox', { name: 'Color de C' }).selectOption('maj7');
-    await expect(tonic.locator('strong')).toHaveText('Cmaj7');
+    await pick(page, tonic.getByRole('button', { name: /^Color de C:/ }), 'maj7');
+    await expect(tonic.locator('strong').first()).toHaveText('Cmaj7');
     await expect(tonic).toContainText('romántico');
     // Otra figura, y el + suma el acorde tal como quedó.
     await tonic.getByRole('button', { name: /^Otra figura de Cmaj7: va la 1/ }).click();
@@ -260,8 +260,8 @@ test.describe('armonía', () => {
     await expect(page).toHaveURL(/v=Cmaj7\.1(&|$)/);
 
     // Otro mundo: los grados vuelven a sus tríadas.
-    await page.locator('#tonica').selectOption('2');
-    await expect(degrees.getByRole('listitem').first().locator('strong')).toHaveText('D');
+    await pick(page, 'tonica', '2');
+    await expect(degrees.getByRole('listitem').first().locator('strong').first()).toHaveText('D');
     expect(errors).toEqual([]);
   });
 
@@ -279,9 +279,9 @@ test.describe('armonía', () => {
     await expect(first.getByRole('button', { name: /^Otra figura de C: va la 2/ })).toBeVisible();
 
     // Otro color: cambia el acorde, lo que dura queda y la figura vuelve a la más fácil.
-    await first.getByRole('combobox', { name: 'Color de C' }).selectOption('7');
+    await pick(page, first.getByRole('button', { name: /^Color de C:/ }), '7');
     await expect(page).toHaveURL(/v=C7\*2_G/);
-    await expect(first.locator('strong')).toHaveText('C7');
+    await expect(first.locator('strong').first()).toHaveText('C7');
     await expect(page.getByTestId('chord-editor')).toBeHidden();
 
     // El editor también elige la figura.

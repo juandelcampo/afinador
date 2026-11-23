@@ -1,4 +1,12 @@
-import { useEffect, useEffectEvent, useMemo, useRef, useState, type ReactNode } from 'react';
+import {
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from 'react';
 import { Link, useSearchParams, type MetaFunction } from 'react-router';
 import {
   BASS_ROLES,
@@ -26,10 +34,10 @@ import {
   POINT_LABEL,
   sameChord,
   samePole,
-  SCALES,
   FAMILY_LABEL,
   type Scale,
   scaleDegrees,
+  SCALES,
   spellIn,
   tonicNames,
   variantsOf,
@@ -39,6 +47,7 @@ import {
   type Key,
 } from '~/core/harmony';
 import { INVERSION_CHORDS } from '~/core/inversions';
+import { findWorld, WORLDS } from '~/core/scales';
 import { noteLabel, noteToMidi } from '~/core/notes';
 import {
   polarityOf,
@@ -56,9 +65,10 @@ import { Fader } from '~/shared/Fader';
 import { TEMPO_RANGE, useSettings } from '~/shared/settings';
 import { useHydrated } from '~/shared/useHydrated';
 import { Icon } from '~/shared/ui/Icon';
+import { Picker } from '~/shared/ui/Picker';
 import { Sheet } from '~/shared/ui/Sheet';
 import { TuneLink, TuningField } from '~/shared/TuningField';
-import { Button, Field, PageTitle, Rail, Segmented, Slab, SlabHead } from '~/shared/ui/ui';
+import { Button, PageTitle, Rail, Segmented, Slab, SlabHead } from '~/shared/ui/ui';
 import ui from '~/shared/ui/ui.module.css';
 import styles from './armonia.module.css';
 import { CircleNotes, CircleWheel } from './CircleOfFifths';
@@ -351,29 +361,36 @@ function ColorShape({
     : [{ suffix: chord.suffix, label: 'El que está', why: '' }, ...colors];
   return (
     <div className={styles.pickBar}>
-      <select
-        className={styles.pickColor}
-        aria-label={`Color de ${name(chord)}`}
-        value={chord.suffix}
-        onChange={(event) => onColor(event.target.value)}
+      <div className={styles.pickColor}>
+        {/* La misma lista que los otros campos: cada color con lo que le suma al acorde. */}
+        <Picker
+          compact
+          label="Color"
+          ariaLabel={`Color de ${name(chord)}`}
+          value={chord.suffix}
+          options={list.map((variant) => ({
+            value: variant.suffix,
+            label: `${variant.label} · ${name({ root: chord.root, suffix: variant.suffix })}`,
+            detail: variant.why || undefined,
+          }))}
+          onChange={onColor}
+        />
+      </div>
+      {/* Siempre está, aunque haya una sola figura: así todas las barras miden lo mismo. */}
+      <button
+        type="button"
+        className={styles.pickShape}
+        disabled={shapeCount < 2}
+        aria-label={
+          shapeCount < 2
+            ? `${name(chord)} tiene ${shapeCount === 1 ? 'una sola figura' : 'ninguna figura'} en esta afinación`
+            : `Otra figura de ${name(chord)}: va la ${shapeAt + 1} de ${shapeCount}`
+        }
+        title="Otra forma de tocar el mismo acorde"
+        onClick={() => onShape((shapeAt + 1) % shapeCount)}
       >
-        {list.map((variant) => (
-          <option key={variant.suffix} value={variant.suffix}>
-            {variant.label} · {name({ root: chord.root, suffix: variant.suffix })}
-          </option>
-        ))}
-      </select>
-      {shapeCount > 1 && (
-        <button
-          type="button"
-          className={styles.pickShape}
-          aria-label={`Otra figura de ${name(chord)}: va la ${shapeAt + 1} de ${shapeCount}`}
-          title="Otra forma de tocar el mismo acorde"
-          onClick={() => onShape((shapeAt + 1) % shapeCount)}
-        >
-          Figura {shapeAt + 1}/{shapeCount}
-        </button>
-      )}
+        Figura {shapeCount ? shapeAt + 1 : 0}/{shapeCount}
+      </button>
     </div>
   );
 }
@@ -392,6 +409,12 @@ interface CardProps {
   onAdd: () => void;
 }
 
+/**
+ * El nombre de un acorde nunca se parte ("Fa#di / m"): la letra se achica según cuántos caracteres tiene, para
+ * entrar en el ancho de su tarjeta. El CSS usa el largo; acá solo se pasa.
+ */
+const fitName = (text: string) => ({ '--chars': [...text].length }) as CSSProperties;
+
 /** Un acorde para escuchar (la tarjeta entera) y sumar a la vuelta (el +). */
 function ChordCard({ name, label, feeling, words, fingering, mark, bar, onListen, onAdd }: CardProps) {
   const text = words ?? (feeling ? feeling.words.join('. ') + '.' : undefined);
@@ -402,7 +425,9 @@ function ChordCard({ name, label, feeling, words, fingering, mark, bar, onListen
           <span className={styles.degree}>{label}</span>
           {mark}
         </span>
-        <strong className={styles.chordName}>{name}</strong>
+        <strong className={styles.chordName} style={fitName(name)}>
+          {name}
+        </strong>
         {feeling && <Feeling feeling={feeling} />}
         {text && <span className={styles.words}>{text}</span>}
         <span className={styles.tab} data-missing={!fingering}>
@@ -429,7 +454,7 @@ export default function ArmoniaRoute() {
     TUNINGS.find((item) => item.id === params.get('afinacion')) ??
     TUNINGS.find((item) => item.id === DEFAULT_TUNING)!;
   const home = homeKey(tuning);
-  const scale = findScale(params.get('escala')) ?? findScale(home.scale)!;
+  const scale = findWorld(params.get('escala')) ?? findWorld(home.scale)!;
   const tonicParam = Number(params.get('tono'));
   const tonic =
     params.has('tono') && Number.isInteger(tonicParam) && tonicParam >= 0 && tonicParam < 12
@@ -636,7 +661,9 @@ export default function ArmoniaRoute() {
   const isActive = (chord: Chord) =>
     !!activeChord && activeChord.root === chord.root && activeChord.suffix === chord.suffix;
   const pole = last && !last.bass ? samePole(last.root) : null;
-  const mode: VueltaMode = chordColor(degrees[0]!.chord.suffix) === 'minor' ? 'menor' : 'mayor';
+  /** El acorde de la tónica. En alguna escala de pocas notas (la iwato) no entra ninguno: va la nota sola. */
+  const tonicChord: Chord = degrees.find((item) => item.degree === 0)?.chord ?? { root: tonic, suffix: '5' };
+  const mode: VueltaMode = chordColor(tonicChord.suffix) === 'minor' ? 'menor' : 'mayor';
   const starter = (degreesOf: readonly string[], vueltaMode: VueltaMode) =>
     degreesOf.map((token) => romanChord(token, tonic, vueltaMode));
   const applyStarter = (chords: Chord[], vueltaMode: VueltaMode) => {
@@ -675,7 +702,7 @@ export default function ArmoniaRoute() {
         { tonic: chord.root, scale: findScale(chordColor(chord.suffix) === 'minor' ? 'natural' : 'mayor')! },
         notation,
       ),
-    worldTonic: degrees[0]!.chord,
+    worldTonic: tonicChord,
     picked: circlePick,
   };
 
@@ -781,33 +808,33 @@ export default function ArmoniaRoute() {
                 // La tónica vuelve a la que mejor cae sobre las cuerdas al aire de la nueva afinación.
                 onChange={(id) => update({ afinacion: id === DEFAULT_TUNING ? null : id, tono: null })}
               />
-              <Field label="Tónica">
-                <select id="tonica" value={tonic} onChange={(event) => update({ tono: event.target.value })}>
-                  {tonicNames(scale).map((label, pc) => (
-                    <option key={label} value={pc}>
-                      {pitchName(label, notation)}
-                    </option>
-                  ))}
-                </select>
-              </Field>
+              <Picker
+                id="tonica"
+                label="Tónica"
+                columns={4}
+                value={String(tonic)}
+                options={tonicNames(scale).map((label, pc) => ({
+                  value: String(pc),
+                  label: pitchName(label, notation),
+                }))}
+                onChange={(value) => update({ tono: value })}
+              />
               {/* Catorce mundos en pestañas se comían media pantalla: van en un desplegable, por familia. */}
-              <Field label="Mundo">
-                <select
-                  id="mundo"
-                  value={scale.id}
-                  onChange={(event) => update({ escala: event.target.value })}
-                >
-                  {(Object.keys(FAMILY_LABEL) as Scale['family'][]).map((family) => (
-                    <optgroup key={family} label={FAMILY_LABEL[family]}>
-                      {SCALES.filter((other) => other.family === family).map((other) => (
-                        <option key={other.id} value={other.id}>
-                          {other.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-              </Field>
+              <Picker
+                id="mundo"
+                label="Mundo"
+                value={scale.id}
+                groups={(Object.keys(FAMILY_LABEL) as Scale['family'][]).map((family) => ({
+                  id: family,
+                  name: FAMILY_LABEL[family],
+                  options: WORLDS.filter((other) => other.family === family).map((other) => ({
+                    value: other.id,
+                    label: other.name,
+                    detail: other.character,
+                  })),
+                }))}
+                onChange={(value) => update({ escala: value })}
+              />
               <TuneLink tuning={tuning} />
             </div>
           </Slab>
@@ -826,7 +853,15 @@ export default function ArmoniaRoute() {
                   </span>
                 </p>
                 <p>{scale.character}</p>
-                {scale.family !== 'tonal' && (
+                {!SCALES.includes(scale) && (
+                  <p className={ui.hint}>
+                    Esta escala no está en el libro de De María: sus acordes no traen la emoción de cada
+                    grado. Escuchalos y elegí con el oído.
+                    {scale.steps.length !== 7 &&
+                      ' Tiene menos acordes que las de siete notas: solo los que entran enteros en la escala.'}
+                  </p>
+                )}
+                {!!scale.characteristic?.length && (
                   <p className={ui.hint}>
                     Para que {scale.family === 'modo' ? 'el modo' : 'la escala'} se sienta, usá los acordes
                     marcados con ★: son los que la distinguen de la escala mayor o menor de siempre.{' '}
@@ -888,16 +923,17 @@ export default function ArmoniaRoute() {
               >
                 Círculo de quintas <span>· los vecinos del mundo</span>
               </button>
-              <CircleWheel
-                {...circleProps}
-                onPick={(chord) => {
-                  setCirclePick(chord);
-                  listen(chord);
-                }}
-                onAdd={add}
-              />
-              <div className={styles.circleText}>
+              {/* La columna del círculo: su título, la rueda y lo que se lee de ella, juntos. */}
+              <div className={styles.circle}>
                 <h3 className={styles.subhead}>Círculo de quintas</h3>
+                <CircleWheel
+                  {...circleProps}
+                  onPick={(chord) => {
+                    setCirclePick(chord);
+                    listen(chord);
+                  }}
+                  onAdd={add}
+                />
                 <CircleNotes
                   {...circleProps}
                   onMoveWorld={(chord) =>
@@ -1122,7 +1158,7 @@ export default function ArmoniaRoute() {
                             onClick={() => openEditor(index)}
                           >
                             <small>{degreeLabel(chord, key)}</small>
-                            <strong>{name(chord)}</strong>
+                            <strong style={fitName(name(chord))}>{name(chord)}</strong>
                             {feeling && <Feeling feeling={feeling} />}
                             {wide && feeling && (
                               <span className={styles.words}>{feeling.words.join('. ')}.</span>

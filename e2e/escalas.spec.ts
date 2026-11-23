@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { clicks, countSounds, goto, plucks, watchErrors } from './fixtures/helpers';
+import { clicks, countSounds, goto, pick, plucks, watchErrors } from './fixtures/helpers';
 
 test.describe('escalas', () => {
   test.beforeEach(async ({ page }) => {
@@ -18,7 +18,7 @@ test.describe('escalas', () => {
     await expect(notes.getByRole('button')).toHaveCount(7);
 
     // Dos cambios seguidos: el segundo no pisa al primero.
-    await page.locator('#escala').selectOption('blues');
+    await pick(page, 'escala', 'blues');
     await page.getByRole('group', { name: 'Tónica' }).getByRole('button', { name: 'A', exact: true }).click();
     await expect(page).toHaveURL(/escala=blues/);
     await expect(page).toHaveURL(/tono=9/);
@@ -41,15 +41,18 @@ test.describe('escalas', () => {
     await page.getByRole('button', { name: /Posición anterior/ }).click();
     await expect(counter).toHaveText(/^Posición (\d+) de \1$/);
 
-    // El blues no está en Armonía: no hay link a sus acordes.
-    await expect(page.getByRole('link', { name: 'Sus acordes en Armonía' })).toHaveCount(0);
+    // Todas las escalas están en Armonía: también el blues tiene el link a sus acordes.
+    await expect(page.getByRole('link', { name: 'Sus acordes en Armonía' })).toHaveAttribute(
+      'href',
+      /escala=blues/,
+    );
     expect(errors).toEqual([]);
   });
 
   test('suena la escala y el drone, y lleva a Armonía con la misma tonalidad', async ({ page }) => {
     const errors = watchErrors(page);
     await goto(page, '/escalas?afinacion=dadgad&tono=2&escala=mixolidio');
-    await expect(page.locator('#afinacion')).toHaveValue('dadgad');
+    await expect(page.locator('#afinacion')).toHaveAttribute('data-value', 'dadgad');
 
     const before = await plucks(page);
     await page.getByRole('button', { name: '▶ Escuchar' }).click();

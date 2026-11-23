@@ -26,8 +26,9 @@ import { Diapason } from '~/shared/Diapason';
 import { useSettings } from '~/shared/settings';
 import { TuneLink, TuningField } from '~/shared/TuningField';
 import { Icon } from '~/shared/ui/Icon';
+import { Picker } from '~/shared/ui/Picker';
 import { Sheet } from '~/shared/ui/Sheet';
-import { Browse, Button, Field, PageTitle, Slab, SplitButton, Toggle } from '~/shared/ui/ui';
+import { Browse, Button, PageTitle, Slab, SplitButton, Toggle } from '~/shared/ui/ui';
 import ui from '~/shared/ui/ui.module.css';
 import { useHydrated } from '~/shared/useHydrated';
 import { DronePanel } from './DronePanel';
@@ -216,25 +217,25 @@ export default function EscalasRoute() {
             // La tónica vuelve a la que mejor cae sobre las cuerdas al aire de la nueva afinación.
             onChange={(id) => update({ afinacion: id === DEFAULT_TUNING ? null : id, tono: null })}
           />
-          <Field label="Escala">
-            <select id="escala" value={scale.id} onChange={(event) => update({ escala: event.target.value })}>
-              {FAMILIES.map((family) => (
-                <optgroup key={family} label={FAMILY_NAMES[family]}>
-                  {ALL_SCALES.filter((item) => item.family === family).map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-          </Field>
+          <Picker
+            id="escala"
+            label="Escala"
+            value={scale.id}
+            groups={FAMILIES.map((family) => ({
+              id: family,
+              name: FAMILY_NAMES[family],
+              options: ALL_SCALES.filter((item) => item.family === family).map((item) => ({
+                value: item.id,
+                label: item.name,
+                detail: item.character,
+              })),
+            }))}
+            onChange={(value) => update({ escala: value })}
+          />
           <TuneLink tuning={tuning} />
-          {scale.inArmonia && (
-            <Link className={ui.bridge} to={armoniaLink}>
-              Sus acordes en Armonía <Icon name="right" />
-            </Link>
-          )}
+          <Link className={ui.bridge} to={armoniaLink}>
+            Sus acordes en Armonía <Icon name="right" />
+          </Link>
         </div>
       </Slab>
 
@@ -364,6 +365,7 @@ export default function EscalasRoute() {
           )}
         </p>
       </Slab>
+
       <Sheet
         open={droneSheet}
         title={`Drone en ${name(tonic)}`}

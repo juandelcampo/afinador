@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { countSounds, goto, plucks, watchErrors } from './fixtures/helpers';
+import { countSounds, goto, pick, plucks, watchErrors } from './fixtures/helpers';
 
 test.describe('inversiones', () => {
   test.beforeEach(async ({ page }) => {
@@ -18,7 +18,7 @@ test.describe('inversiones', () => {
       .getByRole('group', { name: 'Nota del acorde' })
       .getByRole('button', { name: 'C', exact: true })
       .click();
-    await page.locator('#tipo').selectOption('');
+    await pick(page, 'tipo', '');
     await expect(page).toHaveURL(/acorde=C(&|$)/);
 
     const bass = page.getByRole('group', { name: 'Qué va en el bajo' });
@@ -43,7 +43,7 @@ test.describe('inversiones', () => {
       page.getByTestId('diapason').getByRole('button', { name: /^Sacar el dedo de la 6\.ª cuerda.*\(3\)$/ }),
     ).toBeVisible();
 
-    await page.locator('#tipo').selectOption('maj7');
+    await pick(page, 'tipo', 'maj7');
     await expect(page).toHaveURL(/acorde=Cmaj7/);
     await expect(bass.getByRole('button', { name: /Cmaj7\/B/ })).toBeVisible();
     expect(errors).toEqual([]);
@@ -52,7 +52,7 @@ test.describe('inversiones', () => {
   test('se abre con la afinación y el acorde de la URL', async ({ page }) => {
     const errors = watchErrors(page);
     await goto(page, '/inversiones?afinacion=dadgad&acorde=G');
-    await expect(page.locator('#afinacion')).toHaveValue('dadgad');
+    await expect(page.locator('#afinacion')).toHaveAttribute('data-value', 'dadgad');
     await expect(
       page.getByRole('group', { name: 'Qué va en el bajo' }).getByRole('button').first(),
     ).toHaveText(/^GFundamental/);

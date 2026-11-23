@@ -1,11 +1,11 @@
 // Escalas para tocar: todas las de Armonía (con el carácter que les da De María) y además las
 // pentatónicas, el blues, más exóticas, las de jazz y las simétricas. Las palabras de las que no están en
 // Armonía son nuestras. Acá no se arman acordes: se ve dónde cae cada nota en el mástil y cómo suena.
-import { SCALES, spellWithLetter, tonicNames, type Point } from './harmony';
+import { SCALES, spellWithLetter, tonicNames, type Point, type Scale } from './harmony';
 import { noteToMidi } from './notes';
 import { openChord } from './tuning';
 
-export type ScaleFamily = 'tonal' | 'modo' | 'pentatonica' | 'exotica' | 'jazz' | 'simetrica';
+export type ScaleFamily = Scale['family'];
 
 export interface ScaleInfo {
   id: string;
@@ -20,8 +20,6 @@ export interface ScaleInfo {
   minorSpelling: boolean;
   /** Solo las de Armonía: si tiene sensible que tira a la tónica. */
   point?: Point;
-  /** Si Armonía la conoce: entonces sus acordes están allá, con la misma URL. */
-  inArmonia: boolean;
 }
 
 export const FAMILY_NAMES: Record<ScaleFamily, string> = {
@@ -49,7 +47,6 @@ const extra = (
   character,
   steps,
   minorSpelling: steps.includes(3) && !steps.includes(4),
-  inArmonia: false,
 });
 
 const FROM_ARMONIA: ScaleInfo[] = SCALES.map((scale) => ({
@@ -61,7 +58,6 @@ const FROM_ARMONIA: ScaleInfo[] = SCALES.map((scale) => ({
   steps: scale.steps,
   minorSpelling: scale.minorSpelling,
   point: scale.point,
-  inArmonia: true,
 }));
 
 const PENTATONICAS: ScaleInfo[] = [
@@ -414,3 +410,28 @@ export function tonicToTonic(run: readonly ScaleNote[], tonic: number): ScaleNot
 export function octaveOf(tonicMidi: number, steps: readonly number[]): number[] {
   return [...steps.map((step) => tonicMidi + step), tonicMidi + 12];
 }
+
+// ---------------------------------------------------------------- los mundos de Armonía
+
+/**
+ * Los mundos de Armonía: los catorce de De María y, además, todas las de Escalas, con la misma URL. Las
+ * nuevas no traen la emoción de cada grado (eso es del libro); con sensible tienen punta, sin quinta son
+ * inestables.
+ */
+export const WORLDS: readonly Scale[] = [
+  ...SCALES,
+  ...[...PENTATONICAS, ...EXOTICAS, ...JAZZ, ...SIMETRICAS].map((info): Scale => ({
+    id: info.id,
+    name: info.name,
+    alias: info.alias,
+    family: info.family,
+    point: info.steps.includes(11) ? 'con' : info.steps.includes(7) ? 'sin' : 'inestable',
+    character: info.character,
+    steps: info.steps,
+    sevenths: [],
+    minorSpelling: info.minorSpelling,
+    letters: info.steps.map((step) => Number(degreeName(step, info.steps).replace(/[♭♯]/g, '')) - 1),
+  })),
+];
+
+export const findWorld = (id: string | null | undefined) => WORLDS.find((scale) => scale.id === id);

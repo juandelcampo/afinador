@@ -22,7 +22,8 @@ import { useSettings } from '~/shared/settings';
 import { useHydrated } from '~/shared/useHydrated';
 import { Diapason, LAST_FRET } from '~/shared/Diapason';
 import { TuneLink, TuningField } from '~/shared/TuningField';
-import { Browse, Button, Field, PageTitle, Slab } from '~/shared/ui/ui';
+import { Picker } from '~/shared/ui/Picker';
+import { Browse, Button, PageTitle, Slab } from '~/shared/ui/ui';
 import ui from '~/shared/ui/ui.module.css';
 import styles from './inversiones.module.css';
 
@@ -256,19 +257,13 @@ export default function InversionesRoute() {
             tuning={tuning}
             onChange={(id) => update({ afinacion: id === DEFAULT_TUNING ? null : id, forma: null })}
           />
-          <Field label="Tipo">
-            <select
-              id="tipo"
-              value={chord.suffix}
-              onChange={(event) => setChord({ suffix: event.target.value })}
-            >
-              {INVERSION_CHORDS.map((item) => (
-                <option key={item.suffix} value={item.suffix}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </Field>
+          <Picker
+            id="tipo"
+            label="Tipo"
+            value={chord.suffix}
+            options={INVERSION_CHORDS.map((item) => ({ value: item.suffix, label: item.label }))}
+            onChange={(value) => setChord({ suffix: value })}
+          />
           <TuneLink tuning={tuning} />
         </div>
       </Slab>

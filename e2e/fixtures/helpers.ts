@@ -1,4 +1,19 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
+
+/**
+ * Elige en un Picker (los campos que abren una lista): abre el campo, despliega el grupo de la opción si
+ * está plegado y la toca. El campo es su id ("mundo") o el botón mismo.
+ */
+export async function pick(page: Page, field: string | Locator, value: string) {
+  await (typeof field === 'string' ? page.locator(`#${field}`) : field).click();
+  const panel = page.locator('[popover]:popover-open');
+  const option = panel.locator(`[data-option="${value}"]`);
+  if (!(await option.isVisible())) {
+    const group = panel.locator(':scope > div').filter({ has: page.locator(`[data-option="${value}"]`) });
+    await group.locator('h3 button').click();
+  }
+  await option.click();
+}
 
 /** Falla la prueba si la página tira un error, incluidos los de hidratación de React. */
 export function watchErrors(page: Page): string[] {

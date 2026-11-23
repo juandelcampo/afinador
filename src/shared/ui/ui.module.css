@@ -458,6 +458,200 @@ button:disabled {
   letter-spacing: 0;
   text-transform: none;
 }
+/* Picker: el campo que abre una lista. Se ve como un campo: borde de contorno, papel, gris al pasar. */
+.pickerTrigger {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--touch);
+  padding: 6px 10px;
+  border: var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  letter-spacing: 0;
+  text-align: left;
+  text-transform: none;
+  transition: background-color 120ms var(--ease);
+}
+.pickerTrigger:hover {
+  background: var(--soft);
+}
+.pickerTrigger[aria-expanded='true'] {
+  background: var(--ink);
+  color: var(--paper);
+}
+.pickerValue {
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  align-items: baseline;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+/* Lo elegido con la misma letra que las filas de la lista: el nombre en Archivo, el detalle en mono. */
+.pickerValue strong {
+  flex: none;
+  font: 700 16px/1.2 var(--ui);
+}
+.pickerValue small {
+  min-width: 0;
+  overflow: hidden;
+  font: 500 13px/1.2 var(--mono);
+  text-overflow: ellipsis;
+}
+.pickerArrow {
+  flex: none;
+  font: 900 14px/1 var(--ui);
+}
+/* Chico, adentro de una tarjeta: sin contorno propio, la tarjeta ya lo tiene. */
+.pickerTrigger[data-compact] {
+  min-height: 34px;
+  padding: 0 8px;
+  border: 0;
+}
+.pickerTrigger[data-compact] strong {
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+}
+.pickerTrigger[data-compact] .pickerArrow {
+  font-size: 12px;
+}
+
+/* La lista que se abre: un panel flotante, con la sombra de los paneles flotantes. */
+.pickerPanel {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--lift) var(--lift) 0 var(--ink);
+}
+
+/* La lista con grupos: la de afinaciones del Afinador y la que abre cada Picker. El nombre del grupo va en
+   una barra negra que queda arriba mientras se recorre. */
+.listTitle {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0;
+  border-bottom: 2px solid var(--paper);
+  background: var(--ink);
+  color: var(--paper);
+  font: 800 expanded 12px/1.3 var(--heavy);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.listTitle button {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  min-height: var(--touch);
+  padding: 6px var(--gutter);
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  text-transform: inherit;
+}
+.listTitle button:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.listTitle button:focus-visible {
+  outline-color: var(--paper);
+  outline-offset: -5px;
+}
+.listTitle button > span:first-child {
+  flex: 1;
+}
+/* El grupo de lo elegido lleva una marca de acento. */
+.listTitle button[data-current] > span:first-child::before {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  background: var(--accent);
+  content: '';
+  vertical-align: 1px;
+}
+.listCount {
+  font: 700 12px/1 var(--mono);
+}
+.listTitle button > span[aria-hidden] {
+  width: 1ch;
+  font: 900 18px/1 var(--heavy);
+  text-align: center;
+}
+.listOptions {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.listOptions[data-columns] {
+  display: grid;
+}
+.listItem {
+  display: block;
+  width: 100%;
+  min-height: var(--touch);
+  padding: 6px var(--gutter);
+  border: 0;
+  border-bottom: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
+  transition:
+    background-color 120ms var(--ease),
+    padding-left 160ms var(--ease);
+}
+.listItem:hover {
+  padding-left: calc(var(--gutter) + 4px);
+  background: var(--soft);
+}
+/* Lo elegido: en acento, con la barra de tinta a la izquierda. En el Afinador es la página abierta. */
+.listItem[aria-current='true'],
+.listItem[aria-current='page'] {
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: inset 6px 0 0 var(--ink);
+}
+.listItem:focus-visible {
+  outline-offset: -5px;
+}
+.listItem strong {
+  display: block;
+  font: 700 15px/1.3 var(--ui);
+  overflow-wrap: anywhere;
+}
+.listItem small {
+  display: block;
+  font: 400 12px/1.5 var(--mono);
+  overflow-wrap: anywhere;
+}
+/* En grilla (las tónicas), cada casilla centrada y con su raya a la derecha. */
+.listOptions[data-columns] .listItem {
+  border-right: 2px solid var(--ink);
+  text-align: center;
+}
+.listOptions[data-columns] .listItem {
+  padding-inline: 4px;
+}
+.listOptions[data-columns] .listItem:hover {
+  padding-left: 4px;
+}
+
 .field input[type='range'] {
   height: var(--touch);
   margin: 0;

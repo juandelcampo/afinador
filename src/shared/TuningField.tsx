@@ -4,25 +4,29 @@ import { noteLabel } from '~/core/notes';
 import { GROUPS, TUNINGS, type Tuning } from '~/data/tunings';
 import { useSettings } from './settings';
 import { Icon } from './ui/Icon';
-import { Field } from './ui/ui';
+import { Picker } from './ui/Picker';
 import styles from './ui/ui.module.css';
 
 export function TuningField({ tuning, onChange }: { tuning: Tuning; onChange: (id: string) => void }) {
   const notation = useSettings((s) => s.notation);
   return (
-    <Field label="Afinación" wide>
-      <select id="afinacion" value={tuning.id} onChange={(event) => onChange(event.target.value)}>
-        {GROUPS.map((group) => (
-          <optgroup key={group.id} label={group.name}>
-            {TUNINGS.filter((item) => item.group === group.id).map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name} · {item.notes.map((note) => noteLabel(note, notation)).join(' ')}
-              </option>
-            ))}
-          </optgroup>
-        ))}
-      </select>
-    </Field>
+    <Picker
+      id="afinacion"
+      label="Afinación"
+      wide
+      showDetail
+      value={tuning.id}
+      groups={GROUPS.map((group) => ({
+        id: group.id,
+        name: group.name,
+        options: TUNINGS.filter((item) => item.group === group.id).map((item) => ({
+          value: item.id,
+          label: item.name,
+          detail: item.notes.map((note) => noteLabel(note, notation)).join(' '),
+        })),
+      }))}
+      onChange={onChange}
+    />
   );
 }
 

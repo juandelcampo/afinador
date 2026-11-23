@@ -249,8 +249,11 @@
   font: 700 13px/1.3 var(--mono);
 }
 .chordName {
-  font: 900 semi-expanded 22px/1.05 var(--heavy);
-  overflow-wrap: anywhere;
+  /* Nunca se parte: con muchos caracteres, la letra baja hasta entrar en la columna de la tarjeta (todo el
+     ancho menos el + y los márgenes). 0.72 es lo que ocupa cada carácter de esta letra, en em. */
+  font: 900 semi-expanded min(22px, calc((100cqi - var(--touch) - 22px) / (var(--chars, 4) * 0.72)))/1.1
+    var(--heavy);
+  white-space: nowrap;
 }
 .words {
   font-size: 12px;
@@ -390,8 +393,9 @@
   font: 700 12px/1.3 var(--mono);
 }
 .chips strong {
-  font: 900 semi-expanded 18px/1.1 var(--heavy);
-  overflow-wrap: anywhere;
+  /* Como en las tarjetas de los grados: entero, y más chico si es largo. Al costado van la ✕ y la manija. */
+  font: 900 semi-expanded min(18px, calc((100cqi - 52px) / (var(--chars, 4) * 0.72)))/1.1 var(--heavy);
+  white-space: nowrap;
 }
 
 .editor {
@@ -851,29 +855,25 @@
   grid-column: 1 / -1;
   border-top: 2px solid var(--ink);
 }
-.pickColor,
-.pickShape {
-  min-height: 34px;
-  border: 0;
-  background: var(--paper);
-  color: var(--ink);
-  font: 700 12px/1.1 var(--mono);
-}
+/* El color es un Picker chico; la figura, un botón con la misma letra y el mismo alto, al lado. */
 .pickColor {
+  display: flex;
   flex: 1;
   width: 0;
   min-width: 0;
-  padding: 0 4px;
-  text-overflow: ellipsis;
 }
 .pickShape {
   flex: none;
-  padding: 0 6px;
+  min-height: 34px;
+  padding: 0 8px;
+  border: 0;
   border-left: 2px solid var(--ink);
-  text-transform: uppercase;
+  background: var(--paper);
+  color: var(--ink);
+  font: 700 13px/1.2 var(--ui);
   white-space: nowrap;
+  transition: background-color 120ms var(--ease);
 }
-.pickColor:hover,
 .pickShape:hover {
   background: var(--soft);
 }
@@ -943,7 +943,7 @@
   padding: 8px 36px 10px 10px;
 }
 .chips[data-wide] strong {
-  font-size: 30px;
+  font-size: min(30px, calc((100cqi - 56px) / (var(--chars, 4) * 0.72)));
 }
 
 /* Una opción, como las tarjetas de acordes: el recuadro suena, el + la pone. */
@@ -1003,18 +1003,17 @@
   cursor: default;
 }
 
-/* Mundo, acordes y rueda. En el celular, en fila: el mundo, sus acordes y la rueda que se abre a pedido.
-   Con lugar en el medio, la rueda va sola a la derecha desde la altura del mundo, del tamaño que entre en
-   la pantalla, y a la izquierda quedan el mundo, los acordes y lo que se lee de la rueda. */
+/* Mundo, acordes y rueda. En el celular, en fila: el mundo, sus acordes y el círculo, que se abre a pedido.
+   Con lugar, dos columnas que arrancan a la misma altura: a la izquierda el mundo y sus acordes; a la
+   derecha, tras una raya, el círculo con su título, la rueda a todo el ancho de la columna y su lectura. */
 .worldGrid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
 }
-.worldGrid[data-circle='closed'] > .wheel,
-.worldGrid[data-circle='closed'] > .circleText {
+.worldGrid[data-circle='closed'] > .circle {
   display: none;
 }
-.circleText > .subhead {
+.circle > .subhead {
   display: none;
 }
 .circleToggle {
@@ -1052,38 +1051,36 @@
 @container center (min-width: 940px) {
   .worldGrid {
     grid-template-areas:
-      'world wheel'
-      'chords wheel'
-      'notes wheel';
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-rows: auto auto 1fr;
-    column-gap: 56px;
+      'world circle'
+      'chords circle';
+    grid-template-columns: minmax(0, 1fr) clamp(340px, 34%, 460px);
+    grid-template-rows: auto 1fr;
   }
   .worldGrid > .world {
     grid-area: world;
+    padding-right: 24px;
   }
   .worldChords {
     grid-area: chords;
+    padding-right: 24px;
   }
-  .worldGrid > .circleText,
-  .worldGrid[data-circle='closed'] > .circleText {
-    display: block;
-    grid-area: notes;
-    margin-top: 18px;
+  .worldGrid > .circle,
+  .worldGrid[data-circle='closed'] > .circle {
+    display: grid;
+    grid-area: circle;
+    align-content: start;
+    /* El mismo arranque que el mundo, a la izquierda. */
+    margin-top: 12px;
+    padding-left: 24px;
+    border-left: 2px solid var(--ink);
   }
-  .circleText > .subhead {
+  .circle > .subhead {
     display: block;
+    margin-top: 0;
   }
-  .worldGrid > .wheel,
-  .worldGrid[data-circle='closed'] > .wheel {
-    display: block;
-    grid-area: wheel;
-    /* Sin esto la caja se estira al alto de la columna y el medio de la rueda se corre. */
-    align-self: start;
-    /* Lo que entra en la pantalla debajo de las pestañas de Mundo (dos filas), con aire alrededor: entre 300
-       y 470 px. */
-    width: clamp(300px, calc(100dvh - 530px), 470px);
-    margin: 16px 24px 16px 0;
+  .circle > .wheel {
+    width: 100%;
+    margin: 16px 0 0;
   }
   .circleToggle {
     display: none;

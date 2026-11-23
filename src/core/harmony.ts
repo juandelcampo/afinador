@@ -156,7 +156,7 @@ export interface Scale {
   name: string;
   /** Otro nombre, el de su modo. */
   alias?: string;
-  family: 'tonal' | 'modo' | 'exotica';
+  family: 'tonal' | 'modo' | 'pentatonica' | 'exotica' | 'jazz' | 'simetrica';
   point: Point;
   /** El carácter, en palabras de De María. */
   character: string;
@@ -171,6 +171,11 @@ export interface Scale {
   risky?: number;
   /** Si la tónica se escribe como en las tonalidades menores (C#, G#) o mayores (Db, Ab). */
   minorSpelling: boolean;
+  /**
+   * En las que no son de siete notas: qué grado de la escala mayor es cada paso (0 la tónica, 2 la
+   * tercera…), para escribirlo con su letra. Lo calcula Escalas, así las dos herramientas dicen lo mismo.
+   */
+  letters?: readonly number[];
 }
 
 const f = (feeling: Feeling, amount: number, ...words: string[]): DegreeFeeling => ({
@@ -390,8 +395,23 @@ export const SCALES: readonly Scale[] = [
 export const FAMILY_LABEL: Record<Scale['family'], string> = {
   tonal: 'Tonales',
   modo: 'Modos',
+  pentatonica: 'Pentatónicas',
   exotica: 'Exóticas',
+  jazz: 'De jazz',
+  simetrica: 'Simétricas',
 };
+
+/** Si la escala tiene siete notas: entonces cada nota es un grado, con su letra y su número romano. */
+const heptatonic = (scale: Pick<Scale, 'steps'>) => scale.steps.length === 7;
+
+/**
+ * Qué grado de la escala mayor es cada nota de la escala: en las de siete, su lugar; en las otras, lo que
+ * diga la escala, o el grado más cercano (el 3 es la tercera menor, el 10 la séptima menor).
+ */
+const LETTER_OF_STEP = [0, 1, 1, 2, 2, 3, 3, 4, 5, 5, 6, 6];
+const letterOf = (scale: Scale, degree: number) =>
+  heptatonic(scale) ? degree : (scale.letters?.[degree] ?? LETTER_OF_STEP[scale.steps[degree]!]!);
+const MAJOR_STEPS = [0, 2, 4, 5, 7, 9, 11];
 
 export const POINT_LABEL: Record<Point, string> = {
   sin: 'Sin punta',
@@ -414,11 +434,12 @@ export const tonicNames = (scale: Pick<Scale, 'minorSpelling'>) => (scale.minorS
 export function spellIn(pc: number, key: Key): string {
   const tonicName = tonicNames(key.scale)[key.tonic]!;
   const tonicLetter = LETTERS.indexOf(tonicName[0] as (typeof LETTERS)[number]);
-  const degree = key.scale.steps.findIndex((step) => mod12(key.tonic + step) === mod12(pc));
+  const step = mod12(pc - key.tonic);
+  const degree = key.scale.steps.indexOf(step);
   // Fuera de la escala, como se escriben las tónicas de su familia: sostenidos en menor (C#, G#).
   const plain = tonicNames(key.scale)[mod12(pc)]!;
-  if (degree >= 0) return spellWithLetter(pc, tonicLetter + degree) ?? plain;
-  return plain;
+  if (degree < 0) return plain;
+  return spellWithLetter(pc, tonicLetter + letterOf(key.scale, degree)) ?? plain;
 }
 
 export function chordName(chord: Chord, key: Key, notation: Notation): string {
@@ -435,7 +456,37 @@ const CHROMATIC = ['I', '♭II', 'II', '♭III', 'III', 'IV', '♯IV', 'V', '♭
 export function degreeLabel(chord: Chord, key: Key): string {
   const step = mod12(chord.root - key.tonic);
   const degree = key.scale.steps.indexOf(step);
-  return (degree >= 0 ? ROMAN[degree]! : CHROMATIC[step]!) + DEGREE_SUFFIX[chord.suffix];
+  if (degree < 0) return CHROMATIC[step]! + DEGREE_SUFFIX[chord.suffix];
+  if (heptatonic(key.scale)) return ROMAN[degree]! + DEGREE_SUFFIX[chord.suffix];
+  // En las otras, el grado de la mayor con su alteración: en el blues, el ♭V y no el ♯IV.
+  const letter = letterOf(key.scale, degree);
+  const shift = mod12(step - MAJOR_STEPS[letter]! + 6) - 6;
+  const accidental = shift < 0 ? '♭'.repeat(-shift) : '♯'.repeat(shift);
+  return accidental + ROMAN[letter]! + DEGREE_SUFFIX[chord.suffix];
+}
+
+/**
+ * En una escala que no es de siete notas no hay terceras para apilar: sobre cada nota va el acorde que
+ * entra entero en la escala, del más común al más raro. Si no entra ninguno, esa nota no tiene acorde.
+ */
+const FITTING: ReadonlyArray<readonly [Suffix, readonly number[]]> = [
+  ['', [4, 7]],
+  ['m', [3, 7]],
+  ['dim', [3, 6]],
+  ['aug', [4, 8]],
+  ['sus4', [5, 7]],
+  ['sus2', [2, 7]],
+  ['(b5)', [4, 6]],
+  ['sus2(b5)', [2, 6]],
+  ['5', [7]],
+];
+
+function fittingChord(key: Key, degree: number): Chord | null {
+  const steps = key.scale.steps;
+  const base = steps[degree]!;
+  const above = new Set(steps.map((step) => mod12(step - base)));
+  const found = FITTING.find(([, needs]) => needs.every((step) => above.has(step)));
+  return found ? { root: mod12(key.tonic + base), suffix: found[0] } : null;
 }
 
 /** El acorde de un grado: tríada por terceras de la escala, con séptima si el libro la pone. */
@@ -444,6 +495,9 @@ export function degreeChord(
   degree: number,
   withSeventh = key.scale.sevenths.includes(degree),
 ): Chord {
+  if (!heptatonic(key.scale)) {
+    return fittingChord(key, degree) ?? { root: mod12(key.tonic + key.scale.steps[degree]!), suffix: '5' };
+  }
   const steps = key.scale.steps;
   const at = (offset: number) => mod12(steps[(degree + offset) % 7]! - steps[degree]!);
   const third = at(2);
@@ -456,7 +510,10 @@ export function degreeChord(
   // En las exóticas (la árabe, la húngara) aparecen tríadas que no son ni mayores ni menores.
   else if (third === 4 && fifth === 6) suffix = withSeventh && seventh === 10 ? '7b5' : '(b5)';
   else if (third === 2 && fifth === 6) suffix = 'sus2(b5)';
-  else suffix = 'aug';
+  else if (third === 4 && fifth === 8) suffix = 'aug';
+  // Lo que no se arma por terceras (en la alterada, la enigmática): el que entre entero, como en las de
+  // menos notas.
+  else return fittingChord(key, degree) ?? { root: mod12(key.tonic + steps[degree]!), suffix: 'aug' };
   return { root: mod12(key.tonic + steps[degree]!), suffix };
 }
 
@@ -468,14 +525,24 @@ export interface DegreeInfo {
   risky: boolean;
 }
 
+/**
+ * Los acordes de la escala, grado por grado. En las de siete notas hay uno por nota; en las otras, solo las
+ * notas sobre las que entra un acorde entero: por eso tienen menos.
+ */
 export function scaleDegrees(key: Key): DegreeInfo[] {
-  return key.scale.steps.map((_, degree) => ({
-    degree,
-    chord: degreeChord(key, degree),
-    feeling: key.scale.feelings?.[degree],
-    characteristic: key.scale.characteristic?.includes(degree) ?? false,
-    risky: key.scale.risky === degree,
-  }));
+  return key.scale.steps.flatMap((_, degree) => {
+    const chord = heptatonic(key.scale) ? degreeChord(key, degree) : fittingChord(key, degree);
+    if (!chord) return [];
+    return [
+      {
+        degree,
+        chord,
+        feeling: key.scale.feelings?.[degree],
+        characteristic: key.scale.characteristic?.includes(degree) ?? false,
+        risky: key.scale.risky === degree,
+      },
+    ];
+  });
 }
 
 /** ALEGRE ++, TRISTE −−−, RARO −−−−−: el rótulo de la tabla del libro. */
@@ -698,6 +765,8 @@ const FUNCTION_DEGREES: Record<HarmonicFunction, readonly number[]> = {
 
 /** El papel de un acorde en la tonalidad según su raíz, o null si la raíz no es de la escala. */
 export function functionOf(chord: Chord, key: Key): FunctionInfo | null {
+  // Tónica, subdominante y dominante son de las escalas de siete notas: en las otras no hay grados fijos.
+  if (!heptatonic(key.scale)) return null;
   const degree = key.scale.steps.indexOf(mod12(chord.root - key.tonic));
   if (degree < 0) return null;
   const id = (Object.keys(FUNCTION_DEGREES) as HarmonicFunction[]).find((item) =>
