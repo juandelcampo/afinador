@@ -37,12 +37,57 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
-.tab {
-  font: 700 15px/1.2 var(--mono);
+
+/* La forma (como el recuadro de las formas de Inversiones) y al lado lo que suena, en una fila.
+   En el celular la forma va arriba y los tres botones abajo. */
+.play {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  margin-top: 12px;
+}
+.play > * {
+  padding-inline: 6px;
+  font-size: 12px;
+}
+.play > .shape {
+  grid-column: 1 / -1;
+}
+.shape {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 6px;
+  border: var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+}
+.shape:hover:not(:disabled) {
+  background: var(--soft);
+}
+.shape:active:not(:disabled) {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.shape:disabled {
   color: var(--muted);
 }
-.result:active .tab {
-  color: inherit;
+@container content (min-width: 640px) {
+  .play {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .play > * {
+    flex: none;
+    padding-inline: 14px;
+    font-size: 13px;
+  }
+  .play > .shape {
+    flex: 1 1 280px;
+  }
 }
 
 /* Lo que se explica después de escucharlo. */

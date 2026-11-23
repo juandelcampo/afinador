@@ -208,7 +208,6 @@ export default function AcordeRoute() {
         >
           <strong className={styles.name}>{title}</strong>
           <span className={styles.words}>{words}</span>
-          <span className={styles.tab}>{tabOf(frets)}</span>
         </button>
 
         <Diapason
@@ -220,7 +219,20 @@ export default function AcordeRoute() {
           onToggle={toggle}
         />
 
-        <div className={ui.actions}>
+        {/* La forma y lo que suena en una sola fila, como en Escalas e Inversiones: miden lo mismo. */}
+        <div className={styles.play}>
+          <button
+            type="button"
+            className={styles.shape}
+            aria-label={`Escuchar tu forma: ${tabOf(frets)}`}
+            disabled={!sounding.length}
+            onClick={strum}
+          >
+            <span className={ui.browseCount}>
+              Tu forma · {sounding.length} {sounding.length === 1 ? 'cuerda' : 'cuerdas'}
+            </span>
+            <strong className={ui.browseMain}>{tabOf(frets)}</strong>
+          </button>
           <Button variant="primary" onClick={strum} disabled={!sounding.length}>
             ▶ Escuchar
           </Button>
