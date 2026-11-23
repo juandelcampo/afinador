@@ -210,7 +210,6 @@
 }
 /* Los trazos miden lo mismo en píxeles aunque la figura crezca. */
 .shape,
-.outline,
 .star,
 .rest,
 .corner,
@@ -229,21 +228,15 @@
 .star[data-lane='1'] {
   stroke-width: 3px;
 }
-/* La estrella va adentro del polígono parejo, más fino. */
-.outline {
-  fill: none;
-  stroke: var(--ink);
-  stroke-width: 2px;
-  stroke-linejoin: miter;
-}
 /* Un silencio: una muesca de través sobre el lado, como en una regla. */
 .rest {
   stroke: var(--ink);
   stroke-width: 2px;
 }
-/* El lápiz: pinta de naranja el lado que suena; quieto, no se ve. */
+/* El lápiz: la estela gris del lado que se recorre; quieto, no se ve. El naranja es solo de la esquina
+   que suena. */
 .traveler {
-  stroke: var(--accent);
+  stroke: var(--muted);
   stroke-width: 6px;
   stroke-linecap: butt;
 }

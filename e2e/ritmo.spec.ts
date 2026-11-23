@@ -112,14 +112,14 @@ test.describe('ritmo', () => {
     await page.getByRole('button', { name: 'Figura del ritmo: Polígono' }).click();
     await expect(page.getByText('Con menos de cinco golpes queda el polígono')).toBeVisible();
 
-    // Cinco golpes: el pentagrama adentro del pentágono.
+    // Cinco golpes: solo el pentagrama, sin el pentágono alrededor.
     await page
       .getByRole('group', { name: 'Tipo de ritmo' })
       .getByRole('button', { name: 'Euclidiano' })
       .click();
     await page.getByRole('button', { name: 'Cinquillo' }).click();
     await expect(wheel).toHaveAttribute('data-figure', 'estrella');
-    await expect(wheel.locator('polygon')).toHaveCount(2);
+    await expect(wheel.locator('polygon')).toHaveCount(1);
     await expect(wheel.locator('text')).toHaveText('5');
 
     // La figura elegida se recuerda.

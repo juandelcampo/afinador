@@ -1,7 +1,8 @@
-// La figura del ritmo: cada golpe es una esquina y un lápiz naranja pinta el lado que está sonando, desde
-// la esquina del último golpe hasta donde va el pulso, que llega a la siguiente justo cuando suena. Como
-// polígono, cada golpe va donde cae en el ciclo (cuatro parejos son un cuadrado, el tresillo un triángulo
-// torcido); como estrella, los golpes se unen salteando puntas, dentro del polígono parejo. Los silencios
+// La figura del ritmo: cada golpe es una esquina y un lápiz gris deja la estela del lado que se está
+// recorriendo, desde la esquina del último golpe hasta donde va el pulso, que llega a la siguiente justo
+// cuando suena: ahí la esquina se pinta de naranja. Como polígono, cada golpe va donde cae en el ciclo
+// (cuatro parejos son un cuadrado, el tresillo un triángulo torcido); como estrella, los golpes se unen
+// salteando puntas, sin el polígono alrededor. Los silencios
 // son muescas sobre los lados, como en una regla. Sin puntos ni cuadrados: la esquina que suena se pinta
 // de naranja. En una polirritmia la voz con menos golpes va adentro, más chica y sin salirse de la otra:
 // no se pisan, y donde coinciden las esquinas quedan una arriba de la otra; cuando suenan juntas, se
@@ -158,11 +159,10 @@ export function Wheel({ cycle, kind }: { cycle: Cycle; kind: FigureKind }) {
             />
           );
         }
-        // La estrella va adentro del polígono parejo, como en un dado.
+        // Solo la estrella: sus puntas son las de un polígono parejo, pero el polígono no se dibuja.
         const corners = Array.from({ length: count }, (_, place) => onCircle(place / count, lane.radius));
         return (
           <g key={index} data-lane={index}>
-            <polygon className={styles.outline} data-lane={index} points={pointsOf(corners)} />
             {starLoops(count).map((loop) => (
               <polygon
                 key={loop.join()}
@@ -188,7 +188,7 @@ export function Wheel({ cycle, kind }: { cycle: Cycle; kind: FigureKind }) {
           />
         )),
       )}
-      {/* El lápiz: pinta el lado que suena, desde la última esquina hasta el pulso. */}
+      {/* El lápiz: la estela gris del lado que se recorre, desde la última esquina hasta el pulso. */}
       {lanes.map((_, index) => (
         <line key={index} className={styles.traveler} data-traveler={index} />
       ))}
