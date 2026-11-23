@@ -105,9 +105,42 @@
   font-size: 14px;
 }
 
-/* Recorrer las formas: la pieza es la de ui (Browse). */
-.browse {
+/* Recorrer las formas (la pieza es la de ui, Browse) y al lado lo que suena, en una fila como en Escalas.
+   En el celular las formas van arriba y los botones abajo, de a dos; Escuchar las inversiones no entra en
+   un tercio, así que fuera de Tu forma va sola en su fila. */
+.play {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
   margin-top: 12px;
+}
+.play:not([data-editing]) > :nth-child(2) {
+  grid-column: 1 / -1;
+}
+.play > * {
+  padding-inline: 6px;
+  font-size: 12px;
+}
+.play > .browse {
+  grid-column: 1 / -1;
+  padding-inline: 0;
+}
+@container content (min-width: 640px) {
+  .play {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .play > * {
+    flex: none;
+    padding-inline: 14px;
+    font-size: 13px;
+  }
+  .play > .browse {
+    flex: 1 1 280px;
+    min-width: 0;
+    padding-inline: 0;
+  }
 }
 .current {
   display: grid;
@@ -142,13 +175,12 @@
   color: inherit;
 }
 .empty {
-  margin-top: 12px;
+  align-self: center;
   font-weight: 700;
 }
 /* Tu forma: lo que armaste tocando el diapasón. Mide lo mismo que el recuadro de las formas. */
 .mine {
   display: grid;
-  margin-top: 12px;
   border: var(--rule);
 }
 .mine .counter b {
@@ -174,22 +206,4 @@
 .notes [data-kind='nueva']::before {
   content: '★ ';
   color: var(--accent);
-}
-
-/* Los dos botones para salir de Tu forma, lado a lado también en el celular. */
-.mineTools {
-  display: flex;
-  gap: 10px;
-}
-@media (max-width: 640px) {
-  .mineTools {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    width: 100%;
-  }
-  .mineTools > button {
-    width: 100%;
-    padding-inline: 8px;
-    white-space: normal;
-  }
 }

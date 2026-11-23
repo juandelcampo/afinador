@@ -314,79 +314,100 @@ export default function InversionesRoute() {
           onToggle={toggle}
         />
 
-        {editing ? (
-          // Tu forma ocupa lo mismo que el recuadro de las formas: los avisos van en una línea chica
-          // y los botones para salir, abajo con el resto, así la pantalla no se estira.
-          <div className={styles.mine} data-testid="mi-forma">
-            {custom ? (
-              <button
-                type="button"
-                className={styles.current}
-                aria-label={`Escuchar tu forma, ${nameWithBass(shownGroup)}: ${tabOf(custom.frets)}`}
-                onClick={() => play(custom)}
-              >
-                <span className={styles.counter}>
-                  Tu forma · {ORDINALS[shownGroup.inversion]} · <b>{nameWithBass(shownGroup)}</b>
-                </span>
-                <strong className={styles.tab}>{tabOf(custom.frets)}</strong>
-                <small className={styles.notes} data-testid="mi-forma-notas">
-                  {[
-                    custom.unplayable && (
-                      <span key="mano" data-kind="mano">
-                        {custom.unplayable}
-                      </span>
-                    ),
-                    custom.missing.length > 0 && (
-                      <span key="falta">
-                        {custom.missing.length === 1 ? 'Le falta la ' : 'Le faltan '}
-                        {custom.missing.map((item) => toneName(item, chord.suffix)).join(', ')}
-                        {custom.missing.length === 1 && custom.missing[0] === 7
-                          ? ': se reconoce igual.'
-                          : ': no es el acorde entero.'}
-                      </span>
-                    ),
-                    custom.gap && (
-                      <span key="hueco">Cuerda apagada en el medio: apagala con un dedo vecino.</span>
-                    ),
-                    known && (
-                      <span key="lista">
-                        Está en la lista: forma {known.at + 1} de {known.list.length}.
-                      </span>
-                    ),
-                    !known && !custom.unplayable && custom.missing.length === 0 && (
-                      <span key="nueva" data-kind="nueva">
-                        No está en la lista: es tuya.
-                      </span>
-                    ),
-                    <span key="detalles">{details.join(' · ')}</span>,
-                  ].filter(Boolean)}
-                </small>
-              </button>
-            ) : (
-              <div className={styles.current}>
-                <span className={styles.counter}>Tu forma</span>
-                <strong className={styles.tab}>× × × × × ×</strong>
-                <small>Tu forma está vacía.</small>
-              </div>
-            )}
-          </div>
-        ) : voicing ? (
-          <Browse
-            className={styles.browse}
-            countTestId="shape-counter"
-            count={`Forma ${index + 1} de ${shapes.length}`}
-            main={tabOf(voicing.frets)}
-            note={details.join(' · ')}
-            currentLabel={`Escuchar ${nameWithBass(group)}: ${tabOf(voicing.frets)}`}
-            prevLabel="Forma anterior, más cerca de la cejuela"
-            nextLabel="Forma siguiente, más arriba en el mástil"
-            disabled={shapes.length < 2}
-            onStep={step}
-            onCurrent={() => play(voicing)}
-          />
-        ) : (
-          <p className={styles.empty}>En esta afinación la mano no llega a ninguna forma de {name}.</p>
-        )}
+        {/* Las formas y lo que suena en una sola fila, como en Escalas: así entra todo sin bajar. */}
+        <div className={styles.play} data-editing={editing || undefined}>
+          {editing ? (
+            // Tu forma ocupa lo mismo que el recuadro de las formas: los avisos van en una línea chica
+            // y los botones para salir, abajo con el resto, así la pantalla no se estira.
+            <div className={`${styles.browse} ${styles.mine}`} data-testid="mi-forma">
+              {custom ? (
+                <button
+                  type="button"
+                  className={styles.current}
+                  aria-label={`Escuchar tu forma, ${nameWithBass(shownGroup)}: ${tabOf(custom.frets)}`}
+                  onClick={() => play(custom)}
+                >
+                  <span className={styles.counter}>
+                    Tu forma · {ORDINALS[shownGroup.inversion]} · <b>{nameWithBass(shownGroup)}</b>
+                  </span>
+                  <strong className={styles.tab}>{tabOf(custom.frets)}</strong>
+                  <small className={styles.notes} data-testid="mi-forma-notas">
+                    {[
+                      custom.unplayable && (
+                        <span key="mano" data-kind="mano">
+                          {custom.unplayable}
+                        </span>
+                      ),
+                      custom.missing.length > 0 && (
+                        <span key="falta">
+                          {custom.missing.length === 1 ? 'Le falta la ' : 'Le faltan '}
+                          {custom.missing.map((item) => toneName(item, chord.suffix)).join(', ')}
+                          {custom.missing.length === 1 && custom.missing[0] === 7
+                            ? ': se reconoce igual.'
+                            : ': no es el acorde entero.'}
+                        </span>
+                      ),
+                      custom.gap && (
+                        <span key="hueco">Cuerda apagada en el medio: apagala con un dedo vecino.</span>
+                      ),
+                      known && (
+                        <span key="lista">
+                          Está en la lista: forma {known.at + 1} de {known.list.length}.
+                        </span>
+                      ),
+                      !known && !custom.unplayable && custom.missing.length === 0 && (
+                        <span key="nueva" data-kind="nueva">
+                          No está en la lista: es tuya.
+                        </span>
+                      ),
+                      <span key="detalles">{details.join(' · ')}</span>,
+                    ].filter(Boolean)}
+                  </small>
+                </button>
+              ) : (
+                <div className={styles.current}>
+                  <span className={styles.counter}>Tu forma</span>
+                  <strong className={styles.tab}>× × × × × ×</strong>
+                  <small>Tu forma está vacía.</small>
+                </div>
+              )}
+            </div>
+          ) : voicing ? (
+            <Browse
+              className={styles.browse}
+              countTestId="shape-counter"
+              count={`Forma ${index + 1} de ${shapes.length}`}
+              main={tabOf(voicing.frets)}
+              note={details.join(' · ')}
+              currentLabel={`Escuchar ${nameWithBass(group)}: ${tabOf(voicing.frets)}`}
+              prevLabel="Forma anterior, más cerca de la cejuela"
+              nextLabel="Forma siguiente, más arriba en el mástil"
+              disabled={shapes.length < 2}
+              onStep={step}
+              onCurrent={() => play(voicing)}
+            />
+          ) : (
+            <p className={`${styles.browse} ${styles.empty}`}>En esta afinación la mano no llega a ninguna forma de {name}.</p>
+          )}
+          <Button variant="primary" onClick={playTour}>
+            ▶ Escuchar las inversiones
+          </Button>
+          {editing ? (
+            <>
+              <Button variant="ghost" onClick={startEmpty}>
+                Empezar de cero
+              </Button>
+              <Button variant="ghost" onClick={() => show(group.inversion, undefined)}>
+                Volver a las formas
+              </Button>
+            </>
+          ) : (
+            <Button variant="ghost" onClick={startEmpty}>
+              Armar la mía
+            </Button>
+          )}
+          <ShapeStyleToggle />
+        </div>
 
         <p className={styles.why}>
           {editing && !custom ? (
@@ -401,26 +422,6 @@ export default function InversionesRoute() {
           )}
         </p>
 
-        <div className={ui.actions}>
-          <Button variant="primary" onClick={playTour}>
-            ▶ Escuchar las inversiones
-          </Button>
-          {editing ? (
-            <div className={styles.mineTools}>
-              <Button variant="ghost" onClick={startEmpty}>
-                Empezar de cero
-              </Button>
-              <Button variant="ghost" onClick={() => show(group.inversion, undefined)}>
-                Volver a las formas
-              </Button>
-            </div>
-          ) : (
-            <Button variant="ghost" onClick={startEmpty}>
-              Armar la mía
-            </Button>
-          )}
-          <ShapeStyleToggle />
-        </div>
         <p className={ui.hint}>
           Lo tenue son las notas del acorde en todo el mástil; lo blanco, la forma elegida, con el bajo en
           naranja. Para armar la tuya, tocá una nota tenue y el dedo va ahí; tocá un dedo para sacarlo, o el
