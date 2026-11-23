@@ -1,5 +1,7 @@
+import type { ReactNode } from 'react';
 import { Link, type MetaFunction } from 'react-router';
 import { TUNINGS } from '~/data/tunings';
+import { toolOf, useToolHref } from '~/shared/memoria';
 import { Icon } from '~/shared/ui/Icon';
 import { PageTitle, Slab } from '~/shared/ui/ui';
 import styles from './inicio.module.css';
@@ -99,7 +101,7 @@ export default function InicioRoute() {
       <ul className={styles.tools}>
         {TOOLS.map((tool, index) => (
           <li key={tool.to}>
-            <Link to={tool.to} className={styles.tool}>
+            <ToolLink to={tool.to}>
               <span className={styles.number}>{String(index + 1).padStart(2, '0')}</span>
               <strong className={styles.name}>{tool.name}</strong>
               <span className={styles.pitch}>{tool.pitch}</span>
@@ -111,10 +113,19 @@ export default function InicioRoute() {
               <span className={styles.open} aria-hidden="true">
                 Abrir <Icon name="right" />
               </span>
-            </Link>
+            </ToolLink>
           </li>
         ))}
       </ul>
     </div>
+  );
+}
+
+/** Cada herramienta abre donde la dejaste. */
+function ToolLink({ to, children }: { to: string; children: ReactNode }) {
+  return (
+    <Link to={useToolHref(toolOf(to)!)} className={styles.tool}>
+      {children}
+    </Link>
   );
 }

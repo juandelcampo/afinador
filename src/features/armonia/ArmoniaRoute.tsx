@@ -68,6 +68,7 @@ import { Icon } from '~/shared/ui/Icon';
 import { Picker } from '~/shared/ui/Picker';
 import { Sheet } from '~/shared/ui/Sheet';
 import { TuneLink, TuningField } from '~/shared/TuningField';
+import { Guardados } from '~/shared/Guardados';
 import { Button, PageTitle, Rail, Segmented, Slab, SlabHead } from '~/shared/ui/ui';
 import ui from '~/shared/ui/ui.module.css';
 import styles from './armonia.module.css';
@@ -836,6 +837,17 @@ export default function ArmoniaRoute() {
                 onChange={(value) => update({ escala: value })}
               />
               <TuneLink tuning={tuning} />
+              {/* Tus vueltas: se guarda la vuelta con su tonalidad y su afinación, como el link. */}
+              <Guardados
+                tool="armonia"
+                label="Mis vueltas"
+                title="Tus vueltas"
+                noun="esta vuelta"
+                name={vuelta.map(name).join(' ')}
+                detail={`${pitchName(spellIn(tonic, key), notation)} ${scale.name.toLowerCase()} · ${tuning.name}`}
+                search={params.toString()}
+                canSave={vuelta.length > 0}
+              />
             </div>
           </Slab>
 

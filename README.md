@@ -9,6 +9,8 @@ Herramientas para componer con guitarra, pensadas para quien toca de oído y qui
 - **¿Qué acorde?** (`/acorde`): ponés los dedos en el diapasón y te dice qué acorde suena.
 - **Ritmo** (`/ritmo`): metrónomo para compases raros, ritmos euclidianos dibujados como figuras, polirritmias y una caja de ritmos.
 
+Cada herramienta se acuerda de dónde la dejaste: volver desde la barra o la portada, o abrirla de nuevo, trae la afinación, la escala, la forma o el ritmo que tenías (un link con algo en la URL manda). En Armonía, ¿Qué acorde? y Ritmo, "Mis vueltas", "Mis formas" y "Mis ritmos" guardan lo de ahora con un nombre, hasta diez en cada una. Todo queda en este navegador (`localStorage`, clave `afinador`); para llevarlo a otro lado, se comparte el link.
+
 Salió de [Scordatura](../Afinador%20Drake), donde era una de las herramientas. Acá vive solo.
 
 En el celular es una tarea por pantalla, con cuatro pestañas abajo (Afinar, Acordes, Figuras, Temas) y la lista se abre desde la ficha. Desde 900 px son tres columnas: la lista a la izquierda y los temas a la derecha, las dos plegadas al entrar, y en el centro la ficha con Afinar o Acordes; Acordes entra sin scrollear.

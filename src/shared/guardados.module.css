@@ -1,0 +1,93 @@
+/* Lo guardado: arriba el nombre para guardar lo de ahora, abajo la lista. Entra sin scrollear. */
+.save {
+  display: grid;
+  /* El botón dice Guardar o Renombrar en el mismo ancho: que cambie no mueve nada. */
+  grid-template-columns: minmax(0, 1fr) 9.5em;
+  align-items: end;
+  gap: 8px;
+}
+.name {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.name input {
+  min-height: var(--touch);
+  min-width: 0;
+  padding: 6px 10px;
+  border: var(--rule);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 700 16px/1.2 var(--mono);
+}
+.name input:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 0;
+}
+.note {
+  min-height: 1.5em;
+  margin: 6px 0 12px;
+}
+.empty {
+  padding: 14px 0 4px;
+  border-top: 2px solid var(--ink);
+}
+.list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.list li {
+  display: flex;
+  min-width: 0;
+  border: var(--rule);
+}
+/* La que está abierta ahora va en tinta: lo elegido. */
+.list li[data-current] {
+  background: var(--ink);
+  color: var(--paper);
+}
+.open {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  min-height: var(--touch);
+  align-content: center;
+  padding: 4px 10px;
+  color: inherit;
+  text-decoration: none;
+}
+.open:hover {
+  background: var(--soft);
+  color: var(--ink);
+}
+.open strong,
+.open small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.open strong {
+  font: 700 15px/1.25 var(--mono);
+}
+.open small {
+  font: 400 12px/1.3 var(--mono);
+  opacity: 0.75;
+}
+.remove {
+  flex: none;
+  width: var(--touch);
+  border: 0;
+  border-left: 2px solid currentColor;
+  background: transparent;
+  color: inherit;
+  font: 900 20px/1 var(--ui);
+}
+.remove:hover {
+  background: var(--soft);
+  color: var(--ink);
+}

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
 import { setVolume } from '~/audio/engine';
-import { useSettings } from '~/shared/settings';
+import { toolOf, useRememberPlace, useToolHref } from '~/shared/memoria';
+import { useSettings, type ToolKey } from '~/shared/settings';
 import { Fader } from '~/shared/Fader';
 import { useTheme } from '~/shared/theme';
 import { Icon } from '~/shared/ui/Icon';
@@ -9,18 +10,38 @@ import { Stepper, Toggle } from '~/shared/ui/ui';
 import styles from './shell.module.css';
 
 /** Las herramientas, cada una por su lado. `match` dice qué rutas son de cada una. */
-const TOOLS = [
-  { to: '/afinador', label: 'Afinador', match: (path: string) => path.startsWith('/afinador') },
-  { to: '/armonia', label: 'Armonía', match: (path: string) => path.startsWith('/armonia') },
-  { to: '/escalas', label: 'Escalas', match: (path: string) => path.startsWith('/escalas') },
-  {
-    to: '/inversiones',
-    label: 'Inversiones',
-    match: (path: string) => path.startsWith('/inversiones'),
-  },
-  { to: '/acorde', label: '¿Qué acorde?', match: (path: string) => path.startsWith('/acorde') },
-  { to: '/ritmo', label: 'Ritmo', match: (path: string) => path.startsWith('/ritmo') },
+const TOOLS: { key: ToolKey; label: string }[] = [
+  { key: 'afinador', label: 'Afinador' },
+  { key: 'armonia', label: 'Armonía' },
+  { key: 'escalas', label: 'Escalas' },
+  { key: 'inversiones', label: 'Inversiones' },
+  { key: 'acorde', label: '¿Qué acorde?' },
+  { key: 'ritmo', label: 'Ritmo' },
 ];
+
+/** Cada herramienta de la barra lleva adonde la dejaste. */
+function ToolLink({
+  tool,
+  label,
+  current,
+  onClick,
+}: {
+  tool: ToolKey;
+  label: string;
+  current: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <Link
+      to={useToolHref(tool)}
+      className={styles.tool}
+      onClick={onClick}
+      aria-current={current ? 'page' : undefined}
+    >
+      {label}
+    </Link>
+  );
+}
 
 /** Una barra arriba con las herramientas y lo que vale para todas, y la página debajo. */
 export default function AppShell() {
@@ -32,6 +53,8 @@ export default function AppShell() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { pathname } = useLocation();
   const bar = useRef<HTMLElement>(null);
+  useRememberPlace();
+  const currentTool = toolOf(pathname);
 
   useEffect(() => {
     document.documentElement.dataset.ready = 'true';
@@ -69,15 +92,13 @@ export default function AppShell() {
             aria-current={pathname === '/' ? 'page' : undefined}
           />
           {TOOLS.map((tool) => (
-            <Link
-              key={tool.to}
-              to={tool.to}
-              className={styles.tool}
+            <ToolLink
+              key={tool.key}
+              tool={tool.key}
+              label={tool.label}
+              current={currentTool === tool.key}
               onClick={() => setSettingsOpen(false)}
-              aria-current={tool.match(pathname) ? 'page' : undefined}
-            >
-              {tool.label}
-            </Link>
+            />
           ))}
         </nav>
         {/* Solo se ve en pantallas chicas: los ajustes se tocan poco (el volumen también está en los botones del

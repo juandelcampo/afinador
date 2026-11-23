@@ -27,6 +27,7 @@ import {
   type Voices,
 } from '~/core/rhythm';
 import { DRUM_PRESETS } from '~/data/drums';
+import { Guardados } from '~/shared/Guardados';
 import { useSettings } from '~/shared/settings';
 import { Icon } from '~/shared/ui/Icon';
 import { Button, Field, PageTitle, Segmented, Slab, Stepper, Tabs, Toggle } from '~/shared/ui/ui';
@@ -493,25 +494,28 @@ export default function RitmoRoute() {
     metronome.getState,
   );
   const [params, setParams] = useSearchParams();
-  const loaded = useRef(false);
+  // Lo último que esta página escribió en la URL y la última URL que vio: una URL nueva que no escribió
+  // ella vino de afuera. Si se cambia el ritmo dos veces antes de que la URL se ponga al día, la URL vieja
+  // no es nueva: no se vuelve atrás.
+  const written = useRef<string | null>(null);
+  const seen = useRef<string | null>(null);
   const figure = useSettings((s) => s.rhythmFigure);
   const set = useSettings((s) => s.set);
 
-  // Un link compartido puede traer un ritmo en la URL.
+  // La URL y el ritmo van juntos. Un ritmo que llega por la URL (un link compartido, uno de los tuyos,
+  // donde lo dejaste) se carga; después la URL refleja lo que suena. Se lee el estado actual del
+  // metrónomo, no el de este render: puede acabar de cargar el que venía en el link.
   useEffect(() => {
-    if (loaded.current) return;
-    loaded.current = true;
-    const shared = rhythmFromParams(params);
-    if (shared) metronome.setConfig(shared);
-  }, [params]);
-
-  // La URL refleja el ritmo. Se lee el estado actual del metrónomo, no el de este render:
-  // el efecto anterior puede acabar de cargar el ritmo que venía en el link.
-  useEffect(() => {
-    const encoded = rhythmToParams(metronome.getState().config);
-    if (params.toString() !== encoded.toString()) {
-      setParams(encoded, { replace: true, preventScrollReset: true });
+    const current = params.toString();
+    const arrived = current !== seen.current && current !== written.current;
+    seen.current = current;
+    if (arrived) {
+      const shared = rhythmFromParams(params);
+      if (shared) metronome.setConfig(shared);
     }
+    const encoded = rhythmToParams(metronome.getState().config).toString();
+    written.current = encoded;
+    if (current !== encoded) setParams(encoded, { replace: true, preventScrollReset: true });
   }, [config, params, setParams]);
 
   // Cada herramienta suena sola: al salir de Ritmo, el ritmo para.
@@ -535,11 +539,23 @@ export default function RitmoRoute() {
   return (
     <div className={`${styles.page} ${ui.frame}`}>
       <Slab>
-        <PageTitle eyebrow="Ritmo" title={name}>
-          <p data-testid="rhythm-rule" className={styles.rule}>
-            {rule}
-          </p>
-        </PageTitle>
+        {/* Tus ritmos van arriba a la derecha, en el lugar que deja el título: no agregan una fila. */}
+        <div className={styles.head}>
+          <PageTitle eyebrow="Ritmo" title={name}>
+            <p data-testid="rhythm-rule" className={styles.rule}>
+              {rule}
+            </p>
+          </PageTitle>
+          <Guardados
+            tool="ritmo"
+            label="Mis ritmos"
+            title="Tus ritmos"
+            noun="este ritmo"
+            name={name}
+            detail={`${MODES.find((item) => item.value === config.mode)?.label ?? ''} · ${config.bpm} ppm`}
+            search={params.toString()}
+          />
+        </div>
 
         {/* La barra de tocar y las pestañas, siempre en el mismo lugar y a lo ancho: lo que cambia pasa abajo. */}
         <div className={styles.transport}>

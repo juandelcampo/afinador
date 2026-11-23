@@ -10,6 +10,7 @@ import { bassReading, encodeFrets, INVERSION_CHORDS, parseFrets, tabOf, toneName
 import { intervalName, noteToMidi } from '~/core/notes';
 import { MUTED } from '~/core/tuning';
 import { TUNINGS } from '~/data/tunings';
+import { Guardados } from '~/shared/Guardados';
 import { ShapeStyleToggle } from '~/shared/ShapeStyle';
 import { useSettings } from '~/shared/settings';
 import { useHydrated } from '~/shared/useHydrated';
@@ -194,6 +195,16 @@ export default function AcordeRoute() {
             onChange={(id) => update(() => ({ afinacion: id === DEFAULT_TUNING ? null : id }))}
           />
           <TuneLink tuning={tuning} />
+          <Guardados
+            tool="acorde"
+            label="Mis formas"
+            title="Tus formas"
+            noun="esta forma"
+            name={title}
+            detail={`${tabOf(frets)} · ${tuning.name}`}
+            search={params.toString()}
+            canSave={sounding.length > 0}
+          />
           {inversionsLink && (
             <Link className={ui.bridge} to={inversionsLink}>
               Todas las formas de {pcName(reading!.root) + suffixSymbol(reading!.suffix)} en Inversiones <Icon name="right" />

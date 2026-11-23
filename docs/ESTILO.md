@@ -108,6 +108,7 @@ Todo está en `src/shared/`. Antes de escribir CSS para un control, fijate si ya
 | Recorrer una lista de a uno (◀ ▶)         | `Browse`                                     | `ui/ui.tsx`        |
 | Una columna plegada a un costado          | `Rail`                                       | `ui/ui.tsx`        |
 | Un modal                                  | `Sheet`                                      | `ui/Sheet.tsx`     |
+| Guardar con nombre y abrir lo guardado    | `Guardados`                                  | `Guardados.tsx`    |
 | El diapasón                               | `Diapason`                                   | `Diapason.tsx`     |
 | Rasgueo o arpegio de un acorde suelto     | `ShapeStyleToggle`                           | `ShapeStyle.tsx`   |
 | Explicación chica en gris                 | `className={ui.hint}`                        | `ui/ui.module.css` |
@@ -145,7 +146,9 @@ Si una herramienta necesita algo que no está en la tabla y le puede servir a ot
 - **Lo que define lo que se ve** (afinación, acorde, escala, forma) va en la URL, con `useSearchParams`. Así un link abre exactamente lo mismo, y las herramientas se pasan cosas con un link (`TuneLink`, "Sus acordes en Armonía →"). En la URL no van los valores por defecto: `?afinacion=` se omite si es la estándar.
 - Hasta hidratar, la página no conoce la URL: usá `useHydrated()` y los valores por defecto, como hace ¿Qué acorde?.
 - **Las preferencias** (`src/shared/settings.ts`, guardadas en `localStorage` bajo `afinador`) son solo para lo que vale en varias herramientas o se elige una vez: notación, La de referencia, volumen, rasgueo o arpegio. Todo lo que se agregue ahí pasa por `sanitize`.
-- Ningún estado compartido entre herramientas fuera de esas dos vías.
+- **Donde la dejaste** (`src/shared/memoria.ts`): cada herramienta anota su última URL. La barra y la portada llevan ahí, y abrir una herramienta sin nada después del `?` la restaura antes de hidratar (en el Afinador, `/afinador` vuelve a la última afinación). No es estado compartido: cada una se acuerda solo de lo suyo, y un link con algo en la URL manda. Para que ande, la herramienta tiene que poder abrirse con cualquier URL en cualquier momento, también estando ya adentro (Ritmo carga lo que llega por la URL aunque no lo haya escrito él).
+- **Lo guardado con nombre** (`Guardados`, en `src/shared/Guardados.tsx`): un botón "Mis …" que abre un modal para guardar lo de ahora y abrir lo guardado. Cada cosa guardada es el link, así que abrirla es lo mismo que abrir un link compartido. Hasta diez por herramienta, para que el modal entre sin bajar. Va en la fila de arriba (`ui.setup`) o, si no hay, junto al título; nunca suma una fila.
+- Ningún estado compartido entre herramientas fuera de estas vías.
 
 ## 10. Textos
 

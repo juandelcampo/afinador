@@ -16,6 +16,7 @@ import '@fontsource/ibm-plex-mono/latin-700.css';
 import archivo from '@fontsource-variable/archivo/files/archivo-latin-wdth-normal.woff2?url';
 import plex from '@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2?url';
 import plexBold from '@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-700-normal.woff2?url';
+import { RESTORE_SCRIPT } from './shared/memoria';
 import './styles/global.css';
 
 const ICON =
@@ -35,6 +36,8 @@ export function Layout({ children }: { children: ReactNode }) {
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        {/* Si se abre una herramienta sin nada en la URL, vuelve a donde la dejaste (ver memoria.ts). */}
+        <script dangerouslySetInnerHTML={{ __html: RESTORE_SCRIPT }} />
         <link rel="icon" href={ICON} />
         {/* Se piden antes que el CSS: así el texto no aparece primero con la letra del sistema. */}
         {[archivo, plex, plexBold].map((href) => (

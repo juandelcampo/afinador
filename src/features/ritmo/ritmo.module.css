@@ -4,6 +4,18 @@
   min-width: 0;
   container: ritmo / inline-size;
 }
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.head > :first-child {
+  min-width: 0;
+}
+.head > button {
+  flex: none;
+}
 .board {
   display: grid;
   gap: 16px 28px;
