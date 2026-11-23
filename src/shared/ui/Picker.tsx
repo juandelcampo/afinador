@@ -85,13 +85,17 @@ export function Picker({
   useEffect(() => {
     const list = panel.current;
     if (!list) return;
+    // Se ubica antes de mostrarse: `toggle` llega después del primer cuadro, y la lista se veía un instante
+    // arriba a la izquierda antes de saltar abajo del campo.
+    const onBeforeToggle = (event: Event) => {
+      if ((event as ToggleEvent).newState === 'open') place();
+    };
     const onToggle = (event: Event) => {
       const isOpen = (event as ToggleEvent).newState === 'open';
       setOpen(isOpen);
       if (!isOpen) return;
       const home = all.find((group) => group.options.some((option) => option.value === value));
       setExpanded(new Set(home ? [home.id] : []));
-      place();
       // Lo elegido a la vista y con el foco: las flechas siguen desde ahí.
       requestAnimationFrame(() => {
         const chosen = list.querySelector<HTMLElement>('[aria-current="true"]');
@@ -99,8 +103,12 @@ export function Picker({
         (chosen ?? list.querySelector<HTMLElement>('button'))?.focus();
       });
     };
+    list.addEventListener('beforetoggle', onBeforeToggle);
     list.addEventListener('toggle', onToggle);
-    return () => list.removeEventListener('toggle', onToggle);
+    return () => {
+      list.removeEventListener('beforetoggle', onBeforeToggle);
+      list.removeEventListener('toggle', onToggle);
+    };
   });
 
   // Abierta, la lista sigue al campo si la página se mueve o cambia de tamaño.
