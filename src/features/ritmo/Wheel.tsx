@@ -1,26 +1,39 @@
-// La figura del ritmo: cada golpe es un vértice y el pulso viaja por los lados, llegando a cada vértice
-// cuando suena. Como polígono, cada golpe va donde cae en el ciclo (cuatro parejos son un cuadrado, el
-// tresillo un triángulo torcido); como estrella, los golpes se unen salteando puntas, dentro del polígono
-// parejo. Los silencios quedan marcados sobre los lados: el pulso pasa por ellos a su tiempo. En una
-// polirritmia se ven las dos figuras encimadas, la segunda con cuadrados.
+// La figura del ritmo: cada golpe es una esquina y un lápiz naranja pinta el lado que está sonando, desde
+// la esquina del último golpe hasta donde va el pulso, que llega a la siguiente justo cuando suena. Como
+// polígono, cada golpe va donde cae en el ciclo (cuatro parejos son un cuadrado, el tresillo un triángulo
+// torcido); como estrella, los golpes se unen salteando puntas, dentro del polígono parejo. Los silencios
+// son muescas sobre los lados, como en una regla. Sin puntos ni cuadrados: la esquina que suena se pinta
+// de naranja. En una polirritmia se ven las dos figuras encimadas, la segunda punteada.
 import { useEffect, useRef } from 'react';
 import { metronome } from '~/audio/metronome';
-import { figureVertices, onCircle, starLoops, travel, type FigureKind, type Point } from '~/core/figure';
+import { figureVertices, onCircle, starLoops, travelSide, type FigureKind, type Point } from '~/core/figure';
 import type { Cycle } from '~/core/rhythm';
 import styles from './ritmo.module.css';
 
 const RADIUS = 46;
+/** Cuánto se pinta de cada lado de la esquina que suena. */
+const CORNER = 8;
+/** Media muesca de silencio, a cada lado de la línea. */
+const NOTCH = 2.6;
 
 const round = (value: number) => Math.round(value * 100) / 100;
 const pointsOf = (list: readonly Point[]) => list.map(([x, y]) => `${round(x)},${round(y)}`).join(' ');
+const unit = ([x, y]: Point): Point => {
+  const length = Math.hypot(x, y) || 1;
+  return [x / length, y / length];
+};
+const toward = (from: Point, to: Point, length: number): Point => {
+  const [ux, uy] = unit([to[0] - from[0], to[1] - from[1]]);
+  return [from[0] + ux * length, from[1] + uy * length];
+};
 
 interface Lane {
   /** Cuándo suena cada golpe, de 0 a 1, en orden. */
   times: number[];
   vertices: Point[];
-  hits: Array<{ cell: number; level: number }>;
-  /** Las casillas que no suenan, con dónde caen sobre la figura. */
-  rests: Array<{ cell: number; at: Point }>;
+  hits: Array<{ cell: number }>;
+  /** Las casillas que no suenan: la muesca que las marca sobre el lado, de punta a punta. */
+  rests: Array<{ cell: number; notch: [Point, Point] }>;
   /** Cuántas casillas tiene el carril. */
   cells: number;
 }
@@ -32,14 +45,18 @@ function lanesOf(cycle: Cycle, kind: FigureKind): Lane[] {
     const vertices = figureVertices(times, kind, RADIUS);
     const rests = Array.from({ length: count }, (_, cell) => cell)
       .filter((cell) => !hits.some((hit) => hit.cell === cell))
-      .map((cell) => ({ cell, at: travel(times, vertices, cell / count) }));
-    return {
-      times,
-      vertices,
-      hits: hits.map((hit) => ({ cell: hit.cell, level: hit.level })),
-      rests,
-      cells: count,
-    };
+      .flatMap((cell) => {
+        const { from, at } = travelSide(times, vertices, cell / count);
+        if (from[0] === at[0] && from[1] === at[1]) return [];
+        // De través al lado: la dirección del lado girada un cuarto de vuelta.
+        const [ux, uy] = unit([at[0] - from[0], at[1] - from[1]]);
+        const notch: [Point, Point] = [
+          [at[0] + uy * NOTCH, at[1] - ux * NOTCH],
+          [at[0] - uy * NOTCH, at[1] + ux * NOTCH],
+        ];
+        return [{ cell, notch }];
+      });
+    return { times, vertices, hits: hits.map((hit) => ({ cell: hit.cell })), rests, cells: count };
   });
 }
 
@@ -52,7 +69,7 @@ export function Wheel({ cycle, kind }: { cycle: Cycle; kind: FigureKind }) {
     current.current = lanes;
   });
 
-  // El pulso y el golpe que suena se mueven leyendo el reloj cuadro a cuadro, sin renders.
+  // El lápiz y la esquina que suena se mueven leyendo el reloj cuadro a cuadro, sin renders.
   useEffect(() => {
     let frame = 0;
     let previous = '';
@@ -63,8 +80,11 @@ export function Wheel({ cycle, kind }: { cycle: Cycle; kind: FigureKind }) {
         current.current.forEach((lane, index) => {
           const node = root.querySelector(`[data-traveler="${index}"]`);
           if (!node) return;
-          const [x, y] = travel(lane.times, lane.vertices, progress ?? 0);
-          node.setAttribute('transform', `translate(${round(x)} ${round(y)})`);
+          const { from, at } = travelSide(lane.times, lane.vertices, progress ?? 0);
+          node.setAttribute('x1', String(round(from[0])));
+          node.setAttribute('y1', String(round(from[1])));
+          node.setAttribute('x2', String(round(at[0])));
+          node.setAttribute('y2', String(round(at[1])));
           node.toggleAttribute('data-running', progress !== null);
         });
         const cells = metronome.playhead()?.cells ?? [];
@@ -128,67 +148,47 @@ export function Wheel({ cycle, kind }: { cycle: Cycle; kind: FigureKind }) {
           </g>
         );
       })}
-      <text className={styles.count} textAnchor="middle" dominantBaseline="central">
-        {counts.join(':')}
-      </text>
       {lanes.map((lane, index) =>
-        lane.rests.map(({ cell, at: [x, y] }) => (
-          <circle
+        lane.rests.map(({ cell, notch: [[x1, y1], [x2, y2]] }) => (
+          <line
             key={`${index}:${cell}`}
-            className={styles.vertex}
+            className={styles.rest}
             data-cell={`${index}:${cell}`}
-            data-level="rest"
             data-lane={index}
-            cx={round(x)}
-            cy={round(y)}
-            r={1.1}
+            x1={round(x1)}
+            y1={round(y1)}
+            x2={round(x2)}
+            y2={round(y2)}
           />
         )),
       )}
+      {/* El lápiz: pinta el lado que suena, desde la última esquina hasta el pulso. */}
+      {lanes.map((_, index) => (
+        <line key={index} className={styles.traveler} data-traveler={index} />
+      ))}
+      {/* La esquina que suena, apagada hasta que le toca: un trozo de cada lado que llega a ella. */}
       {lanes.map((lane, index) =>
-        lane.hits.map(({ cell, level }, order) => {
-          const [x, y] = lane.vertices[order]!;
-          const props = {
-            'data-cell': `${index}:${cell}`,
-            'data-level': level,
-            'data-lane': index,
-            className: styles.vertex,
-          };
-          // La segunda línea de una polirritmia va con cuadrados, para distinguirla sin otro color.
-          if (index === 1) {
-            const size = level === 2 ? 6 : level === 1 ? 5 : 4;
-            return (
-              <rect
-                key={`${index}:${cell}`}
-                {...props}
-                x={round(x - size / 2)}
-                y={round(y - size / 2)}
-                width={size}
-                height={size}
-              />
-            );
-          }
-          // Tres tamaños: el primer golpe del ciclo, el que abre cada grupo (2+2+3) y el resto.
-          const size = level === 2 ? 3.6 : level === 1 ? 3 : 2.3;
-          return <circle key={`${index}:${cell}`} {...props} cx={round(x)} cy={round(y)} r={size} />;
-        }),
+        lane.vertices.length < 2
+          ? null
+          : lane.hits.map(({ cell }, order) => {
+              const { vertices } = lane;
+              const vertex = vertices[order]!;
+              const before = vertices[(order - 1 + vertices.length) % vertices.length]!;
+              const after = vertices[(order + 1) % vertices.length]!;
+              return (
+                <polyline
+                  key={`${index}:${cell}`}
+                  className={styles.corner}
+                  data-cell={`${index}:${cell}`}
+                  data-lane={index}
+                  points={pointsOf([toward(vertex, before, CORNER), vertex, toward(vertex, after, CORNER)])}
+                />
+              );
+            }),
       )}
-      {/* El pulso: viaja por los lados y llega a cada vértice cuando suena. */}
-      {lanes.map((lane, index) =>
-        index === 1 ? (
-          <rect
-            key={index}
-            className={styles.traveler}
-            data-traveler={index}
-            x={-2.6}
-            y={-2.6}
-            width={5.2}
-            height={5.2}
-          />
-        ) : (
-          <circle key={index} className={styles.traveler} data-traveler={index} r={2.6} />
-        ),
-      )}
+      <text className={styles.count} textAnchor="middle" dominantBaseline="central">
+        {counts.join(':')}
+      </text>
     </svg>
   );
 }

@@ -79,11 +79,13 @@ test.describe('ritmo', () => {
 
     await page.locator('#metro-toggle').click();
     await expect(wheel.locator('[data-active]')).toHaveCount(1);
-    // El pulso viaja por la figura mientras suena.
+    // El lápiz pinta el lado que suena mientras avanza: su punta se mueve.
     const traveler = wheel.locator('[data-traveler="0"]');
     await expect(traveler).toHaveAttribute('data-running', '');
-    const first = await traveler.getAttribute('transform');
-    await expect.poll(() => traveler.getAttribute('transform')).not.toBe(first);
+    const first = await traveler.getAttribute('x2');
+    await expect.poll(() => traveler.getAttribute('x2')).not.toBe(first);
+    // Sin puntos ni cuadrados: las esquinas y los silencios son líneas.
+    await expect(wheel.locator('circle, rect')).toHaveCount(0);
 
     // La polirritmia muestra las dos figuras encimadas.
     await page

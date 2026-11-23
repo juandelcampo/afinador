@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { figureVertices, onCircle, starLoops, starOrder, starStep, travel } from '~/core/figure';
+import { figureVertices, onCircle, starLoops, starOrder, starStep, travel, travelSide } from '~/core/figure';
 
 const close = (point: readonly [number, number], expected: readonly [number, number]) => {
   expect(point[0]).toBeCloseTo(expected[0], 6);
@@ -56,5 +56,13 @@ describe('figuras del ritmo', () => {
       (vertices[1]![0] + vertices[0]![0]) / 2,
       (vertices[1]![1] + vertices[0]![1]) / 2,
     ]);
+  });
+
+  it('el lápiz sale de la esquina del último golpe que sonó, también antes del primero', () => {
+    const times = [0.25, 0.75];
+    const vertices = figureVertices(times, 'poligono', 10);
+    expect(travelSide(times, vertices, 0.5).from).toEqual(vertices[0]);
+    // Antes del primer golpe todavía se viene desde el último del ciclo anterior.
+    expect(travelSide(times, vertices, 0.1).from).toEqual(vertices[1]);
   });
 });

@@ -147,7 +147,7 @@
   }
 }
 
-/* --- La figura: líneas finas sobre el papel, como un dibujo a mano alzada con regla --- */
+/* --- La figura: líneas gruesas con regla, sin puntos; el naranja es solo lo que suena --- */
 /* En el celular, chica: que "Tocar" quede a mano. Al lado de los controles, más grande. */
 .wheel {
   display: block;
@@ -161,66 +161,68 @@
     width: clamp(220px, calc(100dvh - 445px), 460px);
   }
 }
-/* Los trazos miden lo mismo en píxeles aunque la figura crezca: siempre finos. */
+/* Los trazos miden lo mismo en píxeles aunque la figura crezca. */
 .shape,
 .outline,
-.star {
+.star,
+.rest,
+.corner,
+.traveler {
   vector-effect: non-scaling-stroke;
 }
-.shape {
+.shape,
+.star {
   fill: none;
   stroke: var(--ink);
-  stroke-width: 2px;
-  stroke-linejoin: round;
+  stroke-width: 4px;
+  stroke-linejoin: miter;
 }
 .shape[data-lane='1'],
 .star[data-lane='1'] {
-  stroke-width: 1.5px;
-  stroke-dasharray: 6 4;
+  stroke-width: 3px;
+  stroke-dasharray: 9 6;
 }
-/* La estrella va adentro del polígono parejo, que queda apenas marcado. */
+/* La estrella va adentro del polígono parejo, más fino. */
 .outline {
   fill: none;
   stroke: var(--ink);
-  stroke-width: 1px;
+  stroke-width: 2px;
+  stroke-linejoin: miter;
 }
-.star {
-  fill: none;
+/* Un silencio: una muesca de través sobre el lado, como en una regla. */
+.rest {
   stroke: var(--ink);
   stroke-width: 2px;
-  stroke-linejoin: round;
 }
-.vertex {
-  fill: var(--ink);
-  stroke: var(--paper);
-  stroke-width: 0.8;
+/* El lápiz: pinta de naranja el lado que suena; quieto, no se ve. */
+.traveler {
+  stroke: var(--accent);
+  stroke-width: 6px;
+  stroke-linecap: butt;
 }
-.vertex[data-level='rest'] {
-  fill: var(--muted);
-  stroke: none;
+.traveler:not([data-running]) {
+  opacity: 0;
 }
-.vertex[data-active] {
-  fill: var(--accent);
-  stroke: var(--ink);
-  stroke-width: 0.8;
+/* La esquina que suena se pinta de naranja; las demás no llevan nada. */
+.corner {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 9px;
+  stroke-linejoin: miter;
+  stroke-linecap: butt;
+  opacity: 0;
+}
+.corner[data-active] {
+  opacity: 1;
 }
 /* Cuántos golpes, en el medio: un borde del color del papel lo despega de las líneas que lo cruzan. */
 .count {
   fill: var(--ink);
   stroke: var(--paper);
-  stroke-width: 3px;
+  stroke-width: 4px;
   stroke-linejoin: round;
   paint-order: stroke;
   font: 900 expanded 9px/1 var(--heavy);
-}
-/* El pulso: viaja por los lados; quieto, no se ve. */
-.traveler {
-  fill: var(--accent);
-  stroke: var(--ink);
-  stroke-width: 0.8;
-}
-.traveler:not([data-running]) {
-  opacity: 0;
 }
 
 /* --- Armar --- */

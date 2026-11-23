@@ -65,9 +65,21 @@ export function figureVertices(times: readonly number[], kind: FigureKind, radiu
  * que sigue, tan avanzado como el tiempo entre los dos. Llega a cada vértice justo cuando suena.
  */
 export function travel(times: readonly number[], vertices: readonly Point[], progress: number): Point {
+  return travelSide(times, vertices, progress).at;
+}
+
+/**
+ * El lado que se está recorriendo: desde qué vértice salió el pulso (`from`, el último golpe que sonó) y
+ * dónde va (`at`). Con eso se dibuja el lápiz, que pinta el lado desde la esquina hasta el pulso.
+ */
+export function travelSide(
+  times: readonly number[],
+  vertices: readonly Point[],
+  progress: number,
+): { from: Point; at: Point } {
   const count = times.length;
-  if (count === 0) return [0, 0];
-  if (count === 1) return vertices[0]!;
+  if (count === 0) return { from: [0, 0], at: [0, 0] };
+  if (count === 1) return { from: vertices[0]!, at: vertices[0]! };
   // Antes del primer golpe todavía se está yendo desde el último del ciclo anterior.
   let from = count - 1;
   for (let index = 0; index < count; index++) if (times[index]! <= progress) from = index;
@@ -78,5 +90,5 @@ export function travel(times: readonly number[], vertices: readonly Point[], pro
   const fraction = end > start ? (progress - start) / (end - start) : 0;
   const [x1, y1] = vertices[from]!;
   const [x2, y2] = vertices[to]!;
-  return [x1 + (x2 - x1) * fraction, y1 + (y2 - y1) * fraction];
+  return { from: vertices[from]!, at: [x1 + (x2 - x1) * fraction, y1 + (y2 - y1) * fraction] };
 }
