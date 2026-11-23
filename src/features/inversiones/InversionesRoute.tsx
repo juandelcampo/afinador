@@ -389,8 +389,8 @@ export default function InversionesRoute() {
           ) : (
             <p className={`${styles.browse} ${styles.empty}`}>En esta afinación la mano no llega a ninguna forma de {name}.</p>
           )}
-          <Button variant="primary" onClick={playTour}>
-            ▶ Escuchar las inversiones
+          <Button variant="primary" ariaLabel="Escuchar las inversiones" onClick={playTour}>
+            ▶ Escuchar
           </Button>
           {editing ? (
             <>

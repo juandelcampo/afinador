@@ -106,16 +106,16 @@
 }
 
 /* Recorrer las formas (la pieza es la de ui, Browse) y al lado lo que suena, en una fila como en Escalas.
-   En el celular las formas van arriba y los botones abajo, de a dos; Escuchar las inversiones no entra en
-   un tercio, así que fuera de Tu forma va sola en su fila. */
+   En el celular las formas van arriba y los tres botones abajo, en una sola fila; en Tu forma son cuatro,
+   de a dos. Escuchar y el Toggle toman lo justo y Armar la mía, lo que queda. */
 .play {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 8px;
   margin-top: 12px;
 }
-.play:not([data-editing]) > :nth-child(2) {
-  grid-column: 1 / -1;
+.play[data-editing] {
+  grid-template-columns: 1fr 1fr;
 }
 .play > * {
   padding-inline: 6px;
