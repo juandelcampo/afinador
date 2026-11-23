@@ -69,9 +69,15 @@ test.describe('escalas', () => {
     const sheet = page.getByTestId('drone');
     await expect(sheet).toBeVisible();
     await expect(sheet.getByRole('button', { name: '■ Parar' })).toBeVisible();
-    // El tritono trae una nota que no está en mixolidio, y lo avisa.
+    // El tritono trae una nota que no está en mixolidio, y lo avisa. El texto cambia, el modal no: ni de
+    // alto ni con scroll.
+    const size = () =>
+      sheet.evaluate((dialog) => ({ height: dialog.clientHeight, scroll: dialog.scrollHeight }));
+    const { height, scroll } = await size();
+    expect(scroll).toBeLessThanOrEqual(height);
     await sheet.getByRole('button', { name: 'Tritono' }).click();
     await expect(sheet.getByTestId('drone-rule')).toContainText('no está en la escala');
+    expect(await size()).toEqual({ height, scroll });
     const sounding = await clicks(page);
     await sheet.getByRole('button', { name: 'Crudo' }).click();
     await expect.poll(() => clicks(page)).toBeGreaterThan(sounding);

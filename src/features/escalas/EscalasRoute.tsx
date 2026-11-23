@@ -3,7 +3,7 @@ import { Link, useSearchParams, type MetaFunction } from 'react-router';
 import { drone } from '~/audio/drone';
 import { getAudio } from '~/audio/engine';
 import { pluckString, stopInstrument } from '~/audio/instrument';
-import { droneVoices } from '~/core/drone';
+import { DEFAULT_DRONE, droneVoices } from '~/core/drone';
 import { pitchName } from '~/core/harmony';
 import { noteToMidi } from '~/core/notes';
 import {
@@ -363,7 +363,22 @@ export default function EscalasRoute() {
           )}
         </p>
       </Slab>
-      <Sheet open={droneSheet} title={`Drone en ${name(tonic)}`} onClose={() => setDroneSheet(false)} testId="drone">
+      <Sheet
+        open={droneSheet}
+        title={`Drone en ${name(tonic)}`}
+        onClose={() => setDroneSheet(false)}
+        testId="drone"
+        tools={
+          <Button
+            variant="mini"
+            ariaLabel="Volver al sonido de siempre"
+            title="Volver al sonido de siempre"
+            onClick={() => setSettings({ drone: { ...DEFAULT_DRONE } })}
+          >
+            ↺
+          </Button>
+        }
+      >
         <DronePanel
           on={droneOn}
           onToggle={() => setDroneOn((on) => !on)}

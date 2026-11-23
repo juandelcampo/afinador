@@ -3,7 +3,6 @@
 import { useEffect, useRef } from 'react';
 import { drone } from '~/audio/drone';
 import {
-  DEFAULT_DRONE,
   DETUNE_MAX,
   foreignSteps,
   resolveStack,
@@ -18,7 +17,7 @@ import ui from '~/shared/ui/ui.module.css';
 import styles from './escalas.module.css';
 
 const STACK_OPTIONS: ReadonlyArray<{ value: StackChoice; label: string }> = [
-  { value: 'escala', label: 'Según la escala' },
+  { value: 'escala', label: 'La escala' },
   ...(Object.keys(STACKS) as Array<keyof typeof STACKS>).map((id) => ({ value: id, label: STACKS[id].name })),
 ];
 
@@ -61,7 +60,13 @@ function Scope({ on }: { on: boolean }) {
   }, []);
 
   return (
-    <canvas ref={canvas} className={styles.scope} data-on={on || undefined} aria-hidden="true" data-testid="scope" />
+    <canvas
+      ref={canvas}
+      className={styles.scope}
+      data-on={on || undefined}
+      aria-hidden="true"
+      data-testid="scope"
+    />
   );
 }
 
@@ -86,8 +91,20 @@ export function DronePanel({
   name: (pc: number) => string;
   tonic: number;
 }) {
-  const stack = resolveStack(sound.stack, scaleSteps);
-  const foreign = foreignSteps(sound.stack, scaleSteps);
+  /** El porqué de cada pila, con el aviso si trae una nota de afuera de la escala. */
+  const ruleFor = (choice: StackChoice) => {
+    const stack = resolveStack(choice, scaleSteps);
+    const foreign = foreignSteps(choice, scaleSteps).map((step) => name(tonic + step));
+    return [
+      choice === 'escala' ? `${STACKS[stack].name}.` : '',
+      STACKS[stack].rule,
+      foreign.length > 0
+        ? `Ojo: ${foreign.join(' y ')} no ${foreign.length > 1 ? 'están' : 'está'} en la escala.`
+        : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+  };
   const set = (patch: Partial<DroneSound>) => onChange({ ...sound, ...patch });
 
   return (
@@ -116,11 +133,21 @@ export function DronePanel({
           ))}
         </div>
       </Field>
-      <p className={ui.hint} data-testid="drone-rule">
-        {sound.stack === 'escala' && `${STACKS[stack].name}. `}
-        {STACKS[stack].rule}
-        {foreign.length > 0 &&
-          ` Ojo: ${foreign.map((step) => name(tonic + step)).join(' y ')} no ${foreign.length > 1 ? 'están' : 'está'} en la escala, y va a chocar con lo que toques.`}
+      {/* Todos los textos en el mismo lugar y se ve el elegido: el modal no cambia de alto al elegir. */}
+      <p className={`${ui.hint} ${styles.rule}`}>
+        {STACK_OPTIONS.map((option) => {
+          const shown = option.value === sound.stack;
+          return (
+            <span
+              key={option.value}
+              data-shown={shown}
+              aria-hidden={!shown}
+              data-testid={shown ? 'drone-rule' : undefined}
+            >
+              {ruleFor(option.value)}
+            </span>
+          );
+        })}
       </p>
 
       <div className={styles.droneFields}>
@@ -129,7 +156,10 @@ export function DronePanel({
             label="Timbre"
             stretch
             value={sound.timbre}
-            options={(Object.keys(TIMBRES) as TimbreId[]).map((id) => ({ value: id, label: TIMBRES[id].name }))}
+            options={(Object.keys(TIMBRES) as TimbreId[]).map((id) => ({
+              value: id,
+              label: TIMBRES[id].name,
+            }))}
             onChange={(timbre) => set({ timbre })}
           />
         </Field>
@@ -153,7 +183,7 @@ export function DronePanel({
             onChange={(event) => set({ motion: Number(event.target.value) })}
           />
         </Field>
-        <Field label={`Batido: ${Math.round(sound.detune)} cents`}>
+        <Field label="Batido">
           <input
             type="range"
             min={0}
@@ -164,12 +194,6 @@ export function DronePanel({
           />
         </Field>
       </div>
-      <p className={ui.hint}>
-        Lo que elijas queda guardado para la próxima.{' '}
-        <button type="button" className={styles.compare} onClick={() => onChange({ ...DEFAULT_DRONE })}>
-          Volver al de siempre
-        </button>
-      </p>
     </div>
   );
 }

@@ -183,15 +183,16 @@
   }
 }
 
-/* El modal del drone: la onda arriba, después qué se apila y cómo suena. */
+/* El modal del drone: la onda arriba, después qué se apila y cómo suena. Entra sin scrollear también en el
+   celular: la onda se achica con el alto de la pantalla y los controles van de a tres o de a cuatro. */
 .drone {
   display: grid;
-  gap: 12px;
+  gap: 8px;
 }
 .scope {
   display: block;
   width: 100%;
-  height: clamp(80px, 18vw, 120px);
+  height: clamp(40px, 9dvh, 110px);
   border: var(--rule);
   background: var(--neck);
   color: var(--neck-muted);
@@ -201,7 +202,6 @@
 }
 .droneRow {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 8px 14px;
 }
@@ -210,12 +210,42 @@
   overflow-wrap: anywhere;
 }
 .stacks {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
 }
+.stacks > button {
+  min-width: 0;
+  padding-inline: 2px;
+  font-size: 12px;
+}
+@media (min-width: 720px) {
+  .stacks {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .stacks > button {
+    padding-inline: 10px;
+    font-size: 13px;
+  }
+}
+/* Los porqués de todas las pilas superpuestos: el alto es el del más largo y no cambia al elegir. */
+.rule {
+  display: grid;
+  margin: 0;
+}
+.rule > span {
+  grid-area: 1 / 1;
+}
+.rule > span[data-shown='false'] {
+  visibility: hidden;
+}
+/* El timbre a todo el ancho y los tres deslizadores en una fila. */
 .droneFields {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 12px 18px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 12px;
+}
+.droneFields > :first-child {
+  grid-column: 1 / -1;
 }
