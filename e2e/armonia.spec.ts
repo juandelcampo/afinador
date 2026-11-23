@@ -32,15 +32,12 @@ test.describe('armonía', () => {
     await degrees.getByRole('button', { name: 'Escuchar C' }).click();
     await expect.poll(() => plucks(page)).toBeGreaterThanOrEqual(5);
 
-    await page.getByRole('button', { name: 'Dórico' }).click();
+    await page.getByRole('combobox', { name: 'Mundo' }).selectOption('dorico');
     await expect(page).toHaveURL(/escala=dorico/);
     await expect(degrees.locator('text=★')).toHaveCount(2);
     await expect(degrees.locator('text=OJO')).toHaveCount(1);
 
-    await page
-      .getByRole('group', { name: 'Escala · Exóticas' })
-      .getByRole('button', { name: 'Árabe' })
-      .click();
+    await page.getByRole('combobox', { name: 'Mundo' }).selectOption('arabe');
     await expect(page).toHaveURL(/escala=arabe/);
     await expect(degrees.getByRole('button', { name: 'Escuchar Db' })).toBeVisible();
     await expect(degrees.locator('text=★')).toHaveCount(2);

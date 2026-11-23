@@ -351,35 +351,6 @@
   margin-top: 20px;
 }
 
-/* Las familias de mundos: tonales, modos y exóticas, cada una con su rótulo chico encima. */
-.families {
-  display: grid;
-  gap: 10px;
-}
-.family {
-  display: grid;
-  gap: 3px;
-}
-.familyLabel {
-  font: 600 12px/1.5 var(--ui);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-/* Cada familia en dos filas parejas (2×2, 3×2, 2×2), sin un botón suelto abajo. */
-.family button {
-  flex-basis: 34%;
-}
-.family[data-family='modo'] button {
-  flex-basis: 26%;
-}
-/* Con lugar, las tres familias una al lado de la otra: ocupan poco alto y la rueda sigue entrando sin bajar. */
-@container center (min-width: 940px) {
-  .families {
-    grid-template-columns: 4fr 6fr 4fr;
-    column-gap: 12px;
-  }
-}
-
 /* 04 Tu vuelta */
 .chips {
   display: grid;

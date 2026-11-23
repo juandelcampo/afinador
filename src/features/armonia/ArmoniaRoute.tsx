@@ -57,7 +57,7 @@ import { TEMPO_RANGE, useSettings } from '~/shared/settings';
 import { useHydrated } from '~/shared/useHydrated';
 import { Sheet } from '~/shared/ui/Sheet';
 import { TuneLink, TuningField } from '~/shared/TuningField';
-import { Button, Field, PageTitle, Rail, Segmented, Slab, SlabHead, Tabs } from '~/shared/ui/ui';
+import { Button, Field, PageTitle, Rail, Segmented, Slab, SlabHead } from '~/shared/ui/ui';
 import ui from '~/shared/ui/ui.module.css';
 import styles from './armonia.module.css';
 import { CircleNotes, CircleWheel } from './CircleOfFifths';
@@ -789,29 +789,30 @@ export default function ArmoniaRoute() {
                   ))}
                 </select>
               </Field>
+              {/* Catorce mundos en pestañas se comían media pantalla: van en un desplegable, por familia. */}
+              <Field label="Mundo">
+                <select
+                  id="mundo"
+                  value={scale.id}
+                  onChange={(event) => update({ escala: event.target.value })}
+                >
+                  {(Object.keys(FAMILY_LABEL) as Scale['family'][]).map((family) => (
+                    <optgroup key={family} label={FAMILY_LABEL[family]}>
+                      {SCALES.filter((other) => other.family === family).map((other) => (
+                        <option key={other.id} value={other.id}>
+                          {other.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </Field>
               <TuneLink tuning={tuning} />
             </div>
           </Slab>
 
+          {/* Sin rótulo "Mundo": el nombre del mundo ya lo dice, y el desplegable para cambiarlo está arriba. */}
           <Slab>
-            <SlabHead title="Mundo" />
-            {/* Catorce mundos en una sola fila de pestañas no se leen: van en tres familias. */}
-            <div className={styles.families}>
-              {(Object.keys(FAMILY_LABEL) as Scale['family'][]).map((item) => (
-                <div key={item} className={styles.family} data-family={item}>
-                  <span className={styles.familyLabel}>{FAMILY_LABEL[item]}</span>
-                  <Tabs
-                    label={`Escala · ${FAMILY_LABEL[item]}`}
-                    value={scale.id}
-                    options={SCALES.filter((other) => other.family === item).map((other) => ({
-                      value: other.id,
-                      label: other.name,
-                    }))}
-                    onChange={(value) => update({ escala: value })}
-                  />
-                </div>
-              ))}
-            </div>
             {/* En pantalla ancha, la rueda va sola a la derecha, a la altura del mundo; a la izquierda, el mundo,
                 sus acordes y lo que se lee de la rueda. En el celular, todo en fila y la rueda se abre a pedido. */}
             <div className={styles.worldGrid} data-circle={circleOpen ? 'open' : 'closed'}>
