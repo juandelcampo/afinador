@@ -142,6 +142,10 @@
     padding-inline: 0;
   }
 }
+/* Cuerdas, cejilla y si falta la quinta, al lado del contador de formas. */
+.details {
+  color: var(--muted);
+}
 .current {
   display: grid;
   justify-items: center;

@@ -375,10 +375,14 @@ export default function InversionesRoute() {
           ) : voicing ? (
             <Browse
               className={styles.browse}
-              countTestId="shape-counter"
-              count={`Forma ${index + 1} de ${shapes.length}`}
+              // Los detalles van en el renglón del contador: el recuadro mide lo mismo que el de Escalas.
+              count={
+                <>
+                  <span data-testid="shape-counter">{`Forma ${index + 1} de ${shapes.length}`}</span>
+                  {details.length > 0 && <span className={styles.details}> · {details.join(' · ')}</span>}
+                </>
+              }
               main={tabOf(voicing.frets)}
-              note={details.join(' · ')}
               currentLabel={`Escuchar ${nameWithBass(group)}: ${tabOf(voicing.frets)}`}
               prevLabel="Forma anterior, más cerca de la cejuela"
               nextLabel="Forma siguiente, más arriba en el mástil"
