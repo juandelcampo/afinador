@@ -152,7 +152,9 @@ test.describe('ritmo', () => {
     expect(errors).toEqual([]);
   });
 
-  test('la caja de ritmos: partida, pintar, callar, correr, swing y volver', async ({ page }) => {
+  test('la caja de ritmos: partida, pintar, borrar con el derecho, mute, solo, pasos, swing, deshacer y rehacer', async ({
+    page,
+  }) => {
     const errors = watchErrors(page);
     await goto(page, '/ritmo');
     await page.getByRole('group', { name: 'Tipo de ritmo' }).getByRole('button', { name: 'Batería' }).click();
@@ -164,60 +166,63 @@ test.describe('ritmo', () => {
     await expect(page).toHaveURL(/p=2001001000100000_/);
 
     // Pintar arrastrando: tres casillas de tom de un solo gesto.
-    const tomFirst = machine.getByRole('button', { name: 'Tom, paso 1', exact: true });
-    await tomFirst.scrollIntoViewIfNeeded();
-    const a = await tomFirst.boundingBox();
-    const b = await machine.getByRole('button', { name: 'Tom, paso 3', exact: true }).boundingBox();
+    const tom = (step: number) => machine.getByRole('button', { name: `Tom, paso ${step}`, exact: true });
+    await tom(1).scrollIntoViewIfNeeded();
+    const a = await tom(1).boundingBox();
+    const b = await tom(3).boundingBox();
     await page.mouse.move(a!.x + a!.width / 2, a!.y + a!.height / 2);
     await page.mouse.down();
     await page.mouse.move(b!.x + b!.width / 2, b!.y + b!.height / 2, { steps: 6 });
     await page.mouse.up();
-    for (const step of [1, 2, 3]) {
-      await expect(machine.getByRole('button', { name: `Tom, paso ${step}`, exact: true })).toHaveAttribute(
-        'aria-pressed',
-        'true',
-      );
-    }
+    for (const step of [1, 2, 3]) await expect(tom(step)).toHaveAttribute('data-level', '1');
     await expect(machine.getByRole('button', { name: 'Funk' })).toHaveAttribute('aria-pressed', 'false');
 
-    // Otro toque acentúa la casilla, y el siguiente la vacía.
-    await tomFirst.click();
-    await expect(tomFirst).toHaveAttribute('data-level', '2');
-    await tomFirst.click();
-    await expect(tomFirst).toHaveAttribute('aria-pressed', 'false');
-    await tomFirst.click();
-    await expect(tomFirst).toHaveAttribute('data-level', '1');
+    // Con el mouse, otro clic izquierdo pasa el golpe a acento y de vuelta; el derecho borra.
+    await tom(1).click();
+    await expect(tom(1)).toHaveAttribute('data-level', '2');
+    await tom(1).click();
+    await expect(tom(1)).toHaveAttribute('data-level', '1');
+    await tom(2).click({ button: 'right' });
+    await expect(tom(2)).toHaveAttribute('data-level', '0');
 
-    // En el celular se piden con "Ajustar filas"; en pantallas anchas están siempre.
-    const adjust = machine.getByRole('button', { name: 'Ajustar filas' });
-    if (await adjust.isVisible()) await adjust.click();
-    await machine.getByRole('button', { name: 'Correr tom un paso después' }).click();
-    await expect(machine.getByRole('button', { name: 'Tom, paso 1', exact: true })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    );
-    await expect(machine.getByRole('button', { name: 'Tom, paso 4', exact: true })).toHaveAttribute(
+    // Deshacer vuelve atrás de a un cambio (el gesto de arrastrar es uno solo), y rehacer lo devuelve.
+    await page.locator('#undo-drums').click();
+    await expect(tom(2)).toHaveAttribute('data-level', '1');
+    await page.keyboard.press('Control+z');
+    await page.keyboard.press('Control+z');
+    await page.keyboard.press('Control+z');
+    for (const step of [1, 2, 3]) await expect(tom(step)).toHaveAttribute('data-level', '0');
+    await expect(machine.getByRole('button', { name: 'Funk' })).toHaveAttribute('aria-pressed', 'true');
+    await page.locator('#redo-drums').click();
+    await expect(tom(3)).toHaveAttribute('data-level', '1');
+    await page.keyboard.press('Control+Shift+z');
+    await expect(tom(1)).toHaveAttribute('data-level', '2');
+
+    // Mute calla una fila; con alguna en solo, las demás quedan apagadas.
+    await machine.getByRole('button', { name: 'Mute de bombo' }).click();
+    await expect(machine.getByRole('button', { name: 'Mute de bombo' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
-
-    await machine.getByRole('button', { name: 'Callar bombo' }).click();
-    await expect(machine.getByRole('button', { name: 'Callar bombo' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
+    await expect(machine.locator('[data-track="bombo"]')).toHaveAttribute('data-silent', 'true');
+    await machine.getByRole('button', { name: 'Solo de caja' }).click();
+    await expect(machine.locator('[data-track="caja"]')).toHaveAttribute('data-silent', 'false');
+    await expect(machine.locator('[data-track="hihat"]')).toHaveAttribute('data-silent', 'true');
 
     await machine.getByRole('slider', { name: /Swing/ }).fill('66');
     await expect(page.getByTestId('swing')).toHaveText('66');
     await expect(page).toHaveURL(/sw=66/);
 
+    // Los pasos van de a uno: con 15 no hay swing.
+    await machine.getByRole('button', { name: 'Bajar pasos' }).click();
+    await expect(page).toHaveURL(/n=15/);
+    await expect(page.getByTestId('swing')).toHaveText('no va');
+    await expect(machine.getByRole('button', { name: 'Tom, paso 16', exact: true })).toHaveCount(0);
+
     await machine.getByRole('button', { name: 'Borrar todos los golpes' }).click();
     await expect(machine.locator('[aria-pressed="true"][data-step]')).toHaveCount(0);
     await page.locator('#undo-drums').click();
-    await expect(machine.getByRole('button', { name: 'Tom, paso 4', exact: true })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
+    await expect(tom(1)).toHaveAttribute('data-level', '2');
 
     await page.locator('#metro-toggle').click();
     await expect(machine.locator('[data-now]').first()).toBeVisible();

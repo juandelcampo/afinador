@@ -200,6 +200,21 @@ describe('caja de ritmos', () => {
     expect(ats[3]).toBeCloseTo(0.83, 2);
   });
 
+  it('con alguna fila en solo suenan solo esas, y el mute gana sobre el solo', () => {
+    const base = drumConfig(100, { bombo: 'x.x.', caja: '.x.x', hihat: 'xxxx' });
+    const solo = (soloed: boolean[], muted: boolean[] = []): string[] =>
+      [
+        ...new Set(
+          cycleFor({ ...base, soloed, muted }, 0)
+            .hits.map((hit) => hit.voice)
+            .filter(Boolean) as string[],
+        ),
+      ].sort();
+    expect(solo([])).toEqual(['bombo', 'caja', 'hihat']);
+    expect(solo([false, true, false, true])).toEqual(['caja', 'hihat']);
+    expect(solo([false, true, false, true], [false, true])).toEqual(['hihat']);
+  });
+
   it('una fila callada no suena, pero el paso general sigue', () => {
     const base = drumConfig(100, { bombo: 'x.x.', caja: '.x.x' });
     const config: DrumConfig = { ...base, muted: [true, false, false, false, false, false, false, false] };
@@ -246,6 +261,8 @@ describe('caja de ritmos', () => {
 
   it('en el celular los pasos se parten en filas que respetan el compás', () => {
     expect([8, 10, 12, 14, 16, 24, 32].map(rowLength)).toEqual([8, 5, 6, 7, 8, 8, 8]);
+    // Los impares: hasta 9 en una fila; si no se parten parejo, de a 8 y la última más corta.
+    expect([5, 7, 9, 11, 13, 15, 21].map(rowLength)).toEqual([5, 7, 9, 8, 8, 5, 7]);
   });
 });
 

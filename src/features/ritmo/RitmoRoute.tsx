@@ -16,7 +16,6 @@ import {
   rhythmToDrums,
   rhythmToParams,
   type Cycle,
-  type DrumConfig,
   type DrumId,
   type Meter,
   type RhythmConfig,
@@ -462,7 +461,6 @@ export default function RitmoRoute() {
   const clickSound = useSettings((s) => s.clickSound);
   const figure = useSettings((s) => s.rhythmFigure);
   const set = useSettings((s) => s.set);
-  const [undo, setUndo] = useState<DrumConfig[]>([]);
 
   // Un link compartido puede traer un ritmo en la URL.
   useEffect(() => {
@@ -490,16 +488,6 @@ export default function RitmoRoute() {
   const setBpm = useCallback((bpm: number) => {
     metronome.setConfig({ ...metronome.getState().config, bpm: clampBpm(bpm) });
   }, []);
-  const replaceDrums = (next: DrumConfig) => {
-    if (config.mode === 'drum') setUndo((stack) => [...stack, config].slice(-30));
-    apply(next);
-  };
-  const goBack = () => {
-    const previous = undo.at(-1);
-    if (!previous) return;
-    setUndo(undo.slice(0, -1));
-    apply({ ...previous, bpm: config.bpm });
-  };
 
   const { name, rule } = describeRhythm(config);
   // El compás, el euclidiano y la polirritmia se dibujan como figura; el mutante cambia de compás y va en grilla.
@@ -596,12 +584,7 @@ export default function RitmoRoute() {
 
           <div className={styles.controls}>
             {drum ? (
-              <DrumMachine
-                config={config}
-                onChange={apply}
-                onReplace={replaceDrums}
-                onUndo={undo.length > 0 ? goBack : undefined}
-              />
+              <DrumMachine config={config} onChange={apply} />
             ) : (
               <Editor
                 config={config}
@@ -629,13 +612,7 @@ export default function RitmoRoute() {
               </div>
             )}
             {!drum && (
-              <Button
-                id="to-drums"
-                onClick={() => {
-                  setUndo([]);
-                  apply(rhythmToDrums(config));
-                }}
-              >
+              <Button id="to-drums" onClick={() => apply(rhythmToDrums(config))}>
                 Pasar a la batería →
               </Button>
             )}

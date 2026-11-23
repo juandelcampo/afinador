@@ -1,8 +1,7 @@
 /* --- Caja de ritmos --- */
-/* En el celular cada sonido es un bloque: arriba el nombre y "Callar", abajo las casillas a todo el ancho
-   en filas de a 8 (o de a 7, 6…), y una raya entre sonido y sonido para que no se mezclen. Correr la fila y
-   su volumen aparecen entre el nombre y "Callar" con "Ajustar filas". En pantallas anchas todo va en una
-   línea por sonido. */
+/* En pantallas anchas entra entera sin bajar: los de partida, una sola fila de controles y una línea por
+   sonido (nombre, volumen, mute, solo y las casillas). En el celular cada sonido es un bloque: arriba el
+   nombre, el volumen, mute y solo; abajo las casillas a todo el ancho, en filas de a 8 (o de a 7, 6…). */
 .drums {
   display: grid;
   gap: 12px;
@@ -14,31 +13,24 @@
   gap: 10px 16px;
 }
 .swing {
-  flex: 1 1 160px;
-  max-width: 260px;
+  flex: 1 1 140px;
+  max-width: 240px;
 }
 .swing input {
   width: 100%;
 }
+/* En el celular las cuatro acciones van de a dos, parejas; con lugar, en fila al final de los controles. */
 .actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  display: grid;
+  flex: 1 1 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
 }
-/* La explicación de las casillas y, en el celular, el botón que muestra los ajustes de cada fila. */
-.gridHead {
-  display: flex;
-  align-items: flex-end;
-  gap: 12px;
-}
-.hint {
-  flex: 1;
-  max-width: 62ch;
-  margin: 0;
-}
-.adjustToggle {
-  flex: none;
+@container ritmo (min-width: 560px) {
+  .actions {
+    display: flex;
+    flex: none;
+  }
 }
 
 .tracks {
@@ -48,9 +40,9 @@
 .track {
   display: grid;
   grid-template-areas:
-    'name tools mute'
-    'steps steps steps';
-  grid-template-columns: minmax(0, 1fr) auto auto;
+    'name level mute solo'
+    'steps steps steps steps';
+  grid-template-columns: minmax(0, 1fr) minmax(56px, 110px) auto auto;
   align-items: center;
   gap: 4px 8px;
   min-width: 0;
@@ -80,38 +72,27 @@
 .voice:active {
   color: var(--accent);
 }
-.mute {
-  grid-area: mute;
-  min-width: 0;
-}
-.mute > button {
-  width: 84px;
-  padding-inline: 2px;
-  white-space: nowrap;
-}
-.trackTools {
-  grid-area: tools;
-  display: none;
-  grid-template-columns: var(--touch-small) var(--touch-small) 64px;
-  align-items: center;
-  gap: 4px;
-  min-width: 0;
-}
-.tracks[data-adjusting='true'] .trackTools {
-  display: grid;
-}
-.trackTools > button {
-  padding-inline: 0;
-  font-size: 18px;
-}
-.trackTools input {
+.level {
+  grid-area: level;
   width: 100%;
   min-width: 0;
   height: var(--touch-small);
   margin: 0;
   accent-color: var(--accent);
 }
-.track[data-muted='true'] .steps {
+.mute {
+  grid-area: mute;
+}
+.solo {
+  grid-area: solo;
+}
+.mute > button,
+.solo > button {
+  width: 60px;
+  padding-inline: 2px;
+}
+/* Lo que no suena (con mute, o fuera del solo) queda apagado. */
+.track[data-silent='true'] .steps {
   opacity: 0.35;
 }
 .steps {
@@ -155,28 +136,57 @@
   background: var(--accent);
 }
 
-@container ritmo (min-width: 900px) {
-  .adjustToggle {
+/* Cómo se usan las casillas: con mouse (clic derecho borra) o con el dedo (cada toque pasa al que sigue). */
+.hint {
+  margin: 0;
+}
+.touchHint {
+  display: none;
+}
+@media (pointer: coarse) {
+  .mouseHint {
     display: none;
   }
+  .touchHint {
+    display: inline;
+  }
+}
+
+@container ritmo (min-width: 900px) {
   .tracks {
     gap: 4px;
     border-top: 0;
   }
   .track {
-    grid-template-areas: 'name mute tools steps';
-    grid-template-columns: 110px 84px 190px minmax(0, 1fr);
-    grid-template-rows: auto;
-    align-items: center;
+    grid-template-areas: 'name level mute solo steps';
+    grid-template-columns: 100px 100px auto auto minmax(0, 1fr);
     gap: 8px;
     padding: 0;
     border-bottom: 0;
   }
-  .trackTools {
-    display: grid;
-    grid-template-columns: var(--touch-small) var(--touch-small) minmax(0, 1fr);
-  }
   .steps {
     grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
+  }
+}
+
+/* Con mouse, las casillas se achican con la altura de la ventana para que la batería entre sin bajar.
+   Lo que no es la grilla ocupa unos 590 px; el resto se reparte entre los ocho sonidos. Con el dedo,
+   siempre a medida de dedo. */
+@media (pointer: fine) {
+  @container ritmo (min-width: 900px) {
+    .tracks {
+      --cell: clamp(26px, calc((100dvh - 590px) / 8 - 4px), var(--touch-small));
+    }
+    .step,
+    .level {
+      min-height: var(--cell);
+      height: var(--cell);
+    }
+    .mute > button,
+    .solo > button {
+      min-height: var(--cell);
+      height: var(--cell);
+      padding-block: 0;
+    }
   }
 }

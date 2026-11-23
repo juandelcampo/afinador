@@ -34,8 +34,10 @@ export type RhythmConfig =
        * de contratiempo hacia la que sigue. Sin él, parejo.
        */
       swing?: number;
-      /** Filas calladas un rato, sin perder su volumen. No viaja en el link. */
+      /** Filas calladas un rato (mute), sin perder su volumen. No viaja en el link. */
       muted?: boolean[];
+      /** Filas en solo: si hay alguna, suenan solo esas. No viaja en el link. */
+      soloed?: boolean[];
       bpm: number;
     };
 
@@ -74,7 +76,8 @@ export function drumName(id: DrumId, kit: DrumKit = DEFAULT_KIT): string {
 /** Las filas que tenían los links de antes de que hubiera aro y hi-hat abierto, en el orden de ahora. */
 const OLD_LANES = [0, 1, 3, 5, 6, 7];
 export type PolyVoices = [DrumId, DrumId];
-export const DRUM_STEPS = [8, 10, 12, 14, 16, 24, 32] as const;
+/** Cuántos pasos puede tener la caja de ritmos: de a uno, también impares. */
+export const DRUM_STEPS = { min: 2, max: 32 } as const;
 export const DEFAULT_POLY_VOICES: PolyVoices = ['hihat', 'bombo'];
 const DEFAULT_LEVEL = 0.8;
 /** Volumen de un golpe sin acento en la polirritmia; el primero de cada línea va a 1. */
@@ -176,10 +179,20 @@ export function clampBpm(bpm: number): number {
   return Math.min(LIMITS.bpm[1], Math.max(LIMITS.bpm[0], Math.round(bpm)));
 }
 
-/** En pantallas chicas los pasos de la batería se parten en filas de a 8, 7, 6 o 5, para que el compás se lea. */
+/**
+ * En pantallas chicas los pasos de la batería se parten en filas de a 8, 7, 6 o 5, para que el compás se lea.
+ * Hasta 9 entran en una sola fila, y si no hay una partición pareja van de a 8 y la última queda más corta.
+ */
 export function rowLength(steps: number): number {
-  for (let length = 8; length > 1; length--) if (steps % length === 0) return length;
-  return steps;
+  if (steps <= 9) return steps;
+  for (let length = 8; length >= 5; length--) if (steps % length === 0) return length;
+  return 8;
+}
+
+/** Si una fila de la batería suena: no tiene mute y, si hay alguna en solo, es una de ellas. */
+export function laneSounds(config: DrumConfig, lane: number): boolean {
+  if (config.muted?.[lane]) return false;
+  return !config.soloed?.some(Boolean) || !!config.soloed[lane];
 }
 
 export const SWING = { straight: 50, max: 75 } as const;
@@ -261,7 +274,7 @@ export function cycleFor(config: RhythmConfig, index: number): Cycle {
       return meterCycle(config.meters[position]!);
     }
     case 'drum': {
-      const { steps, tracks, levels, muted } = config;
+      const { steps, tracks, levels } = config;
       const at = swungPosition(steps, config.swing ?? SWING.straight);
       const hits: Hit[] = Array.from({ length: steps }, (_, cell) => ({
         at: at(cell),
@@ -271,7 +284,7 @@ export function cycleFor(config: RhythmConfig, index: number): Cycle {
       }));
       tracks.forEach((track, lane) => {
         const gain = levels[lane] ?? DEFAULT_LEVEL;
-        if (muted?.[lane]) return;
+        if (!laneSounds(config, lane)) return;
         track.forEach((on, cell) => {
           if (!on || gain <= 0) return;
           hits.push({ at: at(cell), level: on === 2 ? 2 : 1, lane, cell, voice: DRUMS[lane]!.id, gain });
