@@ -247,8 +247,8 @@ export default function InversionesRoute() {
       <Slab>
         <PageTitle eyebrow="Todas las formas de un acorde" title="Inversiones">
           <p>
-            El mismo acorde cambia de peso según qué nota va en el bajo. Elegí uno y recorré sus formas en el
-            mástil.
+            El mismo acorde cambia de peso según qué nota va en el bajo (en naranja). Recorré sus formas o
+            tocá el mástil para armar la tuya.
           </p>
         </PageTitle>
         <div className={ui.setup}>
@@ -391,7 +391,9 @@ export default function InversionesRoute() {
               onCurrent={() => play(voicing)}
             />
           ) : (
-            <p className={`${styles.browse} ${styles.empty}`}>En esta afinación la mano no llega a ninguna forma de {name}.</p>
+            <p className={`${styles.browse} ${styles.empty}`}>
+              En esta afinación la mano no llega a ninguna forma de {name}.
+            </p>
           )}
           <Button variant="primary" ariaLabel="Escuchar las inversiones" onClick={playTour}>
             ▶ Escuchar
@@ -424,12 +426,6 @@ export default function InversionesRoute() {
               {shownGroup.why}
             </>
           )}
-        </p>
-
-        <p className={ui.hint}>
-          Lo tenue son las notas del acorde en todo el mástil; lo blanco, la forma elegida, con el bajo en
-          naranja. Para armar la tuya, tocá una nota tenue y el dedo va ahí; tocá un dedo para sacarlo, o el
-          nombre de una cuerda para que suene al aire.
         </p>
       </Slab>
     </div>

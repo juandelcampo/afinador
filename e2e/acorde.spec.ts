@@ -26,7 +26,7 @@ test.describe('¿Qué acorde?', () => {
     await expect(page).toHaveURL(/forma=x-3-2-0-1-0/);
     await expect(name.locator('strong')).toHaveText('C');
     await expect(name).toContainText('Mayor');
-    await expect(page.getByTestId('acorde-detalle')).toContainText('La raíz en el bajo');
+    await expect(page.getByTestId('acorde-bajo')).toContainText('La raíz en el bajo');
     // Cada dedo suena al ponerlo.
     await expect.poll(() => plucks(page)).toBeGreaterThanOrEqual(3);
 

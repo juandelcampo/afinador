@@ -183,9 +183,8 @@ export default function AcordeRoute() {
         <PageTitle eyebrow="Ponele nombre a lo que tocás" title="¿Qué acorde?">
           {/* Cómo se usa va acá arriba: se lee al entrar, sin bajar hasta el pie. */}
           <p>
-            Poné los dedos donde te suena lindo y te dice cómo se llama. Tocá un casillero para poner el dedo
-            y el dedo para sacarlo; el nombre de cada cuerda la apaga (×) o la vuelve a prender. En naranja,
-            el bajo.
+            Poné los dedos donde te suena lindo y te dice cómo se llama. El nombre de cada cuerda la apaga
+            (×); el bajo, en naranja.
           </p>
         </PageTitle>
         <div className={ui.setup}>
@@ -194,21 +193,74 @@ export default function AcordeRoute() {
             onChange={(id) => update(() => ({ afinacion: id === DEFAULT_TUNING ? null : id }))}
           />
           <TuneLink tuning={tuning} />
+          {inversionsLink && (
+            <Link className={ui.bridge} to={inversionsLink}>
+              Todas las formas de {pcName(reading!.root) + suffixSymbol(reading!.suffix)} en Inversiones →
+            </Link>
+          )}
         </div>
       </Slab>
 
       <Slab>
-        <button
-          type="button"
-          className={styles.result}
-          data-testid="acorde-nombre"
-          aria-label={`Escuchar ${title}: ${tabOf(frets)}`}
-          aria-live="polite"
-          onClick={strum}
-        >
-          <strong className={styles.name}>{title}</strong>
-          <span className={styles.words}>{words}</span>
-        </button>
+        {/* El nombre a la izquierda y lo que se explica a la derecha, en el alto del acorde de Inversiones:
+            el diapasón y la botonera quedan en el mismo lugar en las tres. */}
+        <div className={styles.lead}>
+          <button
+            type="button"
+            className={styles.result}
+            data-testid="acorde-nombre"
+            aria-label={`Escuchar ${title}: ${tabOf(frets)}`}
+            aria-live="polite"
+            onClick={strum}
+          >
+            <strong className={styles.name}>{title}</strong>
+            <span className={styles.words}>{words}</span>
+          </button>
+          {sounding.length > 0 && (
+            <ul className={styles.facts} data-testid="acorde-detalle">
+              <li>
+                <span>Suena</span>
+                <span className={styles.heard}>
+                  {heard.map(({ pc, role }) => (
+                    <span key={pc}>
+                      {pcName(pc)} <small>{role}</small>
+                    </span>
+                  ))}
+                </span>
+              </li>
+              {reading && reading.extras.length > 0 && (
+                <li data-testid="acorde-color">
+                  <span>Color</span>
+                  <span>
+                    {reading.extras.map((extra, index) => (
+                      <span key={extra.step}>
+                        {index > 0 && ' '}
+                        <strong>La {extra.label}</strong> {extra.words}.
+                      </span>
+                    ))}
+                  </span>
+                </li>
+              )}
+              {reading && reading.omitted.length > 0 && (
+                <li>
+                  <span>Falta</span>
+                  <span>
+                    {reading.omitted.map((step) => `la ${toneName(step, reading.suffix)}`).join(' y ')}: el
+                    acorde se reconoce igual.
+                  </span>
+                </li>
+              )}
+              {others.length > 0 && (
+                <li data-testid="acorde-otras">
+                  <span>También</span>
+                  <span>
+                    Se puede leer como {others.map(nameOf).join(' o ')}: las mismas notas, con otra raíz.
+                  </span>
+                </li>
+              )}
+            </ul>
+          )}
+        </div>
 
         <Diapason
           notes={tuning.notes}
@@ -242,80 +294,25 @@ export default function AcordeRoute() {
           <ShapeStyleToggle />
         </div>
 
-        {sounding.length > 0 && (
-          <ul className={styles.facts} data-testid="acorde-detalle">
-            <li>
-              <span>Suena</span>
-              <span className={styles.heard}>
-                {heard.map(({ pc, role }) => (
-                  <span key={pc}>
-                    {pcName(pc)} <small>{role}</small>
-                  </span>
-                ))}
-              </span>
-            </li>
-            {reading && reading.extras.length > 0 && (
-              <li data-testid="acorde-color">
-                <span>Color</span>
-                <span>
-                  {reading.extras.map((extra, index) => (
-                    <span key={extra.step}>
-                      {index > 0 && ' '}
-                      <strong>La {extra.label}</strong> {extra.words}.
-                    </span>
-                  ))}
-                </span>
-              </li>
-            )}
-            {reading && bass && bassExtra && (
-              <li>
-                <span>Bajo</span>
-                <span>
-                  <strong>La {bassExtra.label} en el bajo.</strong> El color va abajo: el acorde no termina de
-                  apoyarse y queda flotando.
-                </span>
-              </li>
-            )}
-            {reading && bass && !bassExtra && (
-              <li>
-                <span>Bajo</span>
-                <span>
-                  <strong>
-                    {bass.inversion === 0
-                      ? 'La raíz en el bajo.'
-                      : `La ${bass.tone} en el bajo: ${ORDINALS[bass.inversion]!.toLowerCase()}.`}
-                  </strong>{' '}
-                  {bass.why}
-                </span>
-              </li>
-            )}
-            {reading && reading.omitted.length > 0 && (
-              <li>
-                <span>Falta</span>
-                <span>
-                  {reading.omitted.map((step) => `la ${toneName(step, reading.suffix)}`).join(' y ')}: el
-                  acorde se reconoce igual.
-                </span>
-              </li>
-            )}
-            {others.length > 0 && (
-              <li data-testid="acorde-otras">
-                <span>También</span>
-                <span>
-                  Se puede leer como {others.map(nameOf).join(' o ')}: las mismas notas, con otra raíz.
-                </span>
-              </li>
-            )}
-          </ul>
-        )}
-
-        {inversionsLink && (
-          <p className={styles.next}>
-            <Link className={ui.bridge} to={inversionsLink}>
-              Todas las formas de {pcName(reading!.root) + suffixSymbol(reading!.suffix)} en Inversiones →
-            </Link>
-          </p>
-        )}
+        {/* Una sola línea abajo, como en Escalas e Inversiones: lo que va en el bajo. */}
+        <p className={styles.why} data-testid="acorde-bajo">
+          {reading && bass && bassExtra && (
+            <>
+              <strong>La {bassExtra.label} en el bajo.</strong> El color va abajo: el acorde no termina de
+              apoyarse y queda flotando.
+            </>
+          )}
+          {reading && bass && !bassExtra && (
+            <>
+              <strong>
+                {bass.inversion === 0
+                  ? 'La raíz en el bajo.'
+                  : `La ${bass.tone} en el bajo: ${ORDINALS[bass.inversion]!.toLowerCase()}.`}
+              </strong>{' '}
+              {bass.why}
+            </>
+          )}
+        </p>
       </Slab>
     </div>
   );

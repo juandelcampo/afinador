@@ -23,6 +23,13 @@
   justify-content: center;
   height: 38px;
 }
+/* En una ventana baja de escritorio el diapasón se achica un poco: así la herramienta entra sin bajar. */
+@media (min-width: 640px) and (max-height: 880px) {
+  .nut,
+  .cell {
+    height: 33px;
+  }
+}
 /* La cuerda pasa por el medio de cada casillero, más gruesa cuanto más grave. */
 .cell::before {
   content: '';
