@@ -108,10 +108,12 @@ a {
   text-decoration-thickness: 2px;
 }
 
-/* Foco bien visible: 3 px de tinta separados del borde, con 21:1 contra el papel (WCAG 2.4.13). */
+/* Foco bien visible: 3 px adentro del recuadro, separados del borde. Afuera se montaba sobre las rayas
+   vecinas o lo recortaba el contenedor. Va del color de la letra, así contrasta con cualquier fondo: tinta
+   sobre papel, papel sobre lo elegido, la letra del acento sobre el naranja (WCAG 2.4.13). */
 :focus-visible {
-  outline: 3px solid var(--ink);
-  outline-offset: 3px;
+  outline: 3px solid currentColor;
+  outline-offset: -6px;
 }
 
 /* La barra de scroll, una sola para toda la app: la página, los costados, las listas, los modales y el
