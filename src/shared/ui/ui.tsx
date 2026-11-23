@@ -330,3 +330,41 @@ export function PageTitle({
     </header>
   );
 }
+
+/**
+ * Un botón partido en dos: a la izquierda prende y apaga lo que suena, a la derecha abre su modal para
+ * elegir cómo suena. Lo usa el drone de Escalas.
+ */
+export function SplitButton({
+  on,
+  playLabel,
+  onPlay,
+  openLabel,
+  onOpen,
+  children,
+  className = '',
+}: {
+  on: boolean;
+  /** La frase completa del ▶: "Prender el drone en E". */
+  playLabel: string;
+  onPlay: () => void;
+  /** La frase completa de la otra mitad: "Elegir cómo suena el drone". */
+  openLabel: string;
+  onOpen: () => void;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`${styles.split} ${className}`} role="group" aria-label={openLabel}>
+      <button type="button" aria-label={playLabel} aria-pressed={on} data-on={on} onClick={onPlay}>
+        {on ? '■' : '▶'}
+      </button>
+      <button type="button" aria-haspopup="dialog" title={openLabel} onClick={onOpen}>
+        {children}
+        <span className={styles.splitMark} aria-hidden="true">
+          ▾
+        </span>
+      </button>
+    </div>
+  );
+}

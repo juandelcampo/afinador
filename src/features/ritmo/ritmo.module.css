@@ -30,8 +30,43 @@
 /* Arriba de la figura, cómo se dibuja y el paso a la batería: en el mismo lugar en todos los ritmos. */
 .figureBar {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
+  gap: 6px 16px;
   width: 100%;
+}
+/* Debajo de la figura, el mismo ritmo en casillas: a lo ancho de su columna. */
+.figure > .stripBox {
+  justify-self: stretch;
+}
+/* Siempre lugar para dos filas (las de la polirritmia): al cambiar de pestaña, lo de abajo no salta. */
+.figure .strip {
+  min-height: 70px;
+  align-content: start;
+}
+/* La regla del ritmo, debajo del título: guarda tres renglones en el celular y dos en lo ancho, así
+   el largo del texto de cada pestaña no corre la página. */
+.rule {
+  min-height: 3lh;
+}
+@container ritmo (min-width: 860px) {
+  .rule {
+    min-height: 1lh;
+  }
+}
+/* El sonido: la batería y dos instrumentos, primero y con la misma forma en todos los ritmos. En el
+   celular, la batería arriba y los dos instrumentos lado a lado; en lo ancho, todo en una fila. */
+.sound {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+.sound > :first-child {
+  grid-column: 1 / -1;
+}
+/* Los nombres de las baterías no se parten: la columna mide lo que ellos. */
+.sound :global([role='group']) {
+  white-space: nowrap;
 }
 .figure > p {
   justify-self: stretch;
@@ -45,8 +80,20 @@
 }
 @container ritmo (min-width: 860px) {
   .board:not([data-drum]) {
-    /* Mitad y mitad: la figura centrada en la suya, los controles llenan la otra. */
-    grid-template-columns: minmax(260px, 1fr) minmax(0, 1fr);
+    /* La figura centrada en dos quintos; los controles, en el resto: así entran sin bajar. */
+    grid-template-columns: minmax(260px, 2fr) minmax(0, 3fr);
+  }
+  /* La batería a su medida; los dos instrumentos se reparten lo que queda. */
+  .sound {
+    grid-template-columns: max-content minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .sound > :first-child {
+    grid-column: auto;
+  }
+  /* Los botones de la batería, a su medida: así la columna sabe cuánto mide. */
+  .sound :global([role='group']) button {
+    flex: 0 0 auto;
+    padding-inline: 14px;
   }
 }
 
@@ -158,7 +205,7 @@
 @container ritmo (min-width: 860px) {
   /* Tan grande como entre en lo que queda de la ventana, debajo de la barra de tocar. */
   .wheel {
-    width: clamp(220px, calc(100dvh - 445px), 460px);
+    width: clamp(220px, calc(100dvh - 570px), 460px);
   }
 }
 /* Los trazos miden lo mismo en píxeles aunque la figura crezca. */
@@ -244,35 +291,25 @@
 .rows {
   display: flex;
   flex-wrap: wrap;
+  align-items: flex-start;
   gap: 12px;
 }
 .rows > * {
   flex: 1 1 150px;
   max-width: 300px;
 }
-/* Lo que lleva botones (el sonido, cada línea de la polirritmia) ocupa la fila entera. */
-.rows > .span {
-  flex-basis: 100%;
+/* La rotación del mutante: en el celular, la fila entera; en lo ancho, al lado de cada cuántos cambia. */
+.rows > .rotationField {
+  flex: 2 1 280px;
   max-width: none;
 }
 /* Los pasos a pasos llenan su celda: la grilla queda pareja. */
-.rows > * > [role='group']:has(> output),
-.line > [role='group']:has(> output) {
+.rows > * > [role='group']:has(> output) {
   display: flex;
   width: 100%;
 }
 .rows output {
   flex: 1;
-}
-.line {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 14px;
-}
-.line > [role='group']:has(> output) {
-  flex: 0 0 200px;
-  width: auto;
 }
 .rows > .textField {
   max-width: 420px;
@@ -297,9 +334,6 @@
 .error {
   font-size: 12px;
   font-weight: 700;
-}
-.controls > :global(#to-drums) {
-  justify-self: start;
 }
 
 /* --- En casillas: el mismo ritmo en una línea, como en la batería --- */
@@ -363,9 +397,21 @@
 /* La pista gris de siempre: el rótulo de arriba no le contagia su letra. Guarda dos renglones: al
    pasar de quieto a sonando cambia el texto, y lo de abajo no salta. */
 .rotation p {
-  min-height: 3em;
+  min-height: 3lh;
   margin: 0;
   font: 400 12px/1.5 var(--mono);
   letter-spacing: 0;
   text-transform: none;
+}
+@container ritmo (min-width: 860px) {
+  /* En lo ancho la pista de la rotación entra en dos renglones. */
+  .rotation p {
+    min-height: 2lh;
+  }
+}
+@container ritmo (min-width: 860px) {
+  /* En lo ancho las pistas usan toda la columna: menos renglones, y entra sin bajar. */
+  .editor > p {
+    max-width: none;
+  }
 }

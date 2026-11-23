@@ -5,6 +5,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import type { Notation } from '~/core/notes';
 import { TUNINGS } from '~/data/tunings';
 import type { FigureKind } from '~/core/figure';
+import { DEFAULT_DRONE, sanitizeDrone, type DroneSound } from '~/core/drone';
 
 export type TunerMode = 'guided' | 'auto';
 export type PlayStyle = 'arp' | 'strum';
@@ -33,6 +34,8 @@ interface Settings {
   /** Cómo se dibuja el ritmo: como polígono o como estrella. */
   rhythmFigure: FigureKind;
   theme: Theme;
+  /** Cómo suena el drone de Escalas: se elige una vez y vale para cualquier escala. */
+  drone: DroneSound;
   /** Ids de las afinaciones favoritas, en el orden en que se marcaron. */
   favorites: string[];
   toggleFavorite: (id: string) => void;
@@ -82,6 +85,7 @@ export function sanitize(
     clean.rhythmFigure = saved.rhythmFigure;
   if (saved.theme === 'system' || saved.theme === 'light' || saved.theme === 'dark')
     clean.theme = saved.theme;
+  if (saved.drone !== undefined) clean.drone = sanitizeDrone(saved.drone);
   if (Array.isArray(saved.favorites)) {
     // Una afinación que ya no está en el catálogo se olvida, y ninguna aparece dos veces.
     const known = new Set(TUNINGS.map((tuning) => tuning.id));
@@ -103,6 +107,7 @@ export const useSettings = create<Settings>()(
       chordStyle: 'strum',
       rhythmFigure: 'poligono',
       theme: 'system',
+      drone: { ...DEFAULT_DRONE },
       favorites: [],
       toggleFavorite: (id) =>
         set(({ favorites }) => ({

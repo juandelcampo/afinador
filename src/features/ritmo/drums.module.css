@@ -170,12 +170,14 @@
 }
 
 /* Con mouse, las casillas se achican con la altura de la ventana para que la batería entre sin bajar.
-   Lo que no es la grilla ocupa unos 590 px; el resto se reparte entre los ocho sonidos. Con el dedo,
+   Lo que no es la grilla ocupa unos 625 px; el resto se reparte entre los ocho sonidos. Con el dedo,
    siempre a medida de dedo. */
 @media (pointer: fine) {
   @container ritmo (min-width: 900px) {
     .tracks {
-      --cell: clamp(26px, calc((100dvh - 590px) / 8 - 4px), var(--touch-small));
+      --cell: clamp(18px, calc((100dvh - 625px) / 8 - 4px), var(--touch-small));
+      /* Las filas, apenas separadas cuando las casillas ya son chicas. */
+      gap: clamp(2px, calc((100dvh - 800px) / 50 + 2px), 4px);
     }
     .step,
     .level {
@@ -187,6 +189,10 @@
       min-height: var(--cell);
       height: var(--cell);
       padding-block: 0;
+    }
+    /* El nombre también: si no, la fila mide lo que él y la grilla no entra. */
+    .voice {
+      min-height: var(--cell);
     }
   }
 }

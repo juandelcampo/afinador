@@ -99,8 +99,8 @@ const isMetro = (
   config: RhythmConfig,
 ): config is Extract<RhythmConfig, { mode: (typeof METRO_MODES)[number] }> =>
   (METRO_MODES as readonly string[]).includes(config.mode);
-/** Volumen del golpe sin acento de un metrónomo, y el de los acentos que no son el uno. */
-const METRO_GAIN = { golpe: 0.8, acento: 0.8 } as const;
+/** Volumen del golpe de un metrónomo que no empieza grupo. */
+const METRO_GAIN = 0.75;
 const DEFAULT_LEVEL = 0.8;
 /** Volumen de un golpe sin acento en la polirritmia; el primero de cada línea va a 1. */
 const POLY_UNACCENTED = 0.7;
@@ -265,17 +265,18 @@ function meterCycle({ groups, denom }: Meter): Cycle {
 }
 
 /**
- * Le pone instrumento a cada golpe de un metrónomo. El uno va al acento con la toma fuerte; los otros
- * acentos (el primero de cada grupo del compás), al acento un poco más suave; el resto, al golpe.
+ * Le pone instrumento a cada golpe de un metrónomo. Solo el uno va al acento, con la toma fuerte: así el
+ * golpe suena siempre, también en un 4/4 que es 1+1+1+1. El primero de cada grupo del compás va al golpe,
+ * con su toma fuerte y más volumen: 2+2+3 se sigue distinguiendo de 3+2+2. El resto, al golpe.
  */
-function voiceMetro(cycle: Cycle, voices: Voices, isAccent: (hit: Hit) => boolean): Cycle {
+function voiceMetro(cycle: Cycle, voices: Voices, groupStart: (hit: Hit) => boolean): Cycle {
   const [golpe, acento] = voices;
   return {
     ...cycle,
     hits: cycle.hits.map((hit): Hit => {
       if (hit.level === 2) return { ...hit, voice: acento, gain: 1, strong: true };
-      if (isAccent(hit)) return { ...hit, voice: acento, gain: METRO_GAIN.acento };
-      return { ...hit, voice: golpe, gain: METRO_GAIN.golpe };
+      if (groupStart(hit)) return { ...hit, voice: golpe, gain: 1, strong: true };
+      return { ...hit, voice: golpe, gain: METRO_GAIN };
     }),
   };
 }

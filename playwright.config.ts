@@ -2,8 +2,9 @@ import { defineConfig } from '@playwright/test';
 
 // Por defecto corre contra el build real (las páginas estáticas). Con E2E_DEV corre contra el servidor
 // de desarrollo: ahí React ejecuta los efectos dos veces, y eso destapa errores que el build no muestra.
-// E2E_PORT sirve el build en otro puerto: varias sesiones en paralelo no se pisan el puerto.
-const DEV_PORT = 5373;
+// E2E_PORT sirve el build en otro puerto, y E2E_DEV_PORT el servidor de desarrollo: varias sesiones en
+// paralelo no se pisan el puerto (si hay algo andando en ese puerto, se reusa).
+const DEV_PORT = Number(process.env.E2E_DEV_PORT ?? 5373);
 const PORT = Number(process.env.E2E_PORT ?? 4273);
 const baseURL = process.env.E2E_DEV ? `http://localhost:${DEV_PORT}` : `http://localhost:${PORT}`;
 

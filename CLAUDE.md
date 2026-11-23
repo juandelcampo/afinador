@@ -27,4 +27,4 @@ Armonía sigue a De María, _Composición integral_ (el PDF está en `~/Escritor
 - Para sumar o retocar una herramienta, seguir `docs/ESTILO.md`: qué piezas compartidas usar, colores y estados, un solo volumen en la barra, elecciones de dos opciones en un `Toggle`.
 - Los commits y el push van directo a `main`, sin ramas ni PR.
 - Antes de dar algo por terminado: `npm run check`. Para ver cambios de interfaz, sacar capturas en celular (390 px) y escritorio.
-- Puede haber varias sesiones a la vez en este proyecto y en Scordatura: comparten `build/`, así que con sesiones en paralelo conviene correr los e2e en otro puerto (`E2E_PORT=…`) o en una copia aparte.
+- Puede haber varias sesiones a la vez en este proyecto y en Scordatura: comparten `build/`, así que con sesiones en paralelo conviene correr los e2e en otros puertos (`E2E_PORT=… E2E_DEV_PORT=…`, uno para el build y otro para el servidor de desarrollo) o en una copia aparte.

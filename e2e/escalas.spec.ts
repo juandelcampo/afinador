@@ -57,9 +57,27 @@ test.describe('escalas', () => {
     await expect.poll(() => plucks(page)).toBeGreaterThan(before + 5);
     await page.getByRole('button', { name: '■ Parar' }).click();
 
-    await page.getByRole('button', { name: '▶ Drone en D' }).click();
-    await expect(page.getByRole('button', { name: '■ Drone en D' })).toHaveAttribute('aria-pressed', 'true');
+    // El drone es un botón partido: el ▶ lo prende y lo demás abre el modal para elegir cómo suena.
+    await page.getByRole('button', { name: 'Prender el drone en D' }).click();
+    await expect(page.getByRole('button', { name: 'Apagar el drone en D' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
     await expect.poll(() => clicks(page)).toBeGreaterThan(0);
+
+    await page.getByRole('button', { name: /Drone en D/ }).click();
+    const sheet = page.getByTestId('drone');
+    await expect(sheet).toBeVisible();
+    await expect(sheet.getByRole('button', { name: '■ Parar' })).toBeVisible();
+    // El tritono trae una nota que no está en mixolidio, y lo avisa.
+    await sheet.getByRole('button', { name: 'Tritono' }).click();
+    await expect(sheet.getByTestId('drone-rule')).toContainText('no está en la escala');
+    const sounding = await clicks(page);
+    await sheet.getByRole('button', { name: 'Crudo' }).click();
+    await expect.poll(() => clicks(page)).toBeGreaterThan(sounding);
+    await sheet.getByRole('button', { name: 'Cerrar' }).click();
+    await expect(sheet).toBeHidden();
+    await page.getByRole('button', { name: 'Apagar el drone en D' }).click();
 
     await page.getByRole('button', { name: '▶ Comparar' }).click();
 

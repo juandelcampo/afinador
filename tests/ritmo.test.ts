@@ -52,15 +52,22 @@ describe('ritmo', () => {
   it('el metrónomo suena con aro en el golpe y bombo en el acento, o con los que se elijan', () => {
     const voicesOf = (config: RhythmConfig) =>
       cycleFor(config, 0).hits.map((hit) => `${hit.voice}${hit.strong ? '!' : ''}`);
-    // En el compás, el uno va con la toma fuerte y el primero de cada grupo también va al acento.
+    // En el compás, solo el uno va al acento; el primero de cada grupo va al golpe con su toma fuerte.
     expect(voicesOf({ mode: 'meter', groups: [2, 2, 3], denom: 8, bpm: 120 })).toEqual([
       'bombo!',
       'aro',
-      'bombo',
+      'aro!',
       'aro',
-      'bombo',
+      'aro!',
       'aro',
       'aro',
+    ]);
+    // En un 4/4 de 1+1+1+1 el golpe también suena.
+    expect(voicesOf({ mode: 'meter', groups: [1, 1, 1, 1], denom: 4, bpm: 120 })).toEqual([
+      'bombo!',
+      'aro!',
+      'aro!',
+      'aro!',
     ]);
     // En el euclidiano el único acento es el primer golpe.
     expect(
@@ -279,9 +286,9 @@ describe('caja de ritmos', () => {
     expect(drums.steps).toBe(14);
     expect(drums.kit).toBe('808');
     const row = (lane: number) => drums.tracks[lane]!.map((on) => '.xX'[on]).join('');
-    // El bombo en cada grupo, con acento en el uno; el aro en el resto.
-    expect(row(0)).toBe('X...x...x.....');
-    expect(row(2)).toBe('..x...x...x.x.');
+    // El bombo en el uno, con acento; el aro en el resto, con acento donde empieza cada grupo.
+    expect(row(0)).toBe('X.............');
+    expect(row(2)).toBe('..x.X.x.X.x.x.');
     // La polirritmia: cada línea con su instrumento.
     const poly = rhythmToDrums({ mode: 'poly', a: 3, b: 2, voices: ['palma', 'tom'], bpm: 120 });
     const used = DRUMS.filter((_, lane) => poly.tracks[lane]!.some(Boolean)).map((drum) => drum.id);

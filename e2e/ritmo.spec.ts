@@ -109,10 +109,7 @@ test.describe('ritmo', () => {
     await expect(wheel.locator('polygon')).toHaveCount(1);
     await expect(wheel.locator('text')).toHaveText('4');
 
-    await page
-      .getByRole('group', { name: 'Figura del ritmo' })
-      .getByRole('button', { name: 'Estrella' })
-      .click();
+    await page.getByRole('button', { name: 'Figura del ritmo: Polígono' }).click();
     await expect(page.getByText('Con menos de cinco golpes queda el polígono')).toBeVisible();
 
     // Cinco golpes: el pentagrama adentro del pentágono.
@@ -127,9 +124,7 @@ test.describe('ritmo', () => {
 
     // La figura elegida se recuerda.
     await page.reload();
-    await expect(
-      page.getByRole('group', { name: 'Figura del ritmo' }).getByRole('button', { name: 'Estrella' }),
-    ).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('button', { name: 'Figura del ritmo: Estrella' })).toBeVisible();
     expect(errors).toEqual([]);
   });
 
@@ -287,14 +282,14 @@ test.describe('ritmo', () => {
     // El metrónomo suena con la batería: aro en el golpe y bombo en el acento, hasta que se elige otro.
     const golpe = page.getByTestId('metro-voice-0');
     const acento = page.getByTestId('metro-voice-1');
-    await expect(golpe.getByRole('button', { name: 'Aro' })).toHaveAttribute('aria-pressed', 'true');
-    await expect(acento.getByRole('button', { name: 'Bombo' })).toHaveAttribute('aria-pressed', 'true');
-    await golpe.getByRole('button', { name: 'Hi-hat', exact: true }).click();
+    await expect(golpe).toHaveValue('aro');
+    await expect(acento).toHaveValue('bombo');
+    await golpe.selectOption('hihat');
     await expect(page).toHaveURL(/v=hihat_bombo/);
     await page.getByRole('group', { name: 'Batería' }).getByRole('button', { name: '808' }).click();
     await expect(page).toHaveURL(/kit=808/);
     // Con la 808, la percusión es un cencerro.
-    await expect(acento.getByRole('button', { name: 'Cencerro' })).toBeVisible();
+    await expect(acento.locator('option[value="percu"]')).toHaveText('Cencerro');
 
     // El golpe, el acento y la batería pasan al euclidiano.
     await page
@@ -303,10 +298,7 @@ test.describe('ritmo', () => {
       .click();
     await expect(page).toHaveURL(/v=hihat_bombo/);
     await expect(page).toHaveURL(/kit=808/);
-    await expect(golpe.getByRole('button', { name: 'Hi-hat', exact: true })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
+    await expect(golpe).toHaveValue('hihat');
 
     // 3 contra 2 sobre una misma grilla de 6: las dos líneas solo coinciden en la primera.
     await page
@@ -321,8 +313,9 @@ test.describe('ritmo', () => {
     // La polirritmia toma la batería, pero cada línea tiene su instrumento.
     await expect(page).toHaveURL(/kit=808/);
     const voice = page.getByTestId('poly-voice-1');
-    await voice.getByRole('button', { name: 'Tom' }).click();
-    await expect(voice.getByRole('button', { name: 'Tom' })).toHaveAttribute('aria-pressed', 'true');
+    await voice.selectOption('tom');
+    await expect(voice).toHaveValue('tom');
+    await expect(page).toHaveURL(/v=hihat_tom/);
     expect(errors).toEqual([]);
   });
 });

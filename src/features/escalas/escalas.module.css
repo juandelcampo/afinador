@@ -162,9 +162,17 @@
   }
 }
 
-/* El botón partido del drone: el ▶ ya trae su aire adentro, el contenedor no suma. */
+/* El botón partido del drone: el ▶ ya trae su aire adentro, el contenedor no suma. En el celular no entra
+   en un tercio de la fila: va abajo, a todo el ancho, y Escuchar queda junto a lo que dice cada nota. */
 .play > .droneButton {
   padding-inline: 0;
+  grid-column: 1 / -1;
+  grid-row: 3;
+}
+@container content (max-width: 639px) {
+  .play {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
 }
 .play > .droneButton button:last-child {
   padding-inline: 8px;
@@ -208,6 +216,6 @@
 }
 .droneFields {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 12px 18px;
 }

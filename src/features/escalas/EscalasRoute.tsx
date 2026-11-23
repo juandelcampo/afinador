@@ -3,6 +3,7 @@ import { Link, useSearchParams, type MetaFunction } from 'react-router';
 import { drone } from '~/audio/drone';
 import { getAudio } from '~/audio/engine';
 import { pluckString, stopInstrument } from '~/audio/instrument';
+import { droneVoices } from '~/core/drone';
 import { pitchName } from '~/core/harmony';
 import { noteToMidi } from '~/core/notes';
 import {
@@ -24,9 +25,11 @@ import { TUNINGS } from '~/data/tunings';
 import { Diapason } from '~/shared/Diapason';
 import { useSettings } from '~/shared/settings';
 import { TuneLink, TuningField } from '~/shared/TuningField';
-import { Browse, Button, Field, PageTitle, Slab, Toggle } from '~/shared/ui/ui';
+import { Sheet } from '~/shared/ui/Sheet';
+import { Browse, Button, Field, PageTitle, Slab, SplitButton, Toggle } from '~/shared/ui/ui';
 import ui from '~/shared/ui/ui.module.css';
 import { useHydrated } from '~/shared/useHydrated';
+import { DronePanel } from './DronePanel';
 import styles from './escalas.module.css';
 
 export const meta: MetaFunction = () => [
@@ -55,6 +58,8 @@ export default function EscalasRoute() {
   const params = hydrated ? searchParams : EMPTY;
   const notation = useSettings((s) => s.notation);
   const a4 = useSettings((s) => s.a4);
+  const droneSound = useSettings((s) => s.drone);
+  const setSettings = useSettings((s) => s.set);
 
   // Los mismos parámetros que Armonía: el link de una abre la otra en la misma tonalidad.
   const tuning =
@@ -79,6 +84,7 @@ export default function EscalasRoute() {
   const position = positionIndex >= 0 ? positions[positionIndex]! : null;
   const [labels, setLabels] = useState<'grados' | 'notas'>('grados');
   const [droneOn, setDroneOn] = useState(false);
+  const [droneSheet, setDroneSheet] = useState(false);
   /** La nota que está sonando en el recorrido, para iluminarla. */
   const [lit, setLit] = useState<ScaleNote | null>(null);
   const [litStep, setLitStep] = useState<number | null>(null);
@@ -99,17 +105,17 @@ export default function EscalasRoute() {
     [],
   );
 
-  // La tónica grave, con la quinta si la escala la tiene y la octava: suena hasta que se apaga o te vas.
-  const low = 40 + mod12(tonic - 4);
-  const droneNotes = scale.steps.includes(7) ? [low, low + 7, low + 12] : [low, low + 12];
+  // La tónica grave y lo que se le apila (sin elegir nada, la quinta si la escala la tiene): suena hasta
+  // que se apaga o te vas.
+  const droneNotes = droneVoices(tonic, droneSound.stack, scale.steps);
   const droneKey = droneNotes.join();
   useEffect(() => {
     if (!droneOn) {
       drone.stop();
       return;
     }
-    drone.play(droneKey.split(',').map(Number), a4);
-  }, [droneOn, droneKey, a4]);
+    drone.play(droneKey.split(',').map(Number), a4, droneSound);
+  }, [droneOn, droneKey, a4, droneSound]);
   useEffect(() => () => drone.stop(), []);
 
   // Dos toques seguidos no esperan a que la URL se actualice: cada cambio parte del último pedido.
@@ -315,9 +321,16 @@ export default function EscalasRoute() {
           <Button variant="primary" on={playing} onClick={playRun}>
             {playing ? '■ Parar' : '▶ Escuchar'}
           </Button>
-          <Button variant="ghost" on={droneOn} ariaPressed={droneOn} onClick={() => setDroneOn((on) => !on)}>
-            {droneOn ? `■ Drone en ${name(tonic)}` : `▶ Drone en ${name(tonic)}`}
-          </Button>
+          <SplitButton
+            className={styles.droneButton}
+            on={droneOn}
+            playLabel={droneOn ? `Apagar el drone en ${name(tonic)}` : `Prender el drone en ${name(tonic)}`}
+            onPlay={() => setDroneOn((on) => !on)}
+            openLabel="Elegir cómo suena el drone"
+            onOpen={() => setDroneSheet(true)}
+          >
+            Drone en {name(tonic)}
+          </SplitButton>
           <Toggle
             label="Qué dice cada nota"
             value={labels}
@@ -350,6 +363,18 @@ export default function EscalasRoute() {
           )}
         </p>
       </Slab>
+      <Sheet open={droneSheet} title={`Drone en ${name(tonic)}`} onClose={() => setDroneSheet(false)} testId="drone">
+        <DronePanel
+          on={droneOn}
+          onToggle={() => setDroneOn((on) => !on)}
+          sound={droneSound}
+          onChange={(drone) => setSettings({ drone })}
+          voices={droneNotes.map((midi) => name(mod12(midi)))}
+          scaleSteps={scale.steps}
+          name={name}
+          tonic={tonic}
+        />
+      </Sheet>
     </div>
   );
 }

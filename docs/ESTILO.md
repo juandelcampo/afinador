@@ -132,6 +132,8 @@ Si una herramienta necesita algo que no está en la tabla y le puede servir a ot
 ## 8. Espacio
 
 - Primero en el celular (390 px), después en pantalla ancha. A ningún ancho tiene que aparecer barra horizontal.
+- **En escritorio no se scrollea.** Desde una ventana de 1280 × 800, la herramienta entra entera, en cada una de sus pestañas. Para que entre: columnas en lo ancho, rótulos al costado, figuras que se achican con el alto de la ventana (`100dvh`) y lo secundario plegado. En el celular sí se baja.
+- **La disposición no salta.** Al pasar de una pestaña a otra de la misma herramienta, lo que tienen en común queda en el mismo lugar y con la misma forma; lo que cambia va al final.
 - Todo lo que se toca mide al menos 44 × 44 px (`--touch`).
 - Lo esencial a la vista. Lo secundario va en un `<details>` cerrado o en un `Sheet`. **Un modal por vez:** nunca un modal encima de otro.
 - Si la herramienta tiene columnas a los costados, en pantalla ancha arrancan plegadas (`Rail`), como en el Afinador y Armonía.
@@ -160,8 +162,8 @@ Si una herramienta necesita algo que no está en la tabla y le puede servir a ot
 
 ## 12. Antes de dar por terminado
 
-1. `npm run check`. Si hay otras sesiones en paralelo, los e2e van en otro puerto (`E2E_PORT=…`).
-2. Capturas en celular (390 px) y en escritorio (1280 px y 1680 px, donde cambia la barra de arriba).
+1. `npm run check`. Si hay otras sesiones en paralelo, los e2e van en otros puertos (`E2E_PORT=… E2E_DEV_PORT=…`).
+2. Capturas en celular (390 px) y en escritorio (1280 px y 1680 px, donde cambia la barra de arriba). En escritorio, a 1280 × 800, ninguna pestaña scrollea.
 3. Un inventario rápido: `grep` del CSS de la herramienta buscando `button`, `font:` y colores escritos a mano. Lo que aparezca es candidato a pieza compartida.
 
 ## Pendientes conocidos (2026-11-22)

@@ -533,3 +533,63 @@ button:disabled {
 .rail[data-side='right'] > span:last-child {
   transform: none;
 }
+
+/* Botón partido: el ▶ que prende y apaga, y al lado lo que abre su modal. Por fuera mide y se ve como un
+   ghost; adentro, una raya de 2 px separa las dos mitades. */
+.split {
+  display: inline-flex;
+  align-items: stretch;
+  min-height: var(--touch);
+  border: var(--rule);
+  background: var(--paper);
+  font-size: 13px;
+}
+.split button {
+  padding: 6px 12px;
+  border: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--ui);
+  font-size: inherit;
+  font-weight: 700;
+  font-stretch: 112.5%;
+  line-height: 1.2;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition:
+    transform 90ms var(--ease),
+    background-color 120ms var(--ease),
+    color 120ms var(--ease);
+}
+.split button:first-child {
+  flex: none;
+  min-width: var(--touch);
+  padding-inline: 0;
+  border-right: 2px solid var(--ink);
+}
+.split button:last-child {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.split button:hover {
+  background: var(--soft);
+}
+.split button:active {
+  transform: translate(2px, 2px);
+}
+/* Lo que suena va en naranja, como el ghost encendido. */
+.split button[data-on='true'] {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.split button:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: -5px;
+}
+.splitMark {
+  font-size: 0.85em;
+}

@@ -1,6 +1,6 @@
 // Ritmo: metrónomo para compases raros, ritmos euclidianos con su figura, polirritmias, compases que
 // mutan y una caja de ritmos. Suena solo acá: al irse de la página, para.
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useSearchParams, type MetaFunction } from 'react-router';
 import { metronome } from '~/audio/metronome';
 import {
@@ -28,7 +28,7 @@ import {
 } from '~/core/rhythm';
 import { DRUM_PRESETS } from '~/data/drums';
 import { useSettings } from '~/shared/settings';
-import { Button, Field, PageTitle, Segmented, Slab, Stepper, Tabs } from '~/shared/ui/ui';
+import { Button, Field, PageTitle, Segmented, Slab, Stepper, Tabs, Toggle } from '~/shared/ui/ui';
 import ui from '~/shared/ui/ui.module.css';
 import { DrumMachine } from './DrumMachine';
 import { Strip } from './Strip';
@@ -146,70 +146,66 @@ const hear = (voice: DrumId, strong = false) => {
 
 type Sounding = Exclude<RhythmConfig, { mode: 'drum' }>;
 
-/** Con qué batería suena: la misma elección en todos los tipos de ritmo, y queda al pasar de uno a otro. */
-function KitField({ config, onChange }: { config: Sounding; onChange: (config: RhythmConfig) => void }) {
-  return (
-    <Field label="Sonido" as="div" className={styles.span}>
-      <Segmented<DrumKit>
-        label="Batería"
-        stretch
-        value={config.kit ?? DEFAULT_KIT}
-        options={DRUM_KITS.map((option) => ({ value: option.id, label: option.name }))}
-        onChange={(kit) => {
-          const { kit: _previous, ...rest } = config;
-          onChange(kit === DEFAULT_KIT ? rest : { ...rest, kit });
-          hear('bombo', true);
-        }}
-      />
-    </Field>
-  );
-}
-
-/** El instrumento del golpe y el del acento de un metrónomo. */
-function MetroVoices({
-  config,
-  onChange,
-}: {
-  config: Extract<RhythmConfig, { mode: 'meter' | 'euclid' | 'mutante' }>;
-  onChange: (config: RhythmConfig) => void;
-}) {
-  const voices = config.voices ?? DEFAULT_METRO_VOICES;
+/**
+ * Con qué suena: la batería y dos instrumentos (el golpe y el acento de un metrónomo, o las dos líneas de
+ * la polirritmia). Va primero y con la misma forma en todos los tipos de ritmo: al cambiar de pestaña no
+ * se mueve nada.
+ */
+function SoundBlock({ config, onChange }: { config: Sounding; onChange: (config: RhythmConfig) => void }) {
+  const poly = config.mode === 'poly';
+  const defaults = poly ? DEFAULT_POLY_VOICES : DEFAULT_METRO_VOICES;
+  const voices = config.voices ?? defaults;
+  const labels = poly ? (['Círculos', 'Cuadrados'] as const) : (['Golpe', 'Acento'] as const);
   const choose = (index: 0 | 1, voice: DrumId) => {
     const next: Voices = index === 0 ? [voice, voices[1]] : [voices[0], voice];
     const { voices: _previous, ...rest } = config;
-    const plain = next[0] === DEFAULT_METRO_VOICES[0] && next[1] === DEFAULT_METRO_VOICES[1];
+    // En los metrónomos, los de siempre no se escriben en la URL; la polirritmia siempre los lleva.
+    const plain = !poly && next[0] === defaults[0] && next[1] === defaults[1];
     onChange(plain ? rest : { ...rest, voices: next });
-    hear(voice, index === 1);
+    hear(voice, !poly && index === 1);
   };
   return (
-    <>
-      {(['Golpe', 'Acento'] as const).map((label, index) => (
-        <Field key={label} label={label} as="div" className={styles.span}>
-          <Chips<DrumId>
-            label={`Instrumento del ${label.toLowerCase()}`}
-            testId={`metro-voice-${index}`}
-            value={voices[index]!}
-            options={drumOptions(config.kit)}
-            onChange={(voice) => choose(index as 0 | 1, voice)}
-          />
+    <div className={styles.sound}>
+      <Field label="Sonido" as="div">
+        <Segmented<DrumKit>
+          label="Batería"
+          stretch
+          value={config.kit ?? DEFAULT_KIT}
+          options={DRUM_KITS.map((option) => ({ value: option.id, label: option.name }))}
+          onChange={(kit) => {
+            const { kit: _previous, ...rest } = config;
+            onChange(kit === DEFAULT_KIT ? rest : { ...rest, kit });
+            hear('bombo', true);
+          }}
+        />
+      </Field>
+      {/* Ocho instrumentos: una lista, para que el sonido entre en una fila. Al elegir, suena. */}
+      {labels.map((label, index) => (
+        <Field key={label} label={label}>
+          <select
+            aria-label={
+              poly ? `Instrumento de la línea ${index + 1}` : `Instrumento del ${label.toLowerCase()}`
+            }
+            data-testid={poly ? `poly-voice-${index}` : `metro-voice-${index}`}
+            value={voices[index]}
+            onChange={(event) => choose(index as 0 | 1, event.target.value as DrumId)}
+          >
+            {drumOptions(config.kit).map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </Field>
       ))}
-    </>
+    </div>
   );
 }
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const meterKey = (meter: Meter) => `${meter.groups.join()}/${meter.denom}`;
 
-function MeterEditor({
-  meter,
-  onChange,
-  sound,
-}: {
-  meter: Meter;
-  onChange: (meter: Meter) => void;
-  sound: ReactNode;
-}) {
+function MeterEditor({ meter, onChange }: { meter: Meter; onChange: (meter: Meter) => void }) {
   const key = meter.groups.join('+');
   const [text, setText] = useState(key);
   const [syncedKey, setSyncedKey] = useState(key);
@@ -257,7 +253,6 @@ function MeterEditor({
             onChange={(value) => onChange({ ...meter, denom: Number(value) as Meter['denom'] })}
           />
         </Field>
-        {sound}
       </div>
       <p className={parsed ? ui.hint : styles.error}>
         {parsed
@@ -275,23 +270,18 @@ function MeterEditor({
 function Editor({
   config,
   onChange,
-  sound,
   playingIndex,
 }: {
   config: RhythmConfig;
   onChange: (config: RhythmConfig) => void;
   /** En el mutante, qué vuelta está sonando: la rotación marca el compás de ahora. */
   playingIndex: number | null;
-  /** Con qué suena: la batería y, en los metrónomos, el golpe y el acento. Van al final de los ajustes. */
-  sound: ReactNode;
 }) {
   switch (config.mode) {
     case 'drum':
       return null;
     case 'meter':
-      return (
-        <MeterEditor meter={config} onChange={(meter) => onChange({ ...config, ...meter })} sound={sound} />
-      );
+      return <MeterEditor meter={config} onChange={(meter) => onChange({ ...config, ...meter })} />;
     case 'euclid': {
       const { pulses, steps, rotation } = config;
       return (
@@ -343,7 +333,6 @@ function Editor({
                 onUp={() => onChange({ ...config, rotation: (rotation + 1) % steps })}
               />
             </Field>
-            {sound}
           </div>
           <p className={ui.hint}>
             Los golpes se reparten lo más parejo posible en los pulsos, y la figura que forman es el ritmo.
@@ -353,7 +342,6 @@ function Editor({
       );
     }
     case 'poly': {
-      const voices = config.voices ?? DEFAULT_POLY_VOICES;
       const lines = [
         { key: 'a', count: config.a },
         { key: 'b', count: config.b },
@@ -374,33 +362,15 @@ function Editor({
           </div>
           <div className={styles.rows}>
             {lines.map(({ key, count }, line) => (
-              <Field
-                key={key}
-                label={line === 0 ? 'Círculos · golpes y sonido' : 'Cuadrados · golpes y sonido'}
-                as="div"
-                className={styles.span}
-              >
-                <div className={styles.line}>
-                  <Stepper
-                    label={`golpes de la línea ${line + 1}`}
-                    value={count}
-                    onDown={() => onChange({ ...config, [key]: clamp(count - 1, 1, LIMITS.lane[1]) })}
-                    onUp={() => onChange({ ...config, [key]: clamp(count + 1, 1, LIMITS.lane[1]) })}
-                  />
-                  <Chips<DrumId>
-                    label={`Instrumento de la línea ${line + 1}`}
-                    testId={`poly-voice-${line}`}
-                    value={voices[line] ?? null}
-                    options={drumOptions(config.kit)}
-                    onChange={(voice) => {
-                      onChange({ ...config, voices: line === 0 ? [voice, voices[1]] : [voices[0], voice] });
-                      hear(voice);
-                    }}
-                  />
-                </div>
+              <Field key={key} label={line === 0 ? 'Círculos · golpes' : 'Cuadrados · golpes'} as="div">
+                <Stepper
+                  label={`golpes de la línea ${line + 1}`}
+                  value={count}
+                  onDown={() => onChange({ ...config, [key]: clamp(count - 1, 1, LIMITS.lane[1]) })}
+                  onUp={() => onChange({ ...config, [key]: clamp(count + 1, 1, LIMITS.lane[1]) })}
+                />
               </Field>
             ))}
-            {sound}
           </div>
           <p className={ui.hint}>
             Dos líneas parejas en el mismo tiempo: cada una con su figura y su instrumento. Solo coinciden al
@@ -443,10 +413,9 @@ function Editor({
               />
             </Field>
             {/* La rotación va con los ajustes, como un ajuste más: la figura queda sola, igual que en los otros. */}
-            <Field label="Rotación" as="div" className={styles.span}>
+            <Field label="Rotación" as="div" className={styles.rotationField}>
               <Rotation config={config} index={playingIndex} />
             </Field>
-            {sound}
           </div>
           <p className={ui.hint}>
             Arriba marcás los compases que entran en la rotación (podés marcar varios): suenan en el orden en
@@ -566,7 +535,9 @@ export default function RitmoRoute() {
     <div className={`${styles.page} ${ui.frame}`}>
       <Slab>
         <PageTitle eyebrow="Ritmo" title={name}>
-          <p data-testid="rhythm-rule">{rule}</p>
+          <p data-testid="rhythm-rule" className={styles.rule}>
+            {rule}
+          </p>
         </PageTitle>
 
         {/* La barra de tocar y las pestañas, siempre en el mismo lugar y a lo ancho: lo que cambia pasa abajo. */}
@@ -626,7 +597,7 @@ export default function RitmoRoute() {
           {!drum && (
             <section className={styles.figure} aria-label="Figura del ritmo" data-mode={config.mode}>
               <div className={styles.figureBar}>
-                <Chips
+                <Toggle
                   label="Figura del ritmo"
                   value={figure}
                   options={[
@@ -635,6 +606,9 @@ export default function RitmoRoute() {
                   ]}
                   onChange={(value) => set({ rhythmFigure: value })}
                 />
+                <Button variant="mini" id="to-drums" onClick={() => apply(rhythmToDrums(config))}>
+                  Pasar a la batería →
+                </Button>
               </div>
               {/* Encima del margen de la figura, sin ocupar lugar: que aparezca no mueve nada. */}
               {figure === 'estrella' && fewHits && (
@@ -643,6 +617,10 @@ export default function RitmoRoute() {
                 </p>
               )}
               <Wheel cycle={shown} kind={figure} />
+              <div className={`${ui.field} ${styles.stripBox}`}>
+                <span>En casillas</span>
+                <Strip cycle={shown} />
+              </div>
             </section>
           )}
 
@@ -650,28 +628,12 @@ export default function RitmoRoute() {
             {drum ? (
               <DrumMachine config={config} onChange={apply} />
             ) : (
-              <Editor
-                config={config}
-                onChange={apply}
-                playingIndex={playing?.index ?? null}
-                sound={
-                  <>
-                    <KitField config={config} onChange={apply} />
-                    {config.mode !== 'poly' && <MetroVoices config={config} onChange={apply} />}
-                  </>
-                }
-              />
-            )}
-            {!drum && (
-              <div className={`${ui.field} ${styles.stripBox}`}>
-                <span>En casillas</span>
-                <Strip cycle={shown} />
-              </div>
-            )}
-            {!drum && (
-              <Button id="to-drums" onClick={() => apply(rhythmToDrums(config))}>
-                Pasar a la batería →
-              </Button>
+              <>
+                {/* Primero el sonido, igual en todas las pestañas; después lo propio de cada ritmo, que
+                    es lo único que cambia y va al final, donde crecer no mueve nada. */}
+                <SoundBlock config={config} onChange={apply} />
+                <Editor config={config} onChange={apply} playingIndex={playing?.index ?? null} />
+              </>
             )}
           </div>
         </div>
