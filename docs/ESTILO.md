@@ -161,7 +161,7 @@ Si una herramienta necesita algo que no está en la tabla y le puede servir a ot
 ## 12. Antes de dar por terminado
 
 1. `npm run check`. Si hay otras sesiones en paralelo, los e2e van en otro puerto (`E2E_PORT=…`).
-2. Capturas en celular (390 px) y en escritorio (1280 px y 1440 px, donde cambia la barra de arriba).
+2. Capturas en celular (390 px) y en escritorio (1280 px y 1680 px, donde cambia la barra de arriba).
 3. Un inventario rápido: `grep` del CSS de la herramienta buscando `button`, `font:` y colores escritos a mano. Lo que aparezca es candidato a pieza compartida.
 
 ## Pendientes conocidos (2026-11-22)

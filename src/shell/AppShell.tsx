@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from 'react-router';
 import { setVolume } from '~/audio/engine';
 import { useSettings } from '~/shared/settings';
 import { Fader } from '~/shared/Fader';
+import { useTheme } from '~/shared/theme';
 import { Stepper, Toggle } from '~/shared/ui/ui';
 import styles from './shell.module.css';
 
@@ -26,6 +27,7 @@ export default function AppShell() {
   const a4 = useSettings((s) => s.a4);
   const volume = useSettings((s) => s.volume);
   const set = useSettings((s) => s.set);
+  const [theme, chooseTheme] = useTheme();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { pathname } = useLocation();
   const bar = useRef<HTMLElement>(null);
@@ -84,7 +86,7 @@ export default function AppShell() {
           className={styles.settingsToggle}
           aria-expanded={settingsOpen}
           aria-controls="ajustes"
-          aria-label={`Ajustes: notación, La ${a4} y volumen`}
+          aria-label={`Ajustes: notación, La ${a4}, volumen y tema`}
           title="Ajustes"
           onClick={() => setSettingsOpen((open) => !open)}
         >
@@ -106,6 +108,15 @@ export default function AppShell() {
             value={`La ${a4} Hz`}
             onDown={() => set({ a4: Math.max(415, a4 - 1) })}
             onUp={() => set({ a4: Math.min(466, a4 + 1) })}
+          />
+          <Toggle
+            label="Tema"
+            value={theme}
+            options={[
+              { value: 'light', label: 'Claro' },
+              { value: 'dark', label: 'Oscuro' },
+            ]}
+            onChange={chooseTheme}
           />
           {/* Un solo volumen para toda la app: el mismo en todas las herramientas, siempre en este lugar. */}
           <Fader />

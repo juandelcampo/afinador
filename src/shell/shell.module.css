@@ -170,9 +170,9 @@
     padding-block: 0;
   }
 }
-/* Hasta 1440 los ajustes no entran al lado de las herramientas: se abren debajo del botón, encima de la
+/* Hasta 1680 los ajustes (notación, La, tema y volumen) no entran al lado de las herramientas: se abren debajo del botón, encima de la
    página, sin correrla. */
-@media (min-width: 960px) and (max-width: 1439px) {
+@media (min-width: 960px) and (max-width: 1679px) {
   .settings {
     position: absolute;
     top: calc(100% + var(--rule-width));
@@ -187,8 +187,8 @@
     box-shadow: 8px 8px 0 var(--ink);
   }
 }
-/* Desde 1440 entra todo en la fila: el botón de ajustes sobra. */
-@media (min-width: 1440px) {
+/* Desde 1680 entra todo en la fila: el botón de ajustes sobra. */
+@media (min-width: 1680px) {
   .settingsToggle {
     display: none;
   }

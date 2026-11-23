@@ -371,6 +371,12 @@ describe('preferencias guardadas', () => {
     expect(sanitize({ chordStyle: 'tremolo' as never }).chordStyle).toBeUndefined();
   });
 
+  it('se acuerda del tema elegido, y descarta otra cosa', () => {
+    expect(sanitize({ theme: 'dark' }).theme).toBe('dark');
+    expect(sanitize({ theme: 'system' }).theme).toBe('system');
+    expect(sanitize({ theme: 'sepia' as never }).theme).toBeUndefined();
+  });
+
   it('junta el volumen general y el del instrumento de antes sin cambiar cuánto suena', () => {
     expect(sanitize({ volumes: { master: 0.5, instrumento: 0.8 } }).volume).toBeCloseTo(0.4);
     expect(sanitize({ volume: 0.3, volumes: { master: 1, instrumento: 1 } }).volume).toBe(0.3);

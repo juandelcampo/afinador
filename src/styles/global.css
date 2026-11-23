@@ -37,13 +37,24 @@
   --lead: 132px;
 }
 
+/* El oscuro sigue al sistema, salvo que se haya elegido un tema en la barra (data-theme en <html>). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --paper: #000000;
     --ink: #ffffff;
     --muted: #b0b0b0;
     --soft: #262626;
   }
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --paper: #000000;
+  --ink: #ffffff;
+  --muted: #b0b0b0;
+  --soft: #262626;
+}
+:root[data-theme='light'] {
+  color-scheme: light;
 }
 
 * {

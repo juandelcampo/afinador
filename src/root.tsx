@@ -21,12 +21,20 @@ import './styles/global.css';
 const ICON =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Cpath d='M0 8h32M0 16h32M0 24h32' stroke='%23fff' stroke-width='3'/%3E%3Crect x='17' y='11' width='10' height='10' fill='%23ff6626'/%3E%3C/svg%3E";
 
+/**
+ * El tema elegido se pone antes de pintar: las páginas salen prerenderizadas sin saberlo y, si esperaran a
+ * React, se verían un instante con el del sistema.
+ */
+const THEME_SCRIPT = `try{var t=JSON.parse(localStorage.getItem('afinador')).state.theme;if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}`;
+
 export function Layout({ children }: { children: ReactNode }) {
   return (
-    <html lang="es">
+    // El script del tema le agrega data-theme antes de hidratar.
+    <html lang="es" suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         <link rel="icon" href={ICON} />
         {/* Se piden antes que el CSS: así el texto no aparece primero con la letra del sistema. */}
         {[archivo, plex, plexBold].map((href) => (

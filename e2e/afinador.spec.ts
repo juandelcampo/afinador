@@ -259,7 +259,7 @@ test.describe('afinación', () => {
   test('el solfeo cambia los nombres en toda la app', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await goto(page, '/afinador/dadgad');
-    // Hasta 1440 px los ajustes se abren desde el botón de la barra.
+    // Hasta 1680 px los ajustes se abren desde el botón de la barra.
     await page.getByRole('button', { name: /^Ajustes/ }).click();
     await page.getByRole('button', { name: 'Nombres de las notas: E A D' }).click();
     await expect(page.getByTestId('fact-chord')).toHaveText('Resus4');

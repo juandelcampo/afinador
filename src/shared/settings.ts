@@ -9,6 +9,8 @@ import type { FigureKind } from '~/core/figure';
 
 export type TunerMode = 'guided' | 'auto';
 export type PlayStyle = 'arp' | 'strum';
+/** El tema de la pantalla: el del sistema hasta que se elige uno. */
+export type Theme = 'system' | 'light' | 'dark';
 
 /** Cómo suena Escuchar: arpegio o rasgueo, y el patrón elegido para cada uno. */
 export interface ListenPrefs {
@@ -32,6 +34,7 @@ interface Settings {
   clickSound: ClickSound;
   /** Cómo se dibuja el ritmo: como polígono o como estrella. */
   rhythmFigure: FigureKind;
+  theme: Theme;
   /** Ids de las afinaciones favoritas, en el orden en que se marcaron. */
   favorites: string[];
   toggleFavorite: (id: string) => void;
@@ -80,6 +83,8 @@ export function sanitize(
   if (CLICK_SOUNDS.some((sound) => sound.id === saved.clickSound)) clean.clickSound = saved.clickSound;
   if (saved.rhythmFigure === 'poligono' || saved.rhythmFigure === 'estrella')
     clean.rhythmFigure = saved.rhythmFigure;
+  if (saved.theme === 'system' || saved.theme === 'light' || saved.theme === 'dark')
+    clean.theme = saved.theme;
   if (Array.isArray(saved.favorites)) {
     // Una afinación que ya no está en el catálogo se olvida, y ninguna aparece dos veces.
     const known = new Set(TUNINGS.map((tuning) => tuning.id));
@@ -101,6 +106,7 @@ export const useSettings = create<Settings>()(
       chordStyle: 'strum',
       clickSound: 'clic',
       rhythmFigure: 'poligono',
+      theme: 'system',
       favorites: [],
       toggleFavorite: (id) =>
         set(({ favorites }) => ({
