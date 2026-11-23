@@ -132,7 +132,7 @@
 .play {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: stretch;
   gap: 10px;
   margin-top: 12px;
 }
