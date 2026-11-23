@@ -284,9 +284,29 @@ test.describe('ritmo', () => {
   }) => {
     const errors = watchErrors(page);
     await goto(page, '/ritmo');
-    const sound = page.getByRole('group', { name: 'Sonido del metrónomo' });
-    await sound.getByRole('button', { name: 'Madera' }).click();
-    await expect(sound.getByRole('button', { name: 'Madera' })).toHaveAttribute('aria-pressed', 'true');
+    // El metrónomo suena con la batería: aro en el golpe y bombo en el acento, hasta que se elige otro.
+    const golpe = page.getByTestId('metro-voice-0');
+    const acento = page.getByTestId('metro-voice-1');
+    await expect(golpe.getByRole('button', { name: 'Aro' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(acento.getByRole('button', { name: 'Bombo' })).toHaveAttribute('aria-pressed', 'true');
+    await golpe.getByRole('button', { name: 'Hi-hat', exact: true }).click();
+    await expect(page).toHaveURL(/v=hihat_bombo/);
+    await page.getByRole('group', { name: 'Batería' }).getByRole('button', { name: '808' }).click();
+    await expect(page).toHaveURL(/kit=808/);
+    // Con la 808, la percusión es un cencerro.
+    await expect(acento.getByRole('button', { name: 'Cencerro' })).toBeVisible();
+
+    // El golpe, el acento y la batería pasan al euclidiano.
+    await page
+      .getByRole('group', { name: 'Tipo de ritmo' })
+      .getByRole('button', { name: 'Euclidiano' })
+      .click();
+    await expect(page).toHaveURL(/v=hihat_bombo/);
+    await expect(page).toHaveURL(/kit=808/);
+    await expect(golpe.getByRole('button', { name: 'Hi-hat', exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
 
     // 3 contra 2 sobre una misma grilla de 6: las dos líneas solo coinciden en la primera.
     await page
@@ -298,6 +318,8 @@ test.describe('ritmo', () => {
     await expect(rows.nth(0).locator('span')).toHaveCount(6);
     await expect(rows.nth(0).locator('span[data-level]')).toHaveCount(3);
     await expect(rows.nth(1).locator('span[data-level]')).toHaveCount(2);
+    // La polirritmia toma la batería, pero cada línea tiene su instrumento.
+    await expect(page).toHaveURL(/kit=808/);
     const voice = page.getByTestId('poly-voice-1');
     await voice.getByRole('button', { name: 'Tom' }).click();
     await expect(voice.getByRole('button', { name: 'Tom' })).toHaveAttribute('aria-pressed', 'true');

@@ -79,10 +79,10 @@ Hay cinco tipos de ritmo:
 - **Compás**: agrupaciones como 2+2+3, con el primer golpe de cada grupo acentuado.
 - **Batería**: la caja de ritmos.
 - **Euclidiano**: k golpes repartidos parejo en n pulsos. Se dibuja como una rueda: cada golpe es un vértice y juntos forman una figura, con una aguja que gira mientras suena.
-- **Polirritmia**: dos figuras encimadas en la misma rueda, círculos y cuadrados.
+- **Polirritmia**: dos figuras en la misma rueda, la de más golpes afuera y la otra adentro, cada una con su instrumento.
 - **Mutante**: compases que se turnan cada tantos compases.
 
-Cualquiera pasa a la batería para editarlo a mano (`rhythmToDrums`).
+Todo suena con la batería. Compás, Euclidiano y Mutante eligen un instrumento para el golpe y otro para el acento (aro y bombo de entrada); el uno suena con la toma fuerte. La batería (acústica, 808 o sintética) se elige igual en todos y sigue al pasar de uno a otro, y el golpe y el acento pasan entre los tres metrónomos. Cualquiera pasa a la batería para editarlo a mano (`rhythmToDrums`), con cada golpe en la fila de su instrumento: suena igual que antes de pasarlo.
 
 La caja de ritmos tiene ocho sonidos (bombo, caja, aro, hi-hat, hi-hat abierto, palma, tom y una percusión que es pandereta en la acústica y cencerro en las otras) y tres baterías: la acústica y la 808, grabadas, y la sintética. Cada casilla puede estar vacía, tener un golpe o un golpe con acento: con el mouse, el clic izquierdo pone el golpe y lo pasa a acento y de vuelta, y el derecho borra; con el dedo, cada toque pasa al estado que sigue. Se pinta arrastrando. El hi-hat cerrado corta al abierto, como en una batería de verdad, y la acústica se toca un poco a mano: cada golpe cambia apenas de volumen, de afinación y de lugar, y alterna entre varias tomas. Hay ritmos de partida (rock, balada, funk, hip hop, shuffle, reggae, dembow, cumbia, bossa…), un patrón inventado (euclidiano por sonido, con el bombo en el uno), Borrar, Deshacer y Rehacer (también Ctrl+Z y Ctrl+Mayús+Z), pasos de a uno entre 2 y 32 y swing de 50 (parejo) a 75, que con pasos impares no va. Cada fila se escucha tocando su nombre, y tiene su volumen, mute y solo. En pantallas anchas entra entera sin bajar: con mouse, las casillas se achican con la altura de la ventana. En el celular los pasos se parten en filas de a 8, 7, 6 o 5, para que el compás se lea.
 

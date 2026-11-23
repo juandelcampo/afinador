@@ -2,7 +2,6 @@
 import { useSyncExternalStore } from 'react';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { CLICK_SOUNDS, type ClickSound } from '~/audio/drums';
 import type { Notation } from '~/core/notes';
 import { TUNINGS } from '~/data/tunings';
 import type { FigureKind } from '~/core/figure';
@@ -31,7 +30,6 @@ interface Settings {
   /** Cómo suena un acorde suelto: rasgueado o arpegiado, nota por nota. */
   chordStyle: PlayStyle;
   /** Con qué suena el metrónomo de Ritmo. */
-  clickSound: ClickSound;
   /** Cómo se dibuja el ritmo: como polígono o como estrella. */
   rhythmFigure: FigureKind;
   theme: Theme;
@@ -80,7 +78,6 @@ export function sanitize(
     };
   }
   if (saved.chordStyle === 'arp' || saved.chordStyle === 'strum') clean.chordStyle = saved.chordStyle;
-  if (CLICK_SOUNDS.some((sound) => sound.id === saved.clickSound)) clean.clickSound = saved.clickSound;
   if (saved.rhythmFigure === 'poligono' || saved.rhythmFigure === 'estrella')
     clean.rhythmFigure = saved.rhythmFigure;
   if (saved.theme === 'system' || saved.theme === 'light' || saved.theme === 'dark')
@@ -104,7 +101,6 @@ export const useSettings = create<Settings>()(
       tunerMode: 'auto',
       listen: { ...DEFAULT_LISTEN, patterns: { ...DEFAULT_LISTEN.patterns } },
       chordStyle: 'strum',
-      clickSound: 'clic',
       rhythmFigure: 'poligono',
       theme: 'system',
       favorites: [],

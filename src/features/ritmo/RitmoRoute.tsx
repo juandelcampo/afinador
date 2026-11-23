@@ -2,27 +2,33 @@
 // mutan y una caja de ritmos. Suena solo acá: al irse de la página, para.
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useSearchParams, type MetaFunction } from 'react-router';
-import { CLICK_SOUNDS, type ClickSound } from '~/audio/drums';
 import { metronome } from '~/audio/metronome';
 import {
   clampBpm,
   cycleFor,
+  DEFAULT_KIT,
+  DEFAULT_METRO_VOICES,
   DEFAULT_POLY_VOICES,
   describeRhythm,
+  DRUM_KITS,
+  drumName,
   DRUMS,
   LIMITS,
   parseMeter,
   rhythmFromParams,
   rhythmToDrums,
   rhythmToParams,
+  withSoundOf,
   type Cycle,
   type DrumId,
+  type DrumKit,
   type Meter,
   type RhythmConfig,
+  type Voices,
 } from '~/core/rhythm';
 import { DRUM_PRESETS } from '~/data/drums';
 import { useSettings } from '~/shared/settings';
-import { Button, Field, PageTitle, Slab, Stepper, Tabs } from '~/shared/ui/ui';
+import { Button, Field, PageTitle, Segmented, Slab, Stepper, Tabs } from '~/shared/ui/ui';
 import ui from '~/shared/ui/ui.module.css';
 import { DrumMachine } from './DrumMachine';
 import { Strip } from './Strip';
@@ -129,10 +135,68 @@ function Chips<T extends string>({
   );
 }
 
-const DRUM_OPTIONS: ReadonlyArray<{ value: DrumId; label: string }> = DRUMS.map((drum) => ({
-  value: drum.id,
-  label: drum.name,
-}));
+/** Los instrumentos, con el nombre que tienen en la batería elegida (la percusión cambia). */
+const drumOptions = (kit: DrumKit | undefined): ReadonlyArray<{ value: DrumId; label: string }> =>
+  DRUMS.map((drum) => ({ value: drum.id, label: drumName(drum.id, kit) }));
+
+/** Primero suena: al elegir un instrumento o una batería, se escucha un golpe (si no está sonando el ritmo). */
+const hear = (voice: DrumId, strong = false) => {
+  if (!metronome.getState().running) metronome.preview(voice, 1, strong);
+};
+
+type Sounding = Exclude<RhythmConfig, { mode: 'drum' }>;
+
+/** Con qué batería suena: la misma elección en todos los tipos de ritmo, y queda al pasar de uno a otro. */
+function KitField({ config, onChange }: { config: Sounding; onChange: (config: RhythmConfig) => void }) {
+  return (
+    <Field label="Sonido" as="div" className={styles.span}>
+      <Segmented<DrumKit>
+        label="Batería"
+        stretch
+        value={config.kit ?? DEFAULT_KIT}
+        options={DRUM_KITS.map((option) => ({ value: option.id, label: option.name }))}
+        onChange={(kit) => {
+          const { kit: _previous, ...rest } = config;
+          onChange(kit === DEFAULT_KIT ? rest : { ...rest, kit });
+          hear('bombo', true);
+        }}
+      />
+    </Field>
+  );
+}
+
+/** El instrumento del golpe y el del acento de un metrónomo. */
+function MetroVoices({
+  config,
+  onChange,
+}: {
+  config: Extract<RhythmConfig, { mode: 'meter' | 'euclid' | 'mutante' }>;
+  onChange: (config: RhythmConfig) => void;
+}) {
+  const voices = config.voices ?? DEFAULT_METRO_VOICES;
+  const choose = (index: 0 | 1, voice: DrumId) => {
+    const next: Voices = index === 0 ? [voice, voices[1]] : [voices[0], voice];
+    const { voices: _previous, ...rest } = config;
+    const plain = next[0] === DEFAULT_METRO_VOICES[0] && next[1] === DEFAULT_METRO_VOICES[1];
+    onChange(plain ? rest : { ...rest, voices: next });
+    hear(voice, index === 1);
+  };
+  return (
+    <>
+      {(['Golpe', 'Acento'] as const).map((label, index) => (
+        <Field key={label} label={label} as="div" className={styles.span}>
+          <Chips<DrumId>
+            label={`Instrumento del ${label.toLowerCase()}`}
+            testId={`metro-voice-${index}`}
+            value={voices[index]!}
+            options={drumOptions(config.kit)}
+            onChange={(voice) => choose(index as 0 | 1, voice)}
+          />
+        </Field>
+      ))}
+    </>
+  );
+}
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const meterKey = (meter: Meter) => `${meter.groups.join()}/${meter.denom}`;
@@ -218,7 +282,7 @@ function Editor({
   onChange: (config: RhythmConfig) => void;
   /** En el mutante, qué vuelta está sonando: la rotación marca el compás de ahora. */
   playingIndex: number | null;
-  /** El sonido del metrónomo: una fila más, en los ritmos que suenan con un solo sonido. */
+  /** Con qué suena: la batería y, en los metrónomos, el golpe y el acento. Van al final de los ajustes. */
   sound: ReactNode;
 }) {
   switch (config.mode) {
@@ -327,14 +391,16 @@ function Editor({
                     label={`Instrumento de la línea ${line + 1}`}
                     testId={`poly-voice-${line}`}
                     value={voices[line] ?? null}
-                    options={DRUM_OPTIONS}
-                    onChange={(voice) =>
-                      onChange({ ...config, voices: line === 0 ? [voice, voices[1]] : [voices[0], voice] })
-                    }
+                    options={drumOptions(config.kit)}
+                    onChange={(voice) => {
+                      onChange({ ...config, voices: line === 0 ? [voice, voices[1]] : [voices[0], voice] });
+                      hear(voice);
+                    }}
                   />
                 </div>
               </Field>
             ))}
+            {sound}
           </div>
           <p className={ui.hint}>
             Dos líneas parejas en el mismo tiempo: cada una con su figura y su instrumento. Solo coinciden al
@@ -458,7 +524,6 @@ export default function RitmoRoute() {
   );
   const [params, setParams] = useSearchParams();
   const loaded = useRef(false);
-  const clickSound = useSettings((s) => s.clickSound);
   const figure = useSettings((s) => s.rhythmFigure);
   const set = useSettings((s) => s.set);
 
@@ -478,8 +543,6 @@ export default function RitmoRoute() {
       setParams(encoded, { replace: true, preventScrollReset: true });
     }
   }, [config, params, setParams]);
-
-  useEffect(() => metronome.setSound(clickSound), [clickSound]);
 
   // Cada herramienta suena sola: al salir de Ritmo, el ritmo para.
   useEffect(() => () => metronome.stop(), []);
@@ -554,7 +617,8 @@ export default function RitmoRoute() {
           options={MODES}
           onChange={(mode) => {
             if (mode === config.mode) return;
-            apply({ ...(metronome.lastOfMode(mode) ?? DEFAULTS[mode](config.bpm)), bpm: config.bpm });
+            const next = metronome.lastOfMode(mode) ?? DEFAULTS[mode](config.bpm);
+            apply(withSoundOf(config, { ...next, bpm: config.bpm }));
           }}
         />
         {/* Debajo, la figura a la izquierda y lo que se arma a la derecha: entra sin bajar. */}
@@ -591,17 +655,10 @@ export default function RitmoRoute() {
                 onChange={apply}
                 playingIndex={playing?.index ?? null}
                 sound={
-                  config.mode === 'poly' ? null : (
-                    <Field label="Sonido" as="div" className={styles.span}>
-                      <Chips<ClickSound>
-                        label="Sonido del metrónomo"
-                        testId="click-sound"
-                        value={clickSound}
-                        options={CLICK_SOUNDS.map((sound) => ({ value: sound.id, label: sound.name }))}
-                        onChange={(value) => set({ clickSound: value })}
-                      />
-                    </Field>
-                  )
+                  <>
+                    <KitField config={config} onChange={apply} />
+                    {config.mode !== 'poly' && <MetroVoices config={config} onChange={apply} />}
+                  </>
                 }
               />
             )}

@@ -8,18 +8,29 @@ export interface Meter {
   denom: Denominator;
 }
 
+/**
+ * Cómo suena un metrónomo (compás, euclidiano, mutante): el instrumento del golpe y el del acento, y con
+ * qué batería. Sin elegir, aro y bombo de la acústica.
+ */
+interface MetroSound {
+  voices?: Voices;
+  kit?: DrumKit;
+}
+
 export type RhythmConfig =
-  | ({ mode: 'meter'; bpm: number } & Meter)
-  | { mode: 'euclid'; pulses: number; steps: number; rotation: number; bpm: number }
+  | ({ mode: 'meter'; bpm: number } & Meter & MetroSound)
+  | ({ mode: 'euclid'; pulses: number; steps: number; rotation: number; bpm: number } & MetroSound)
   | {
       mode: 'poly';
       a: number;
       b: number;
       /** El sonido de batería de cada línea. Sin elegir, suenan los de DEFAULT_POLY_VOICES. */
-      voices?: PolyVoices;
+      voices?: Voices;
+      /** Con qué batería suena. Sin elegir, la acústica. */
+      kit?: DrumKit;
       bpm: number;
     }
-  | { mode: 'mutante'; meters: Meter[]; barsEach: number; bpm: number }
+  | ({ mode: 'mutante'; meters: Meter[]; barsEach: number; bpm: number } & MetroSound)
   | {
       mode: 'drum';
       steps: number;
@@ -75,19 +86,30 @@ export function drumName(id: DrumId, kit: DrumKit = DEFAULT_KIT): string {
 
 /** Las filas que tenían los links de antes de que hubiera aro y hi-hat abierto, en el orden de ahora. */
 const OLD_LANES = [0, 1, 3, 5, 6, 7];
-export type PolyVoices = [DrumId, DrumId];
+/** Dos instrumentos: las dos líneas de la polirritmia, o el golpe y el acento de un metrónomo. */
+export type Voices = [DrumId, DrumId];
 /** Cuántos pasos puede tener la caja de ritmos: de a uno, también impares. */
 export const DRUM_STEPS = { min: 2, max: 32 } as const;
-export const DEFAULT_POLY_VOICES: PolyVoices = ['hihat', 'bombo'];
+export const DEFAULT_POLY_VOICES: Voices = ['hihat', 'bombo'];
+/** El golpe y el acento de los metrónomos: el aro es lo más parecido a un clic, y el bombo marca el uno. */
+export const DEFAULT_METRO_VOICES: Voices = ['aro', 'bombo'];
+/** Los ritmos que suenan como metrónomo: un instrumento para el golpe y otro para el acento. */
+export const METRO_MODES = ['meter', 'euclid', 'mutante'] as const;
+const isMetro = (
+  config: RhythmConfig,
+): config is Extract<RhythmConfig, { mode: (typeof METRO_MODES)[number] }> =>
+  (METRO_MODES as readonly string[]).includes(config.mode);
+/** Volumen del golpe sin acento de un metrónomo, y el de los acentos que no son el uno. */
+const METRO_GAIN = { golpe: 0.8, acento: 0.8 } as const;
 const DEFAULT_LEVEL = 0.8;
 /** Volumen de un golpe sin acento en la polirritmia; el primero de cada línea va a 1. */
 const POLY_UNACCENTED = 0.7;
 
-function parsePolyVoices(text: string): PolyVoices | null {
+function parseVoices(text: string): Voices | null {
   // El cencerro de antes es la percusión de ahora.
   const ids = text.split('_').map((id) => (id === 'cencerro' ? 'percu' : id));
   const valid = ids.length === 2 && ids.every((id) => DRUMS.some((drum) => drum.id === id));
-  return valid ? (ids as PolyVoices) : null;
+  return valid ? (ids as Voices) : null;
 }
 
 const stepOf = (char: string | undefined): Step => (char === 'X' ? 2 : char === 'x' ? 1 : 0);
@@ -159,10 +181,12 @@ export interface Hit {
   /** Carril donde se dibuja. El carril -1 no suena: marca el paso general de la caja de ritmos. */
   lane: number;
   cell: number;
-  /** Sonido de batería. Sin él, suena el sonido elegido para el metrónomo. */
+  /** El instrumento de batería que suena. Sin él, el golpe no suena (el paso general de la batería). */
   voice?: DrumId;
   /** Volumen del golpe, de 0 a 1. */
   gain?: number;
+  /** Si suena la toma fuerte del instrumento, la del acento. */
+  strong?: boolean;
 }
 
 export interface Cycle {
@@ -240,17 +264,38 @@ function meterCycle({ groups, denom }: Meter): Cycle {
   return { beats: (total * 4) / denom, lanes: [total], hits };
 }
 
+/**
+ * Le pone instrumento a cada golpe de un metrónomo. El uno va al acento con la toma fuerte; los otros
+ * acentos (el primero de cada grupo del compás), al acento un poco más suave; el resto, al golpe.
+ */
+function voiceMetro(cycle: Cycle, voices: Voices, isAccent: (hit: Hit) => boolean): Cycle {
+  const [golpe, acento] = voices;
+  return {
+    ...cycle,
+    hits: cycle.hits.map((hit): Hit => {
+      if (hit.level === 2) return { ...hit, voice: acento, gain: 1, strong: true };
+      if (isAccent(hit)) return { ...hit, voice: acento, gain: METRO_GAIN.acento };
+      return { ...hit, voice: golpe, gain: METRO_GAIN.golpe };
+    }),
+  };
+}
+
 /** El ciclo que suena en la vuelta `index`. Solo el modo mutante cambia entre vueltas. */
 export function cycleFor(config: RhythmConfig, index: number): Cycle {
   switch (config.mode) {
     case 'meter':
-      return meterCycle(config);
+      return voiceMetro(meterCycle(config), config.voices ?? DEFAULT_METRO_VOICES, (hit) => hit.level === 1);
     case 'euclid': {
       const pattern = euclid(config.pulses, config.steps, config.rotation);
       const hits = pattern.flatMap((on, cell): Hit[] =>
         on ? [{ at: cell / config.steps, level: cell === pattern.indexOf(true) ? 2 : 1, lane: 0, cell }] : [],
       );
-      return { beats: config.steps / 2, lanes: [config.steps], hits };
+      // En el euclidiano el único acento es el primer golpe: los demás son golpes.
+      return voiceMetro(
+        { beats: config.steps / 2, lanes: [config.steps], hits },
+        config.voices ?? DEFAULT_METRO_VOICES,
+        () => false,
+      );
     }
     case 'poly': {
       const voices = config.voices ?? DEFAULT_POLY_VOICES;
@@ -271,7 +316,11 @@ export function cycleFor(config: RhythmConfig, index: number): Cycle {
     }
     case 'mutante': {
       const position = Math.floor(index / config.barsEach) % config.meters.length;
-      return meterCycle(config.meters[position]!);
+      return voiceMetro(
+        meterCycle(config.meters[position]!),
+        config.voices ?? DEFAULT_METRO_VOICES,
+        (hit) => hit.level === 1,
+      );
     }
     case 'drum': {
       const { steps, tracks, levels } = config;
@@ -287,7 +336,15 @@ export function cycleFor(config: RhythmConfig, index: number): Cycle {
         if (!laneSounds(config, lane)) return;
         track.forEach((on, cell) => {
           if (!on || gain <= 0) return;
-          hits.push({ at: at(cell), level: on === 2 ? 2 : 1, lane, cell, voice: DRUMS[lane]!.id, gain });
+          hits.push({
+            at: at(cell),
+            level: on === 2 ? 2 : 1,
+            lane,
+            cell,
+            voice: DRUMS[lane]!.id,
+            gain,
+            strong: on === 2,
+          });
         });
       });
       return { beats: steps / 4, lanes: tracks.map(() => steps), hits };
@@ -296,9 +353,9 @@ export function cycleFor(config: RhythmConfig, index: number): Cycle {
 }
 
 /**
- * Cualquier ritmo pasado a batería, para poder verlo y editarlo en una grilla: el primer acento va
- * al bombo, los otros acentos a la caja y el resto al hi-hat. El segundo carril de una polirritmia
- * va a la percusión. Lo que no entra en 32 pasos se comprime, así que ahí el resultado es aproximado.
+ * Cualquier ritmo pasado a batería, para poder verlo y editarlo en una grilla: cada golpe va a la fila
+ * de su instrumento, el uno con acento, y con la misma batería. Suena igual que antes de pasarlo. Lo que
+ * no entra en 32 pasos se comprime, así que ahí el resultado es aproximado.
  */
 export function rhythmToDrums(config: RhythmConfig, index = 0): DrumConfig {
   if (config.mode === 'drum') return config;
@@ -306,15 +363,20 @@ export function rhythmToDrums(config: RhythmConfig, index = 0): DrumConfig {
   let steps = Math.max(2, Math.round(cycle.beats * 4));
   while (steps > LIMITS.cells[1]) steps = Math.ceil(steps / 2);
   const tracks = DRUMS.map(() => new Array<Step>(steps).fill(0));
-  const voiceOf = (hit: Hit): DrumId => {
-    if (hit.lane > 0) return 'percu';
-    return hit.level === 2 ? 'bombo' : hit.level === 1 ? 'caja' : 'hihat';
-  };
   for (const hit of cycle.hits) {
-    const track = DRUMS.findIndex((drum) => drum.id === voiceOf(hit));
-    tracks[track]![Math.round(hit.at * steps) % steps] = 1;
+    if (!hit.voice) continue;
+    const track = tracks[DRUMS.findIndex((drum) => drum.id === hit.voice)]!;
+    const step = Math.round(hit.at * steps) % steps;
+    track[step] = Math.max(track[step]!, hit.strong ? 2 : 1) as Step;
   }
-  return { mode: 'drum', steps, bpm: config.bpm, tracks, levels: DRUMS.map(() => DEFAULT_LEVEL) };
+  return {
+    mode: 'drum',
+    steps,
+    bpm: config.bpm,
+    tracks,
+    levels: DRUMS.map(() => DEFAULT_LEVEL),
+    ...(config.kit && { kit: config.kit }),
+  };
 }
 
 const NAMED_EUCLID: Record<string, string> = {
@@ -362,7 +424,7 @@ export function describeRhythm(config: RhythmConfig): { name: string; label: str
       return {
         name: `${config.a} contra ${config.b}`,
         label: `${config.a} contra ${config.b}, ${tempo}`,
-        rule: `Polirritmia: ${config.a} golpes de ${drumName(first).toLowerCase()} y ${config.b} de ${drumName(second).toLowerCase()}, parejos en el mismo tiempo. Solo coinciden al empezar el ciclo.`,
+        rule: `Polirritmia: ${config.a} golpes de ${drumName(first, config.kit).toLowerCase()} y ${config.b} de ${drumName(second, config.kit).toLowerCase()}, parejos en el mismo tiempo. Solo coinciden al empezar el ciclo.`,
       };
     }
     case 'mutante':
@@ -411,17 +473,23 @@ const intIn = (value: string | null, min: number, max: number): number | null =>
 
 export function rhythmToParams(config: RhythmConfig): URLSearchParams {
   const params = new URLSearchParams({ m: config.mode, bpm: String(config.bpm) });
+  const sound = () => {
+    if ('voices' in config && config.voices) params.set('v', config.voices.join('_'));
+    if (config.kit && config.kit !== DEFAULT_KIT) params.set('kit', config.kit);
+  };
   if (config.mode === 'meter') {
     params.set('g', config.groups.join('+'));
     params.set('d', String(config.denom));
+    sound();
   } else if (config.mode === 'euclid') {
     params.set('k', String(config.pulses));
     params.set('n', String(config.steps));
     params.set('r', String(config.rotation));
+    sound();
   } else if (config.mode === 'poly') {
     params.set('a', String(config.a));
     params.set('b', String(config.b));
-    if (config.voices) params.set('v', config.voices.join('_'));
+    sound();
   } else if (config.mode === 'drum') {
     params.set('n', String(config.steps));
     params.set('p', config.tracks.map((track) => track.join('')).join('_'));
@@ -431,6 +499,7 @@ export function rhythmToParams(config: RhythmConfig): URLSearchParams {
   } else {
     params.set('s', config.meters.map((meter) => `${meter.groups.join('+')}/${meter.denom}`).join('_'));
     params.set('c', String(config.barsEach));
+    sound();
   }
   return params;
 }
@@ -438,27 +507,35 @@ export function rhythmToParams(config: RhythmConfig): URLSearchParams {
 export function rhythmFromParams(params: URLSearchParams): RhythmConfig | null {
   const bpm = intIn(params.get('bpm'), LIMITS.bpm[0], LIMITS.bpm[1]);
   if (bpm === null) return null;
+  // Los instrumentos y la batería: los links de antes no los traen y suenan con los de siempre. Unos
+  // instrumentos que no se entienden invalidan el link; una batería que no existe, no.
+  const text = params.get('v');
+  const voices = text === null ? undefined : parseVoices(text);
+  if (voices === null) return null;
+  const kit = DRUM_KITS.find((option) => option.id === params.get('kit'))?.id;
+  const sound = {
+    ...(voices && { voices }),
+    ...(kit && kit !== DEFAULT_KIT && { kit }),
+  };
   switch (params.get('m')) {
     case 'meter': {
       const meter = parseMeter(params.get('g') ?? '', Number(params.get('d')));
-      return meter && { mode: 'meter', bpm, ...meter };
+      return meter && { mode: 'meter', bpm, ...meter, ...sound };
     }
     case 'euclid': {
       const steps = intIn(params.get('n'), 2, LIMITS.cells[1]);
       if (steps === null) return null;
       const pulses = intIn(params.get('k'), 1, steps);
       const rotation = intIn(params.get('r'), 0, steps - 1);
-      return pulses !== null && rotation !== null ? { mode: 'euclid', pulses, steps, rotation, bpm } : null;
+      return pulses !== null && rotation !== null
+        ? { mode: 'euclid', pulses, steps, rotation, bpm, ...sound }
+        : null;
     }
     case 'poly': {
       const a = intIn(params.get('a'), LIMITS.lane[0], LIMITS.lane[1]);
       const b = intIn(params.get('b'), LIMITS.lane[0], LIMITS.lane[1]);
       if (a === null || b === null) return null;
-      // Los links de antes no traen instrumentos: siguen valiendo, con los de siempre.
-      const text = params.get('v');
-      if (text === null) return { mode: 'poly', a, b, bpm };
-      const voices = parsePolyVoices(text);
-      return voices && { mode: 'poly', a, b, voices, bpm };
+      return { mode: 'poly', a, b, bpm, ...sound };
     }
     case 'mutante': {
       const barsEach = intIn(params.get('c'), 1, 16);
@@ -467,7 +544,7 @@ export function rhythmFromParams(params: URLSearchParams): RhythmConfig | null {
         return parseMeter(groups, Number(denom));
       });
       if (barsEach === null || meters.length === 0 || meters.some((meter) => !meter)) return null;
-      return { mode: 'mutante', meters: meters as Meter[], barsEach, bpm };
+      return { mode: 'mutante', meters: meters as Meter[], barsEach, bpm, ...sound };
     }
     case 'drum': {
       const steps = intIn(params.get('n'), 2, LIMITS.cells[1]);
@@ -485,7 +562,6 @@ export function rhythmFromParams(params: URLSearchParams): RhythmConfig | null {
       const levels = (params.get('l') ?? '').split('_').map(Number);
       const swing = params.has('sw') ? intIn(params.get('sw'), SWING.straight, SWING.max) : SWING.straight;
       if (swing === null) return null;
-      const kit = DRUM_KITS.find((option) => option.id === params.get('kit'))?.id;
       return {
         mode: 'drum',
         steps,
@@ -507,4 +583,17 @@ export function rhythmFromParams(params: URLSearchParams): RhythmConfig | null {
     default:
       return null;
   }
+}
+
+/**
+ * Al pasar de un tipo de ritmo a otro, el sonido va con uno: la batería siempre, y el golpe y el acento
+ * entre los metrónomos (compás, euclidiano, mutante). La polirritmia y la caja de ritmos tienen sus
+ * propios instrumentos.
+ */
+export function withSoundOf(from: RhythmConfig, to: RhythmConfig): RhythmConfig {
+  const { kit: _kit, ...rest } = to;
+  const next = { ...rest, ...(from.kit && from.kit !== DEFAULT_KIT && { kit: from.kit }) } as RhythmConfig;
+  if (!isMetro(from) || !isMetro(next)) return next;
+  const { voices: _voices, ...bare } = next;
+  return { ...bare, ...(from.voices && { voices: from.voices }) } as RhythmConfig;
 }

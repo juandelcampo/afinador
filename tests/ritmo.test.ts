@@ -11,6 +11,7 @@ import {
   rhythmToParams,
   rowLength,
   tapTempo,
+  withSoundOf,
   DRUMS,
   type DrumConfig,
   type RhythmConfig,
@@ -46,6 +47,25 @@ describe('ritmo', () => {
     const cycle = cycleFor({ mode: 'meter', groups: [2, 2, 3], denom: 8, bpm: 120 }, 0);
     expect(cycle.beats).toBe(3.5);
     expect(cycle.hits.map((hit) => hit.level)).toEqual([2, 0, 1, 0, 1, 0, 0]);
+  });
+
+  it('el metrónomo suena con aro en el golpe y bombo en el acento, o con los que se elijan', () => {
+    const voicesOf = (config: RhythmConfig) =>
+      cycleFor(config, 0).hits.map((hit) => `${hit.voice}${hit.strong ? '!' : ''}`);
+    // En el compás, el uno va con la toma fuerte y el primero de cada grupo también va al acento.
+    expect(voicesOf({ mode: 'meter', groups: [2, 2, 3], denom: 8, bpm: 120 })).toEqual([
+      'bombo!',
+      'aro',
+      'bombo',
+      'aro',
+      'bombo',
+      'aro',
+      'aro',
+    ]);
+    // En el euclidiano el único acento es el primer golpe.
+    expect(
+      voicesOf({ mode: 'euclid', pulses: 3, steps: 8, rotation: 0, voices: ['hihat', 'caja'], bpm: 120 }),
+    ).toEqual(['caja!', 'hihat', 'hihat']);
   });
 
   it('la polirritmia pone dos carriles en el mismo ciclo', () => {
@@ -95,6 +115,9 @@ describe('ritmo', () => {
   it('un ritmo sobrevive a ida y vuelta por la URL', () => {
     const configs: RhythmConfig[] = [
       { mode: 'meter', groups: [2, 2, 3], denom: 8, bpm: 160 },
+      { mode: 'meter', groups: [3, 3], denom: 8, voices: ['hihat', 'tom'], kit: '808', bpm: 160 },
+      { mode: 'euclid', pulses: 3, steps: 8, rotation: 0, kit: 'sintetica', bpm: 90 },
+      { mode: 'poly', a: 3, b: 2, voices: ['aro', 'bombo'], kit: '808', bpm: 96 },
       { mode: 'euclid', pulses: 5, steps: 8, rotation: 2, bpm: 90 },
       { mode: 'poly', a: 4, b: 3, bpm: 96 },
       { mode: 'poly', a: 4, b: 3, voices: ['palma', 'caja'], bpm: 96 },
@@ -251,12 +274,55 @@ describe('caja de ritmos', () => {
     }
   });
 
-  it('cualquier ritmo pasa a la batería: el 7/8 pone el bombo en el uno y la caja en cada grupo', () => {
-    const drums = rhythmToDrums({ mode: 'meter', groups: [2, 2, 3], denom: 8, bpm: 120 });
+  it('cualquier ritmo pasa a la batería tal como suena: cada golpe en la fila de su instrumento', () => {
+    const drums = rhythmToDrums({ mode: 'meter', groups: [2, 2, 3], denom: 8, kit: '808', bpm: 120 });
     expect(drums.steps).toBe(14);
-    const row = (lane: number) => drums.tracks[lane]!.map((on) => (on ? 'x' : '.')).join('');
-    expect(row(0)).toBe('x.............');
-    expect(row(1)).toBe('....x...x.....');
+    expect(drums.kit).toBe('808');
+    const row = (lane: number) => drums.tracks[lane]!.map((on) => '.xX'[on]).join('');
+    // El bombo en cada grupo, con acento en el uno; el aro en el resto.
+    expect(row(0)).toBe('X...x...x.....');
+    expect(row(2)).toBe('..x...x...x.x.');
+    // La polirritmia: cada línea con su instrumento.
+    const poly = rhythmToDrums({ mode: 'poly', a: 3, b: 2, voices: ['palma', 'tom'], bpm: 120 });
+    const used = DRUMS.filter((_, lane) => poly.tracks[lane]!.some(Boolean)).map((drum) => drum.id);
+    expect(used).toEqual(['palma', 'tom']);
+  });
+
+  it('al cambiar de tipo de ritmo, la batería sigue y el golpe y el acento pasan entre metrónomos', () => {
+    const meter: RhythmConfig = {
+      mode: 'meter',
+      groups: [1, 1, 1],
+      denom: 4,
+      voices: ['hihat', 'caja'],
+      kit: '808',
+      bpm: 100,
+    };
+    expect(withSoundOf(meter, { mode: 'euclid', pulses: 3, steps: 8, rotation: 0, bpm: 100 })).toEqual({
+      mode: 'euclid',
+      pulses: 3,
+      steps: 8,
+      rotation: 0,
+      voices: ['hihat', 'caja'],
+      kit: '808',
+      bpm: 100,
+    });
+    // La polirritmia se queda con sus instrumentos, pero toma la batería.
+    expect(withSoundOf(meter, { mode: 'poly', a: 3, b: 2, voices: ['tom', 'aro'], bpm: 100 })).toEqual({
+      mode: 'poly',
+      a: 3,
+      b: 2,
+      voices: ['tom', 'aro'],
+      kit: '808',
+      bpm: 100,
+    });
+    // Volver a la acústica la saca del ritmo de destino.
+    const { kit: _kit, ...acoustic } = meter;
+    expect(withSoundOf(acoustic, { mode: 'poly', a: 3, b: 2, kit: '808', bpm: 100 })).toEqual({
+      mode: 'poly',
+      a: 3,
+      b: 2,
+      bpm: 100,
+    });
   });
 
   it('en el celular los pasos se parten en filas que respetan el compás', () => {
