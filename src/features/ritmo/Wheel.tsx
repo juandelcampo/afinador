@@ -3,7 +3,9 @@
 // polígono, cada golpe va donde cae en el ciclo (cuatro parejos son un cuadrado, el tresillo un triángulo
 // torcido); como estrella, los golpes se unen salteando puntas, dentro del polígono parejo. Los silencios
 // son muescas sobre los lados, como en una regla. Sin puntos ni cuadrados: la esquina que suena se pinta
-// de naranja. En una polirritmia se ven las dos figuras encimadas, la segunda punteada.
+// de naranja. En una polirritmia la voz con menos golpes va adentro, más chica y sin salirse de la otra:
+// no se pisan, y donde coinciden las esquinas quedan una arriba de la otra; cuando suenan juntas, se
+// encienden más gruesas.
 import { useEffect, useRef } from 'react';
 import { metronome } from '~/audio/metronome';
 import { figureVertices, onCircle, starLoops, travelSide, type FigureKind, type Point } from '~/core/figure';
@@ -11,6 +13,10 @@ import type { Cycle } from '~/core/rhythm';
 import styles from './ritmo.module.css';
 
 const RADIUS = 46;
+/** La voz de adentro, como mucho: después se achica hasta entrar en la de afuera. */
+const INNER = 28;
+/** Lo que queda entre la voz de adentro y los lados de la de afuera. */
+const GAP = 5;
 /** Cuánto se pinta de cada lado de la esquina que suena. */
 const CORNER = 8;
 /** Media muesca de silencio, a cada lado de la línea. */
@@ -28,6 +34,7 @@ const toward = (from: Point, to: Point, length: number): Point => {
 };
 
 interface Lane {
+  radius: number;
   /** Cuándo suena cada golpe, de 0 a 1, en orden. */
   times: number[];
   vertices: Point[];
@@ -38,11 +45,24 @@ interface Lane {
   cells: number;
 }
 
+/** El radio de cada voz: la de más golpes afuera; la otra, adentro y sin tocar los lados de la de afuera. */
+function radiiOf(cycle: Cycle): number[] {
+  const counts = cycle.lanes.map((_, lane) => cycle.hits.filter((hit) => hit.lane === lane).length);
+  if (counts.length < 2) return counts.map(() => RADIUS);
+  const outer = counts.indexOf(Math.max(...counts));
+  const sides = counts[outer]!;
+  // Lo que hay del centro a los lados del polígono parejo de afuera.
+  const room = sides >= 3 ? RADIUS * Math.cos(Math.PI / sides) - GAP : INNER;
+  return counts.map((_, lane) => (lane === outer ? RADIUS : Math.min(INNER, room)));
+}
+
 function lanesOf(cycle: Cycle, kind: FigureKind): Lane[] {
+  const radii = radiiOf(cycle);
   return cycle.lanes.map((count, lane) => {
+    const radius = radii[lane]!;
     const hits = cycle.hits.filter((hit) => hit.lane === lane).sort((a, b) => a.at - b.at);
     const times = hits.map((hit) => hit.at);
-    const vertices = figureVertices(times, kind, RADIUS);
+    const vertices = figureVertices(times, kind, radius);
     const rests = Array.from({ length: count }, (_, cell) => cell)
       .filter((cell) => !hits.some((hit) => hit.cell === cell))
       .flatMap((cell) => {
@@ -56,7 +76,7 @@ function lanesOf(cycle: Cycle, kind: FigureKind): Lane[] {
         ];
         return [{ cell, notch }];
       });
-    return { times, vertices, hits: hits.map((hit) => ({ cell: hit.cell })), rests, cells: count };
+    return { radius, times, vertices, hits: hits.map((hit) => ({ cell: hit.cell })), rests, cells: count };
   });
 }
 
@@ -96,6 +116,12 @@ export function Wheel({ cycle, kind }: { cycle: Cycle; kind: FigureKind }) {
             if (cell !== null)
               root.querySelector(`[data-cell="${lane}:${cell}"]`)?.setAttribute('data-active', '');
           });
+          // Las dos voces juntas: el mismo lugar del ciclo en las dos.
+          const lanes = current.current;
+          const at = cells.map((cell, lane) => (cell === null ? null : cell / (lanes[lane]?.cells ?? 1)));
+          const together =
+            at.length > 1 && at.every((time) => time !== null && Math.abs(time - at[0]!) < 1e-9);
+          root.toggleAttribute('data-together', together);
         }
       }
       frame = requestAnimationFrame(draw);
@@ -133,7 +159,7 @@ export function Wheel({ cycle, kind }: { cycle: Cycle; kind: FigureKind }) {
           );
         }
         // La estrella va adentro del polígono parejo, como en un dado.
-        const corners = Array.from({ length: count }, (_, place) => onCircle(place / count, RADIUS));
+        const corners = Array.from({ length: count }, (_, place) => onCircle(place / count, lane.radius));
         return (
           <g key={index} data-lane={index}>
             <polygon className={styles.outline} data-lane={index} points={pointsOf(corners)} />

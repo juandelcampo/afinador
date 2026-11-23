@@ -177,10 +177,10 @@
   stroke-width: 4px;
   stroke-linejoin: miter;
 }
+/* La segunda voz de la polirritmia va adentro, apenas más fina: el tamaño ya las separa. */
 .shape[data-lane='1'],
 .star[data-lane='1'] {
   stroke-width: 3px;
-  stroke-dasharray: 9 6;
 }
 /* La estrella va adentro del polígono parejo, más fino. */
 .outline {
@@ -214,6 +214,10 @@
 }
 .corner[data-active] {
   opacity: 1;
+}
+/* Las dos voces suenan juntas: las esquinas, más gruesas. */
+[data-together] .corner[data-active] {
+  stroke-width: 13px;
 }
 /* Cuántos golpes, en el medio: un borde del color del papel lo despega de las líneas que lo cruzan. */
 .count {

@@ -87,13 +87,15 @@ test.describe('ritmo', () => {
     // Sin puntos ni cuadrados: las esquinas y los silencios son líneas.
     await expect(wheel.locator('circle, rect')).toHaveCount(0);
 
-    // La polirritmia muestra las dos figuras encimadas.
+    // La polirritmia muestra las dos figuras: la de más golpes afuera y la otra adentro, más chica.
     await page
       .getByRole('group', { name: 'Tipo de ritmo' })
       .getByRole('button', { name: 'Polirritmia' })
       .click();
     await page.getByRole('button', { name: '4 contra 3' }).click();
     await expect(wheel.locator('polygon')).toHaveCount(2);
+    await expect(wheel.locator('polygon[data-lane="0"]')).toHaveAttribute('points', /^0,-46 /);
+    await expect(wheel.locator('polygon[data-lane="1"]')).toHaveAttribute('points', /^0,-2\d[.\d]* /);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('4 contra 3');
     expect(errors).toEqual([]);
   });
