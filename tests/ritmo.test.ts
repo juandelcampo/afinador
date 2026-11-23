@@ -11,6 +11,7 @@ import {
   rhythmToParams,
   rowLength,
   tapTempo,
+  DRUMS,
   type DrumConfig,
   type RhythmConfig,
 } from '~/core/rhythm';
@@ -61,13 +62,21 @@ describe('ritmo', () => {
       ]);
     };
     expect(voicesOf({ mode: 'poly', a: 3, b: 2, bpm: 120 })).toEqual([['hihat'], ['bombo']]);
-    expect(voicesOf({ mode: 'poly', a: 3, b: 2, voices: ['cencerro', 'tom'], bpm: 120 })).toEqual([
-      ['cencerro'],
+    expect(voicesOf({ mode: 'poly', a: 3, b: 2, voices: ['percu', 'tom'], bpm: 120 })).toEqual([
+      ['percu'],
       ['tom'],
     ]);
-    expect(
-      describeRhythm({ mode: 'poly', a: 3, b: 2, voices: ['cencerro', 'tom'], bpm: 120 }).rule,
-    ).toContain('3 golpes de cencerro y 2 de tom');
+    expect(describeRhythm({ mode: 'poly', a: 3, b: 2, voices: ['aro', 'tom'], bpm: 120 }).rule).toContain(
+      '3 golpes de aro y 2 de tom',
+    );
+    // Los links de antes dicen cencerro: ahora es la percusión.
+    expect(rhythmFromParams(new URLSearchParams('m=poly&bpm=120&a=3&b=2&v=cencerro_tom'))).toEqual({
+      mode: 'poly',
+      a: 3,
+      b: 2,
+      voices: ['percu', 'tom'],
+      bpm: 120,
+    });
   });
 
   it('el compás mutante cambia cada tantas vueltas', () => {
@@ -137,10 +146,44 @@ describe('ritmo', () => {
   it('las filas calladas no viajan en el link', () => {
     const config: DrumConfig = {
       ...drumConfig(100, { bombo: 'x...x...' }),
-      muted: [true, false, false, false, false, false],
+      muted: [true, false, false, false, false, false, false, false],
     };
     const { muted: _muted, ...rest } = config;
     expect(rhythmFromParams(rhythmToParams(config))).toEqual(rest);
+  });
+
+  it('los acentos y la batería elegida viajan en el link; la acústica no se escribe', () => {
+    const config = drumConfig(100, { bombo: 'X..x', abierto: '..x.' });
+    expect(config.tracks[0]).toEqual([2, 0, 0, 1]);
+    // El acento suena como nivel 2; el golpe normal, como 1.
+    const bombo = cycleFor(config, 0).hits.filter((hit) => hit.voice === 'bombo');
+    expect(bombo.map((hit) => hit.level)).toEqual([2, 1]);
+    expect(rhythmToParams(config).get('p')).toBe('2001_0000_0000_0000_0010_0000_0000_0000');
+    expect(rhythmToParams(config).has('kit')).toBe(false);
+    const machine: DrumConfig = { ...config, kit: '808' };
+    expect(rhythmToParams(machine).get('kit')).toBe('808');
+    expect(rhythmFromParams(rhythmToParams(machine))).toEqual(machine);
+    // Una batería que no existe es la acústica.
+    expect(rhythmFromParams(new URLSearchParams(`${rhythmToParams(config)}&kit=linn`))).toEqual(config);
+  });
+
+  it('un link de antes, con seis filas, abre con cada sonido en su fila de ahora', () => {
+    const params = new URLSearchParams(
+      'm=drum&bpm=98&n=4&p=1000_0010_1111_0001_0100_1010&l=80_70_60_50_40_30',
+    );
+    const config = rhythmFromParams(params);
+    expect(config?.mode).toBe('drum');
+    if (config?.mode !== 'drum') return;
+    const row = (id: string) => config.tracks[DRUMS.findIndex((drum) => drum.id === id)]!.join('');
+    expect(row('bombo')).toBe('1000');
+    expect(row('caja')).toBe('0010');
+    expect(row('aro')).toBe('0000');
+    expect(row('hihat')).toBe('1111');
+    expect(row('abierto')).toBe('0000');
+    expect(row('palma')).toBe('0001');
+    expect(row('tom')).toBe('0100');
+    expect(row('percu')).toBe('1010');
+    expect(config.levels).toEqual([0.8, 0.7, 0.8, 0.6, 0.8, 0.5, 0.4, 0.3]);
   });
 });
 
@@ -148,7 +191,7 @@ describe('caja de ritmos', () => {
   it('el swing corre solo los contratiempos, y con 66 caen como tresillo', () => {
     const config: DrumConfig = { ...drumConfig(100, { hihat: 'xxxx' }), swing: 66 };
     const ats = cycleFor(config, 0)
-      .hits.filter((hit) => hit.lane === 2)
+      .hits.filter((hit) => hit.voice === 'hihat')
       .map((hit) => hit.at);
     expect(ats[0]).toBe(0);
     expect(ats[2]).toBe(0.5);
@@ -159,7 +202,7 @@ describe('caja de ritmos', () => {
 
   it('una fila callada no suena, pero el paso general sigue', () => {
     const base = drumConfig(100, { bombo: 'x.x.', caja: '.x.x' });
-    const config: DrumConfig = { ...base, muted: [true, false, false, false, false, false] };
+    const config: DrumConfig = { ...base, muted: [true, false, false, false, false, false, false, false] };
     const { hits } = cycleFor(config, 0);
     expect(hits.some((hit) => hit.voice === 'bombo')).toBe(false);
     expect(hits.filter((hit) => hit.voice === 'caja')).toHaveLength(2);
@@ -177,7 +220,7 @@ describe('caja de ritmos', () => {
         const pattern = randomDrumPattern(next, 100, steps);
         expect(pattern.steps).toBe(steps);
         expect(pattern.tracks.every((track) => track.length === steps)).toBe(true);
-        expect(pattern.tracks[0]![0]).toBe(true);
+        expect(pattern.tracks[0]![0]).toBe(2);
       }
     }
   });

@@ -84,9 +84,9 @@ Hay cinco tipos de ritmo:
 
 Cualquiera pasa a la batería para editarlo a mano (`rhythmToDrums`).
 
-La caja de ritmos tiene ritmos de partida (rock, funk, hip hop, shuffle, dembow, cumbia, bossa…), un patrón inventado (euclidiano por sonido, con el bombo en el uno), Borrar y Volver, pasos de 8 a 32 y swing de 50 (parejo) a 75. Se pinta arrastrando. Cada fila se escucha tocando su nombre, y se puede callar, correr un paso o bajar de volumen. En el celular los pasos se parten en filas de a 8, 7, 6 o 5, para que el compás se lea.
+La caja de ritmos tiene ocho sonidos (bombo, caja, aro, hi-hat, hi-hat abierto, palma, tom y una percusión que es pandereta en la acústica y cencerro en las otras) y tres baterías: la acústica y la 808, grabadas, y la sintética. Cada casilla tiene tres estados: un toque pone un golpe, otro lo acentúa y otro lo saca. El hi-hat cerrado corta al abierto, como en una batería de verdad, y la acústica se toca un poco a mano: cada golpe cambia apenas de volumen, de afinación y de lugar, y alterna entre varias tomas. Hay ritmos de partida (rock, balada, funk, hip hop, shuffle, reggae, dembow, cumbia, bossa…), un patrón inventado (euclidiano por sonido, con el bombo en el uno), Borrar y Volver, pasos de 8 a 32 y swing de 50 (parejo) a 75. Se pinta arrastrando. Cada fila se escucha tocando su nombre, y se puede callar, correr un paso o bajar de volumen; en el celular, correr y el volumen aparecen con "Ajustar filas". Ahí los pasos se parten en filas de a 8, 7, 6 o 5, para que el compás se lea.
 
-El motor (`core/rhythm.ts`) reduce todo a un ciclo de golpes entre 0 y 1; `audio/metronome.ts` los programa con anticipación desde un Worker (`ticker.ts`), y `audio/drums.ts` sintetiza la batería. El ritmo entero va en la URL (`/ritmo?m=meter&bpm=150&g=2+2+3&d=8`), menos las filas calladas.
+El motor (`core/rhythm.ts`) reduce todo a un ciclo de golpes entre 0 y 1; `audio/metronome.ts` los programa con anticipación desde un Worker (`ticker.ts`), `audio/kit.ts` toca la batería elegida y `audio/drums.ts` sintetiza la sintética, que también suena mientras las grabadas no terminaron de bajar. El ritmo entero va en la URL (`/ritmo?m=meter&bpm=150&g=2+2+3&d=8`), menos las filas calladas. Los links de la batería de antes, con seis filas, siguen abriendo.
 
 La barra de arriba tiene los nombres de las notas (E A D o Mi La Re) y la referencia del La. El volumen es uno solo para todo lo que suena; está en Escuchar y en Ritmo.
 
@@ -114,7 +114,7 @@ El micrófono solo funciona en `localhost` o por `https`, así que para usarlo d
 src/
   core/        notas, detección de altura (pitch.ts), síntesis de cuerda (pluck.ts), afinaciones y figuras (tuning.ts), armonía (harmony.ts), lo de Rooksby (progressions.ts) las figuras de cada inversión (inversions.ts) y el ritmo (rhythm.ts). TypeScript puro.
   data/        el catálogo de afinaciones (tunings.ts), las vueltas para arrancar (vueltas.ts) y los ritmos de partida de la batería (drums.ts). Solo datos.
-  audio/       AudioContext y mezcla, instrumento (muestras de guitarra en samples.ts), micrófono, metrónomo y batería sintetizada. Sin React.
+  audio/       AudioContext y mezcla, instrumento (muestras de guitarra en samples.ts), micrófono, metrónomo y batería (grabada en kit.ts, sintetizada en drums.ts). Sin React.
   shared/      preferencias, el hook del afinador (useTuner.ts) y componentes de interfaz.
   shell/       la barra de arriba, con las herramientas.
   features/    una carpeta por pantalla: inicio/ (la portada), afinador/, armonia/, inversiones/, acorde/ y ritmo/.
@@ -156,3 +156,8 @@ Las fuentes principales:
 - [Wikipedia: Open C tuning](https://en.wikipedia.org/wiki/Open_C_tuning)
 
 La guitarra que suena es una acústica grabada nota por nota por los [University of Iowa Electronic Music Studios](https://theremin.music.uiowa.edu/MIS.html), tomada de [tonejs-instruments](https://github.com/nbrosowsky/tonejs-instruments) y recortada en `public/sonidos/guitarra/`. Cada muestra se midió con el detector del afinador y se corrige al tocarla. Con `?guitarra=sintetica` en la dirección suena la cuerda sintetizada de antes, que también suena mientras una muestra no terminó de bajar.
+
+Las baterías grabadas están recortadas a mono en `public/sonidos/bateria/`, y las dos son CC0 (dominio público):
+
+- La acústica sale de [Recorded drums (CC0)](https://github.com/Nullframe/daw-content/releases/tag/drums-recorded-cc0-2026-09-30), armado con [Big Rusty Drums](https://github.com/sfzinstruments/karoryfer.big-rusty-drums) y [Swirly Drums](https://github.com/sfzinstruments/karoryfer.swirly-drums) de Karoryfer Samples y la [VCSL](https://github.com/sgossner/VCSL) de Versilian Studios.
+- La 808 es la Roland TR-808 que grabó Michael Fischer en 1994, en [tidalcycles/sounds-tr808-fischer](https://github.com/tidalcycles/sounds-tr808-fischer).

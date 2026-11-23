@@ -1,10 +1,24 @@
 // Caja de ritmos: una fila de casillas por sonido. Se edita mientras suena, y se pinta arrastrando.
-import { useEffect, useRef, type CSSProperties, type PointerEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
 import { metronome } from '~/audio/metronome';
-import { DRUMS, DRUM_STEPS, randomDrumPattern, rowLength, SWING, type DrumConfig } from '~/core/rhythm';
+import {
+  DEFAULT_KIT,
+  DRUM_KITS,
+  DRUM_STEPS,
+  DRUMS,
+  drumName,
+  randomDrumPattern,
+  rowLength,
+  SWING,
+  type DrumConfig,
+  type DrumKit,
+  type Step,
+} from '~/core/rhythm';
 import { DRUM_PRESETS } from '~/data/drums';
-import { Button, Field, Stepper } from '~/shared/ui/ui';
-import styles from './ritmo.module.css';
+import { Button, Field, Segmented, Stepper } from '~/shared/ui/ui';
+import ui from '~/shared/ui/ui.module.css';
+import styles from './drums.module.css';
+import ritmo from './ritmo.module.css';
 
 interface DrumMachineProps {
   config: DrumConfig;
@@ -17,8 +31,16 @@ interface DrumMachineProps {
 
 const samePattern = (a: DrumConfig, b: DrumConfig) => JSON.stringify(a.tracks) === JSON.stringify(b.tracks);
 
+/** Cada toque sobre una casilla la pasa al estado que sigue: silencio, golpe, acento y de nuevo silencio. */
+const nextStep = (step: Step): Step => ((step + 1) % 3) as Step;
+
+const STEP_NAMES: Record<Step, string> = { 0: 'silencio', 1: 'golpe', 2: 'acento' };
+
 export function DrumMachine({ config, onChange, onReplace, onUndo }: DrumMachineProps) {
   const grid = useRef<HTMLDivElement>(null);
+  // En el celular, correr las filas y su volumen quedan guardados hasta que se piden.
+  const [adjusting, setAdjusting] = useState(false);
+  const kit = config.kit ?? DEFAULT_KIT;
 
   // Marca la columna que suena leyendo el reloj cuadro a cuadro, sin renders.
   useEffect(() => {
@@ -41,15 +63,15 @@ export function DrumMachine({ config, onChange, onReplace, onUndo }: DrumMachine
     return () => cancelAnimationFrame(frame);
   }, []);
 
-  // Pintar: apretar una casilla la prende (o la apaga) y pasar por las de al lado de la misma fila
-  // hace lo mismo. La config va en una ref, porque cada paso del gesto llega antes del render.
+  // Pintar: apretar una casilla la pasa al estado que sigue, y pasar por las de al lado de la misma
+  // fila las deja igual. La config va en una ref, porque cada paso del gesto llega antes del render.
   const latest = useRef(config);
   useEffect(() => {
     latest.current = config;
   }, [config]);
-  const setStep = (lane: number, step: number, value: boolean) => {
+  const setStep = (lane: number, step: number, value: Step) => {
     const current = latest.current;
-    if ((current.tracks[lane]?.[step] ?? false) === value) return;
+    if ((current.tracks[lane]?.[step] ?? 0) === value) return;
     const next = {
       ...current,
       tracks: current.tracks.map((track, index) =>
@@ -60,12 +82,18 @@ export function DrumMachine({ config, onChange, onReplace, onUndo }: DrumMachine
     onChange(next);
   };
 
+  // Lo que se pone se escucha, si el patrón está parado.
+  const hear = (lane: number, value: Step) => {
+    if (value > 0 && !metronome.getState().running) {
+      metronome.preview(DRUMS[lane]!.id, config.levels[lane], value === 2);
+    }
+  };
+
   const paint = (lane: number, step: number) => (event: PointerEvent<HTMLButtonElement>) => {
     if (event.button !== 0) return;
-    const value = !(config.tracks[lane]?.[step] ?? false);
+    const value = nextStep(config.tracks[lane]?.[step] ?? 0);
     setStep(lane, step, value);
-    // Prender una casilla con el patrón parado la hace sonar: se escucha qué se está poniendo.
-    if (value && !metronome.getState().running) metronome.preview(DRUMS[lane]!.id, config.levels[lane]);
+    hear(lane, value);
     const pointer = event.pointerId;
     const move = (e: globalThis.PointerEvent) => {
       if (e.pointerId !== pointer) return;
@@ -90,7 +118,7 @@ export function DrumMachine({ config, onChange, onReplace, onUndo }: DrumMachine
     onChange({
       ...config,
       tracks: config.tracks.map((row, index) =>
-        index === lane ? row.map((_, i) => track[(i - by + steps) % steps] ?? false) : row,
+        index === lane ? row.map((_, i) => track[(i - by + steps) % steps] ?? 0) : row,
       ),
     });
   };
@@ -117,16 +145,18 @@ export function DrumMachine({ config, onChange, onReplace, onUndo }: DrumMachine
       ...config,
       muted: DRUMS.map((_, index) => (index === lane ? !muted[index] : !!muted[index])),
     });
+  // Lo que no es el patrón se queda como estaba al cambiar de patrón: la batería, los volúmenes, lo callado.
+  const keep = { levels: config.levels, muted: config.muted, ...(config.kit && { kit: config.kit }) };
 
   return (
     <div className={styles.drums} data-testid="drum-machine">
-      <div className={styles.presets} role="group" aria-label="Ritmos de partida">
+      <div className={ritmo.presets} role="group" aria-label="Ritmos de partida">
         {DRUM_PRESETS.map((preset) => (
           <Button
             key={preset.id}
             variant="mini"
             ariaPressed={preset.id === presetId}
-            onClick={() => onReplace({ ...preset.config, levels: config.levels, muted: config.muted })}
+            onClick={() => onReplace({ ...preset.config, ...keep })}
           >
             {preset.name}
           </Button>
@@ -134,37 +164,18 @@ export function DrumMachine({ config, onChange, onReplace, onUndo }: DrumMachine
       </div>
 
       <div className={styles.toolbar}>
-        <div className={styles.actions}>
-          <Button
-            id="invent-drums"
-            onClick={() =>
-              onReplace({
-                ...randomDrumPattern(Math.random, config.bpm, config.steps),
-                levels: config.levels,
-                swing: config.swing,
-                muted: config.muted,
-              })
-            }
-          >
-            Inventar
-          </Button>
-          <Button
-            ariaLabel="Borrar todos los golpes"
-            onClick={() =>
-              onReplace({ ...config, tracks: config.tracks.map((track) => track.map(() => false)) })
-            }
-          >
-            Borrar
-          </Button>
-          <Button
-            id="undo-drums"
-            onClick={() => onUndo?.()}
-            disabled={!onUndo}
-            ariaLabel="Volver al patrón anterior"
-          >
-            ↩ Volver
-          </Button>
-        </div>
+        <Field label="Sonido" as="div">
+          <Segmented<DrumKit>
+            label="Batería"
+            value={kit}
+            options={DRUM_KITS.map((option) => ({ value: option.id, label: option.name }))}
+            onChange={(value) => {
+              const { kit: _previous, ...rest } = config;
+              onChange(value === DEFAULT_KIT ? rest : { ...rest, kit: value });
+              if (!metronome.getState().running) metronome.preview('bombo', config.levels[0], true);
+            }}
+          />
+        </Field>
         <Field label="Pasos" as="div">
           <Stepper label="pasos" value={config.steps} onDown={() => resize(-1)} onUp={() => resize(1)} />
         </Field>
@@ -188,9 +199,51 @@ export function DrumMachine({ config, onChange, onReplace, onUndo }: DrumMachine
         </Field>
       </div>
 
+      <div className={styles.actions}>
+        <Button
+          id="invent-drums"
+          onClick={() =>
+            onReplace({
+              ...randomDrumPattern(Math.random, config.bpm, config.steps),
+              ...keep,
+              swing: config.swing,
+            })
+          }
+        >
+          Inventar
+        </Button>
+        <Button
+          ariaLabel="Borrar todos los golpes"
+          onClick={() => onReplace({ ...config, tracks: config.tracks.map((track) => track.map(() => 0)) })}
+        >
+          Borrar
+        </Button>
+        <Button
+          id="undo-drums"
+          onClick={() => onUndo?.()}
+          disabled={!onUndo}
+          ariaLabel="Volver al patrón anterior"
+        >
+          ↩ Volver
+        </Button>
+      </div>
+
+      <div className={styles.gridHead}>
+        <p className={`${ui.hint} ${styles.hint}`}>
+          Tocá una casilla para poner un golpe; otra vez, para acentuarlo; otra, para sacarlo. Arrastrando se
+          pintan varias.
+        </p>
+        <div className={styles.adjustToggle}>
+          <Button variant="mini" ariaPressed={adjusting} onClick={() => setAdjusting(!adjusting)}>
+            Ajustar filas
+          </Button>
+        </div>
+      </div>
+
       <div
         ref={grid}
         className={styles.tracks}
+        data-adjusting={adjusting}
         style={
           {
             '--columns': config.steps > 16 ? config.steps / 2 : config.steps,
@@ -200,29 +253,34 @@ export function DrumMachine({ config, onChange, onReplace, onUndo }: DrumMachine
       >
         {DRUMS.map((drum, lane) => {
           const silent = !!muted[lane];
+          const name = drumName(drum.id, kit);
+          const lower = name.toLowerCase();
           return (
             <div key={drum.id} className={styles.track} data-track={drum.id} data-muted={silent}>
-              <div className={styles.trackHead}>
-                <button
-                  type="button"
-                  className={styles.voice}
-                  title={`Escuchar ${drum.name.toLowerCase()}`}
-                  onClick={() => metronome.preview(drum.id, config.levels[lane])}
-                >
-                  {drum.name}
-                </button>
+              <button
+                type="button"
+                className={styles.voice}
+                title={`Escuchar ${lower}`}
+                onClick={() => metronome.preview(drum.id, config.levels[lane])}
+              >
+                {/* El abierto va debajo del hi-hat: alcanza con decir que es el abierto. */}
+                {drum.id === 'abierto' ? 'Abierto' : name}
+              </button>
+              <div className={styles.mute}>
                 <Button
                   variant="mini"
                   ariaPressed={silent}
-                  ariaLabel={`Callar ${drum.name.toLowerCase()}`}
+                  ariaLabel={`Callar ${lower}`}
                   title="Callar la fila"
                   onClick={() => toggleMute(lane)}
                 >
                   {silent ? 'Callada' : 'Callar'}
                 </Button>
+              </div>
+              <div className={styles.trackTools}>
                 <Button
                   variant="mini"
-                  ariaLabel={`Correr ${drum.name.toLowerCase()} un paso antes`}
+                  ariaLabel={`Correr ${lower} un paso antes`}
                   title="Correr un paso antes"
                   onClick={() => shift(lane, -1)}
                 >
@@ -230,7 +288,7 @@ export function DrumMachine({ config, onChange, onReplace, onUndo }: DrumMachine
                 </Button>
                 <Button
                   variant="mini"
-                  ariaLabel={`Correr ${drum.name.toLowerCase()} un paso después`}
+                  ariaLabel={`Correr ${lower} un paso después`}
                   title="Correr un paso después"
                   onClick={() => shift(lane, 1)}
                 >
@@ -241,7 +299,7 @@ export function DrumMachine({ config, onChange, onReplace, onUndo }: DrumMachine
                   min={0}
                   max={100}
                   value={Math.round((config.levels[lane] ?? 0.8) * 100)}
-                  aria-label={`Volumen de ${drum.name.toLowerCase()}`}
+                  aria-label={`Volumen de ${lower}`}
                   onChange={(event) =>
                     onChange({
                       ...config,
@@ -254,7 +312,7 @@ export function DrumMachine({ config, onChange, onReplace, onUndo }: DrumMachine
               </div>
               <div className={styles.steps}>
                 {Array.from({ length: config.steps }, (_, step) => {
-                  const on = config.tracks[lane]?.[step] ?? false;
+                  const value = config.tracks[lane]?.[step] ?? 0;
                   return (
                     <button
                       key={step}
@@ -262,13 +320,18 @@ export function DrumMachine({ config, onChange, onReplace, onUndo }: DrumMachine
                       className={styles.step}
                       data-step={step}
                       data-beat={step % 4 === 0}
-                      aria-pressed={on}
+                      data-level={value}
+                      aria-pressed={value > 0}
                       data-lane={lane}
-                      aria-label={`${drum.name}, paso ${step + 1}`}
+                      aria-label={`${name}, paso ${step + 1}`}
+                      title={STEP_NAMES[value]}
                       onPointerDown={paint(lane, step)}
                       // Con el teclado no hay puntero: el clic llega solo (detail 0).
                       onClick={(event) => {
-                        if (event.detail === 0) setStep(lane, step, !on);
+                        if (event.detail !== 0) return;
+                        const next = nextStep(value);
+                        setStep(lane, step, next);
+                        hear(lane, next);
                       }}
                     />
                   );

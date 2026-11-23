@@ -1,4 +1,5 @@
-// Batería sintetizada: cada golpe se arma con osciladores y ruido.
+// Batería sintetizada: cada golpe se arma con osciladores y ruido. Es la batería "Sintética", y la que
+// suena mientras las grabadas no terminaron de bajar.
 import type { DrumId } from '~/core/rhythm';
 
 let noise: AudioBuffer | null = null;
@@ -79,8 +80,17 @@ export function playDrum(
       tone(ctx, out, time, { from: 200, to: 140, drop: 0.05, level: 0.45 * v, decay: 0.1, type: 'triangle' });
       hiss(ctx, out, time, { level: 0.55 * v, decay: 0.17, type: 'highpass', frequency: 1500 });
       return;
+    case 'aro':
+      // El palillo contra el borde: dos parciales que se apagan enseguida y un chasquido.
+      tone(ctx, out, time, { from: 1700, level: 0.3 * v, decay: 0.035, type: 'triangle' });
+      tone(ctx, out, time, { from: 480, level: 0.35 * v, decay: 0.05 });
+      hiss(ctx, out, time, { level: 0.25 * v, decay: 0.03, type: 'bandpass', frequency: 3000, q: 1.5 });
+      return;
     case 'hihat':
       hiss(ctx, out, time, { level: 0.32 * v, decay: 0.05, type: 'highpass', frequency: 7500 });
+      return;
+    case 'abierto':
+      hiss(ctx, out, time, { level: 0.26 * v, decay: 0.42, type: 'highpass', frequency: 7000 });
       return;
     case 'palma':
       for (const delay of [0, 0.012, 0.024]) {
@@ -103,7 +113,7 @@ export function playDrum(
     case 'tom':
       tone(ctx, out, time, { from: 190, to: 95, drop: 0.14, level: 0.8 * v, decay: 0.26 });
       return;
-    case 'cencerro':
+    case 'percu':
       tone(ctx, out, time, { from: 540, level: 0.28 * v, decay: 0.14, type: 'square' });
       tone(ctx, out, time, { from: 800, level: 0.22 * v, decay: 0.14, type: 'square' });
       return;

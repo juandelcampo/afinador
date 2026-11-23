@@ -2,8 +2,9 @@
 // suscribe a `getState()` y consulta `playhead()` en cada cuadro. Suena solo en su página: Ritmo lo
 // para al salir.
 import { clampBpm, cycleFor, type Cycle, type DrumId, type Hit, type RhythmConfig } from '~/core/rhythm';
-import { playClick, playDrum, type ClickSound } from './drums';
+import { playClick, type ClickSound } from './drums';
 import { getAudio, rhythmBus } from './engine';
+import { playKitDrum, setKit } from './kit';
 import { createTicker } from './ticker';
 
 const LOOKAHEAD_SECONDS = 0.16;
@@ -72,7 +73,9 @@ function schedule() {
     if (!hit) return;
     const time = cycleStart + hit.at * secondsPerCycle();
     if (time > ctx.currentTime + LOOKAHEAD_SECONDS) return;
-    if (hit.voice) playDrum(ctx, out, hit.voice, time, hit.gain ?? 1);
+    // En la caja de ritmos el nivel 2 es una casilla con acento; en la polirritmia el acento ya va en el volumen.
+    if (hit.voice)
+      playKitDrum(ctx, out, hit.voice, time, hit.gain ?? 1, state.config.mode === 'drum' && hit.level === 2);
     else if (hit.lane >= 0) playClick(ctx, out, sound, hit.level, hit.lane, time);
     queued.push({ time, lane: hit.lane, cell: hit.cell, cycle, index: cycleIndex });
     if (queued.length > VISUAL_HISTORY) queued = queued.slice(-VISUAL_HISTORY);
@@ -120,14 +123,17 @@ export const metronome = {
   },
 
   /** Un golpe suelto, para escuchar un sonido de la batería antes de usarlo. */
-  preview(voice: DrumId, gain = 1) {
+  preview(voice: DrumId, gain = 1, strong = false) {
     const { ctx } = getAudio();
-    playDrum(ctx, rhythmBus(), voice, ctx.currentTime + 0.01, gain);
+    playKitDrum(ctx, rhythmBus(), voice, ctx.currentTime + 0.01, gain, strong);
   },
 
   /** Cambia el ritmo. Si está sonando, vuelve a empezar para no mezclar dos compases. */
   setConfig(config: RhythmConfig) {
     const next = { ...config, bpm: clampBpm(config.bpm) };
+    // La polirritmia suena con la última batería elegida.
+    if (next.mode === 'drum') setKit(next.kit);
+    else if (next.mode === 'poly') setKit(lastByMode.drum?.mode === 'drum' ? lastByMode.drum.kit : undefined);
     lastByMode[next.mode] = next;
     if (state.running && withoutTempo(next) === withoutTempo(state.config)) {
       // El tempo cambia sin cortar: se recalcula el resto del ciclo desde este instante.

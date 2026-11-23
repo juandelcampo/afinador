@@ -23,8 +23,10 @@ export type RhythmConfig =
   | {
       mode: 'drum';
       steps: number;
-      /** Un arreglo de golpes por sonido, en el orden de DRUMS. */
-      tracks: boolean[][];
+      /** Un arreglo de casillas por sonido, en el orden de DRUMS: 0 es silencio, 1 golpe y 2 golpe con acento. */
+      tracks: Step[][];
+      /** Con qué batería suena. Sin elegir, la acústica. */
+      kit?: DrumKit;
       /** Volumen de cada sonido, de 0 a 1. */
       levels: number[];
       /**
@@ -42,13 +44,35 @@ export type DrumConfig = Extract<RhythmConfig, { mode: 'drum' }>;
 export const DRUMS = [
   { id: 'bombo', name: 'Bombo' },
   { id: 'caja', name: 'Caja' },
+  { id: 'aro', name: 'Aro' },
   { id: 'hihat', name: 'Hi-hat' },
+  { id: 'abierto', name: 'Hi-hat abierto' },
   { id: 'palma', name: 'Palma' },
   { id: 'tom', name: 'Tom' },
-  { id: 'cencerro', name: 'Cencerro' },
+  { id: 'percu', name: 'Percusión' },
 ] as const;
 
 export type DrumId = (typeof DRUMS)[number]['id'];
+
+/** Una casilla de la caja de ritmos: silencio, golpe o golpe con acento. */
+export type Step = 0 | 1 | 2;
+
+export const DRUM_KITS = [
+  { id: 'acustica', name: 'Acústica' },
+  { id: '808', name: '808' },
+  { id: 'sintetica', name: 'Sintética' },
+] as const;
+export type DrumKit = (typeof DRUM_KITS)[number]['id'];
+export const DEFAULT_KIT: DrumKit = 'acustica';
+
+/** El sonido de la última fila cambia con la batería: en la acústica es una pandereta. */
+export function drumName(id: DrumId, kit: DrumKit = DEFAULT_KIT): string {
+  if (id === 'percu') return kit === 'acustica' ? 'Pandereta' : 'Cencerro';
+  return DRUMS.find((drum) => drum.id === id)!.name;
+}
+
+/** Las filas que tenían los links de antes de que hubiera aro y hi-hat abierto, en el orden de ahora. */
+const OLD_LANES = [0, 1, 3, 5, 6, 7];
 export type PolyVoices = [DrumId, DrumId];
 export const DRUM_STEPS = [8, 10, 12, 14, 16, 24, 32] as const;
 export const DEFAULT_POLY_VOICES: PolyVoices = ['hihat', 'bombo'];
@@ -56,15 +80,16 @@ const DEFAULT_LEVEL = 0.8;
 /** Volumen de un golpe sin acento en la polirritmia; el primero de cada línea va a 1. */
 const POLY_UNACCENTED = 0.7;
 
-const drumName = (id: DrumId) => DRUMS.find((drum) => drum.id === id)!.name.toLowerCase();
-
 function parsePolyVoices(text: string): PolyVoices | null {
-  const ids = text.split('_');
+  // El cencerro de antes es la percusión de ahora.
+  const ids = text.split('_').map((id) => (id === 'cencerro' ? 'percu' : id));
   const valid = ids.length === 2 && ids.every((id) => DRUMS.some((drum) => drum.id === id));
   return valid ? (ids as PolyVoices) : null;
 }
 
-/** Arma un patrón a partir de texto: cada x es un golpe. */
+const stepOf = (char: string | undefined): Step => (char === 'X' ? 2 : char === 'x' ? 1 : 0);
+
+/** Arma un patrón a partir de texto: cada x es un golpe y cada X, un golpe con acento. */
 export function drumConfig(
   bpm: number,
   pattern: Partial<Record<DrumId, string>>,
@@ -74,14 +99,15 @@ export function drumConfig(
     mode: 'drum',
     steps,
     bpm,
-    tracks: DRUMS.map(({ id }) => Array.from({ length: steps }, (_, i) => pattern[id]?.[i] === 'x')),
+    tracks: DRUMS.map(({ id }) => Array.from({ length: steps }, (_, i) => stepOf(pattern[id]?.[i]))),
     levels: DRUMS.map(() => DEFAULT_LEVEL),
   };
 }
 
 /**
  * Un patrón inventado: cada sonido reparte sus golpes en forma euclidiana, con su propia rotación.
- * El bombo, la caja y el hi-hat casi siempre están; el resto aparece a veces.
+ * El bombo, la caja y el hi-hat casi siempre están; el resto aparece a veces. El bombo del uno y los
+ * golpes de hi-hat que caen en el tiempo van con acento.
  */
 export function randomDrumPattern(
   next: () => number,
@@ -90,19 +116,32 @@ export function randomDrumPattern(
 ): Extract<RhythmConfig, { mode: 'drum' }> {
   const int = (min: number, max: number) => min + Math.floor(next() * (max - min + 1));
   const scale = steps / 16;
-  const density = [int(3, 5), int(2, 3), int(5, 11), int(0, 2), int(0, 2), int(0, 3)].map((pulses) =>
-    Math.round(pulses * scale),
-  );
+  // En el orden de DRUMS: bombo, caja, aro, hi-hat, abierto, palma, tom, percusión. El aro y la palma
+  // casi nunca van juntos con la caja: a veces uno reemplaza al otro.
+  const density = [
+    int(3, 5),
+    int(1, 3),
+    int(-3, 2),
+    int(5, 11),
+    int(-2, 1),
+    int(-3, 2),
+    int(-1, 2),
+    int(-1, 3),
+  ].map((pulses) => Math.max(0, Math.round(pulses * scale)));
   return {
     mode: 'drum',
     steps,
     bpm,
-    tracks: DRUMS.map((_, track) => {
+    tracks: DRUMS.map(({ id }, track): Step[] => {
       const pulses = Math.min(steps, density[track] ?? 0);
-      if (pulses === 0) return new Array<boolean>(steps).fill(false);
+      if (pulses === 0) return new Array<Step>(steps).fill(0);
       // El bombo arranca en el uno y la caja cae en el dos: así siempre se siente dónde está el tiempo.
       const rotation = track === 0 ? 0 : track === 1 ? steps - Math.round(4 * scale) : int(0, steps - 1);
-      return euclid(pulses, steps, rotation);
+      return euclid(pulses, steps, rotation).map((on, i): Step => {
+        if (!on) return 0;
+        const strong = (id === 'bombo' && i === 0) || (id === 'hihat' && i % 4 === 0);
+        return strong ? 2 : 1;
+      });
     }),
     levels: DRUMS.map(() => DEFAULT_LEVEL),
   };
@@ -235,7 +274,7 @@ export function cycleFor(config: RhythmConfig, index: number): Cycle {
         if (muted?.[lane]) return;
         track.forEach((on, cell) => {
           if (!on || gain <= 0) return;
-          hits.push({ at: at(cell), level: 1, lane, cell, voice: DRUMS[lane]!.id, gain });
+          hits.push({ at: at(cell), level: on === 2 ? 2 : 1, lane, cell, voice: DRUMS[lane]!.id, gain });
         });
       });
       return { beats: steps / 4, lanes: tracks.map(() => steps), hits };
@@ -246,21 +285,21 @@ export function cycleFor(config: RhythmConfig, index: number): Cycle {
 /**
  * Cualquier ritmo pasado a batería, para poder verlo y editarlo en una grilla: el primer acento va
  * al bombo, los otros acentos a la caja y el resto al hi-hat. El segundo carril de una polirritmia
- * va al cencerro. Lo que no entra en 32 pasos se comprime, así que ahí el resultado es aproximado.
+ * va a la percusión. Lo que no entra en 32 pasos se comprime, así que ahí el resultado es aproximado.
  */
 export function rhythmToDrums(config: RhythmConfig, index = 0): DrumConfig {
   if (config.mode === 'drum') return config;
   const cycle = cycleFor(config, index);
   let steps = Math.max(2, Math.round(cycle.beats * 4));
   while (steps > LIMITS.cells[1]) steps = Math.ceil(steps / 2);
-  const tracks = DRUMS.map(() => new Array<boolean>(steps).fill(false));
+  const tracks = DRUMS.map(() => new Array<Step>(steps).fill(0));
   const voiceOf = (hit: Hit): DrumId => {
-    if (hit.lane > 0) return 'cencerro';
+    if (hit.lane > 0) return 'percu';
     return hit.level === 2 ? 'bombo' : hit.level === 1 ? 'caja' : 'hihat';
   };
   for (const hit of cycle.hits) {
     const track = DRUMS.findIndex((drum) => drum.id === voiceOf(hit));
-    tracks[track]![Math.round(hit.at * steps) % steps] = true;
+    tracks[track]![Math.round(hit.at * steps) % steps] = 1;
   }
   return { mode: 'drum', steps, bpm: config.bpm, tracks, levels: DRUMS.map(() => DEFAULT_LEVEL) };
 }
@@ -310,7 +349,7 @@ export function describeRhythm(config: RhythmConfig): { name: string; label: str
       return {
         name: `${config.a} contra ${config.b}`,
         label: `${config.a} contra ${config.b}, ${tempo}`,
-        rule: `Polirritmia: ${config.a} golpes de ${drumName(first)} y ${config.b} de ${drumName(second)}, parejos en el mismo tiempo. Solo coinciden al empezar el ciclo.`,
+        rule: `Polirritmia: ${config.a} golpes de ${drumName(first).toLowerCase()} y ${config.b} de ${drumName(second).toLowerCase()}, parejos en el mismo tiempo. Solo coinciden al empezar el ciclo.`,
       };
     }
     case 'mutante':
@@ -321,7 +360,7 @@ export function describeRhythm(config: RhythmConfig): { name: string; label: str
       };
     case 'drum': {
       const used = DRUMS.filter((_, lane) => config.tracks[lane]?.some(Boolean)).map((drum) =>
-        drum.name.toLowerCase(),
+        drumName(drum.id, config.kit).toLowerCase(),
       );
       return {
         name: `Batería en ${config.steps} pasos`,
@@ -372,9 +411,10 @@ export function rhythmToParams(config: RhythmConfig): URLSearchParams {
     if (config.voices) params.set('v', config.voices.join('_'));
   } else if (config.mode === 'drum') {
     params.set('n', String(config.steps));
-    params.set('p', config.tracks.map((track) => track.map((on) => (on ? '1' : '0')).join('')).join('_'));
+    params.set('p', config.tracks.map((track) => track.join('')).join('_'));
     params.set('l', config.levels.map((level) => Math.round(level * 100)).join('_'));
     if (config.swing !== undefined && config.swing !== SWING.straight) params.set('sw', String(config.swing));
+    if (config.kit && config.kit !== DEFAULT_KIT) params.set('kit', config.kit);
   } else {
     params.set('s', config.meters.map((meter) => `${meter.groups.join('+')}/${meter.denom}`).join('_'));
     params.set('c', String(config.barsEach));
@@ -420,20 +460,31 @@ export function rhythmFromParams(params: URLSearchParams): RhythmConfig | null {
       const steps = intIn(params.get('n'), 2, LIMITS.cells[1]);
       if (steps === null) return null;
       const rows = (params.get('p') ?? '').split('_');
-      if (rows.length !== DRUMS.length || !rows.every((row) => row.length === steps && /^[01]+$/.test(row))) {
+      // Los links de antes traen seis filas, sin aro ni hi-hat abierto: cada una va a su lugar de ahora.
+      const old = rows.length === OLD_LANES.length;
+      if (
+        (rows.length !== DRUMS.length && !old) ||
+        !rows.every((row) => row.length === steps && /^[012]+$/.test(row))
+      ) {
         return null;
       }
+      const laneOf = (lane: number) => (old ? OLD_LANES.indexOf(lane) : lane);
       const levels = (params.get('l') ?? '').split('_').map(Number);
       const swing = params.has('sw') ? intIn(params.get('sw'), SWING.straight, SWING.max) : SWING.straight;
       if (swing === null) return null;
+      const kit = DRUM_KITS.find((option) => option.id === params.get('kit'))?.id;
       return {
         mode: 'drum',
         steps,
         bpm,
         ...(swing !== SWING.straight && { swing }),
-        tracks: rows.map((row) => [...row].map((char) => char === '1')),
+        ...(kit && kit !== DEFAULT_KIT && { kit }),
+        tracks: DRUMS.map((_, lane) => {
+          const row = rows[laneOf(lane)];
+          return row ? [...row].map((char) => Number(char) as Step) : new Array<Step>(steps).fill(0);
+        }),
         levels: DRUMS.map((_, lane) => {
-          const level = levels[lane];
+          const level = levels[laneOf(lane)];
           return level !== undefined && Number.isFinite(level)
             ? Math.min(1, Math.max(0, level / 100))
             : DEFAULT_LEVEL;

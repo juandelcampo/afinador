@@ -159,7 +159,7 @@ test.describe('ritmo', () => {
 
     await machine.getByRole('button', { name: 'Funk' }).click();
     await expect(page).toHaveURL(/bpm=98/);
-    await expect(page).toHaveURL(/p=1001001000100000_/);
+    await expect(page).toHaveURL(/p=2001001000100000_/);
 
     // Pintar arrastrando: tres casillas de tom de un solo gesto.
     const tomFirst = machine.getByRole('button', { name: 'Tom, paso 1', exact: true });
@@ -178,6 +178,17 @@ test.describe('ritmo', () => {
     }
     await expect(machine.getByRole('button', { name: 'Funk' })).toHaveAttribute('aria-pressed', 'false');
 
+    // Otro toque acentúa la casilla, y el siguiente la vacía.
+    await tomFirst.click();
+    await expect(tomFirst).toHaveAttribute('data-level', '2');
+    await tomFirst.click();
+    await expect(tomFirst).toHaveAttribute('aria-pressed', 'false');
+    await tomFirst.click();
+    await expect(tomFirst).toHaveAttribute('data-level', '1');
+
+    // En el celular se piden con "Ajustar filas"; en pantallas anchas están siempre.
+    const adjust = machine.getByRole('button', { name: 'Ajustar filas' });
+    if (await adjust.isVisible()) await adjust.click();
     await machine.getByRole('button', { name: 'Correr tom un paso después' }).click();
     await expect(machine.getByRole('button', { name: 'Tom, paso 1', exact: true })).toHaveAttribute(
       'aria-pressed',
@@ -208,6 +219,38 @@ test.describe('ritmo', () => {
 
     await page.locator('#metro-toggle').click();
     await expect(machine.locator('[data-now]').first()).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+
+  test('la batería se elige entre la acústica, la 808 y la sintética, y las grabadas bajan', async ({
+    page,
+  }) => {
+    const errors = watchErrors(page);
+    const samples: number[] = [];
+    page.on('response', (response) => {
+      if (response.url().includes('/sonidos/bateria/')) samples.push(response.status());
+    });
+    await goto(
+      page,
+      '/ritmo?m=drum&bpm=100&n=4&p=2000_0010_0000_1111_0000_0000_0000_1010&l=80_80_80_80_80_80_80_80',
+    );
+    const machine = page.getByTestId('drum-machine');
+    const kit = machine.getByRole('group', { name: 'Batería' });
+    await expect(kit.getByRole('button', { name: 'Acústica' })).toHaveAttribute('aria-pressed', 'true');
+    // La última fila es la pandereta en la acústica y el cencerro en la 808.
+    await expect(machine.getByRole('button', { name: 'Pandereta, paso 1', exact: true })).toBeVisible();
+    await expect.poll(() => samples.length).toBeGreaterThan(20);
+
+    await kit.getByRole('button', { name: '808' }).click();
+    await expect(page).toHaveURL(/kit=808/);
+    await expect(machine.getByRole('button', { name: 'Cencerro, paso 1', exact: true })).toBeVisible();
+    await page.locator('#metro-toggle').click();
+    await expect(machine.locator('[data-now]').first()).toBeVisible();
+    await page.locator('#metro-toggle').click();
+
+    await kit.getByRole('button', { name: 'Acústica' }).click();
+    await expect(page).not.toHaveURL(/kit=/);
+    expect(samples.every((status) => status === 200)).toBe(true);
     expect(errors).toEqual([]);
   });
 
