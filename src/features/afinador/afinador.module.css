@@ -1239,8 +1239,9 @@
   display: none;
 }
 @container main (min-width: 900px) {
+  /* --chip-cols lo calcula la página para que las filas queden parejas (nueve y nueve, no dieciséis y dos). */
   .chips {
-    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+    grid-template-columns: repeat(var(--chip-cols, auto-fill), minmax(104px, 1fr));
   }
   .chips small {
     display: block;

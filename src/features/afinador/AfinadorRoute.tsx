@@ -477,6 +477,32 @@ const KIND_FILTERS: ReadonlyArray<{ value: ChordKind | 'todos'; label: string }>
 /** Cuántos acordes entran en el celular antes del botón que lleva a Figuras: dos filas. En pantallas
  *  anchas entran todos. */
 const CHIPS_NARROW = 9;
+/** Ancho mínimo de cada acorde en pantallas anchas y el hueco entre ellos (iguales que en el CSS). */
+const CHIP_MIN = 104;
+const CHIP_GAP = 4;
+
+/** Columnas para que los acordes llenen parejo las filas que ocupan: con lugar para dieciséis y
+ *  dieciocho acordes, van nueve y nueve en vez de dieciséis y dos. */
+function chipColumns(width: number, count: number): number {
+  const fit = Math.max(1, Math.floor((width + CHIP_GAP) / (CHIP_MIN + CHIP_GAP)));
+  const rows = Math.ceil(count / fit);
+  return Math.max(1, Math.ceil(count / Math.max(1, rows)));
+}
+
+/** Mide la grilla de acordes y le pasa por `--chip-cols` cuántas columnas usar. */
+function useChipColumns(count: number) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const grid = ref.current;
+    if (!grid) return;
+    const update = () => grid.style.setProperty('--chip-cols', String(chipColumns(grid.clientWidth, count)));
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(grid);
+    return () => observer.disconnect();
+  }, [count]);
+  return ref;
+}
 
 function TuningPage({
   tuning,
@@ -521,6 +547,7 @@ function TuningPage({
       ),
     [tuning.notes, listener.capo, notation],
   );
+  const chipsRef = useChipColumns(shapes.length);
   const isOn = (frets: number[]) => frets.every((fret, index) => fret === listener.frets[index]);
   // La misma aclaración en Acordes y en Figuras; la de Acordes es la que miran las pruebas.
   const capoNote = (testId?: string) =>
@@ -590,6 +617,7 @@ function TuningPage({
             </div>
 
             <div
+              ref={chipsRef}
               className={styles.chips}
               data-testid="chord-shapes"
               role="group"
