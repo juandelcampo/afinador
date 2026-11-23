@@ -28,6 +28,8 @@
   --touch: 44px;
   --touch-small: 44px;
   --gutter: 16px;
+  /* Ancho de la barra de scroll: el riel con su raya y el bloque de tinta adentro. */
+  --scrollbar: 16px;
   /* La flecha de los desplegables dibujados con CSS (::after), con el trazo de Icon.tsx: se usa como máscara. */
   --icon-down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='M9 2v13M4 10l5 5 5-5' fill='none' stroke='black' stroke-width='3'/%3E%3C/svg%3E");
   /* Alto de la barra de arriba cuando entra en una fila. */
@@ -110,6 +112,53 @@ a {
 :focus-visible {
   outline: 3px solid var(--ink);
   outline-offset: 3px;
+}
+
+/* La barra de scroll, una sola para toda la app: la página, los costados, las listas, los modales y el
+   diapasón en el celular. Un riel de papel separado del contenido por una raya de 2 px y un bloque de
+   tinta, recto y sin flechas. Gris al pasar el mouse, como todo lo que se toca. Chrome y Safari la
+   dibujan con ::-webkit-scrollbar (que Chrome ignora si hay scrollbar-color, por eso va aparte);
+   Firefox solo deja elegir los colores. En el celular el sistema muestra la suya, que se superpone. */
+::-webkit-scrollbar {
+  width: var(--scrollbar);
+  height: var(--scrollbar);
+}
+::-webkit-scrollbar-track {
+  background: var(--paper);
+}
+::-webkit-scrollbar-track:vertical {
+  box-shadow: inset 2px 0 0 var(--ink);
+}
+::-webkit-scrollbar-track:horizontal {
+  box-shadow: inset 0 2px 0 var(--ink);
+}
+::-webkit-scrollbar-thumb {
+  /* El borde transparente despega el bloque del riel; del lado de la raya es más grueso para tapar sus 2 px. */
+  border: 3px solid transparent;
+  background: var(--ink) padding-box;
+}
+::-webkit-scrollbar-thumb:vertical {
+  border-left-width: 5px;
+}
+::-webkit-scrollbar-thumb:horizontal {
+  border-top-width: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--muted);
+}
+::-webkit-scrollbar-thumb:active {
+  background-color: var(--ink);
+}
+::-webkit-scrollbar-corner {
+  background: var(--paper);
+}
+::-webkit-scrollbar-button {
+  display: none;
+}
+@supports not selector(::-webkit-scrollbar) {
+  :root {
+    scrollbar-color: var(--ink) var(--paper);
+  }
 }
 
 .sr-only {

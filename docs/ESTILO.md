@@ -83,6 +83,7 @@ Hay un solo color de acento. Cada color dice siempre lo mismo:
   - `--heavy` (Archivo ancha y negra): títulos.
   - `--ui` (Archivo): botones y rótulos, en mayúsculas.
   - `--mono` (Plex Mono): datos (notas, trastes, números, intervalos) y el texto corrido.
+- **Barra de scroll:** una sola para toda la app, definida en `global.css` (riel de papel con raya de 2 px y bloque de tinta, gris al pasar el mouse; ancho en `--scrollbar`). Cualquier `overflow: auto` la usa solo: no la estilices en la herramienta ni la escondas.
 - **Rótulos:** los rótulos chicos de los campos van a 12 px, en mayúsculas y con letra espaciada. No los armes a mano: usá `Field`.
 
 ## 5. Las piezas compartidas
