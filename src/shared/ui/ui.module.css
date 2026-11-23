@@ -187,8 +187,7 @@
   visibility: hidden;
 }
 .toggleMark {
-  font-size: 15px;
-  line-height: 1;
+  --icon-size: 16px;
 }
 
 /* Recorrer de a uno: flecha, lo elegido y flecha. */
@@ -468,6 +467,8 @@ button:disabled {
 .bridge {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
+  --icon-size: 15px;
   min-height: var(--touch);
   font: 700 semi-expanded 13px/1.2 var(--ui);
   letter-spacing: 0.03em;
@@ -522,9 +523,8 @@ button:disabled {
 .rail:hover {
   background: var(--soft);
 }
-.rail > span:first-child {
-  font-size: 24px;
-  letter-spacing: 0;
+.rail > .icon {
+  --icon-size: 22px;
 }
 .rail > span:last-child {
   writing-mode: vertical-rl;
@@ -592,4 +592,21 @@ button:disabled {
 }
 .splitMark {
   font-size: 0.85em;
+}
+
+/* Los íconos de línea (Icon.tsx): 18 px con trazo de 3 px, como los bordes. --icon-size los achica. */
+.icon {
+  flex: none;
+  width: var(--icon-size, 18px);
+  height: var(--icon-size, 18px);
+  overflow: visible;
+  vertical-align: -0.2em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: butt;
+  stroke-linejoin: miter;
+}
+.icon[data-filled='true'] {
+  fill: currentColor;
 }

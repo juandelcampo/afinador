@@ -355,8 +355,8 @@
   border: 0;
   background: none;
   color: inherit;
-  font: 400 20px/1 var(--ui);
   cursor: pointer;
+  --icon-size: 20px;
 }
 .star:hover {
   background: var(--soft);
@@ -505,6 +505,7 @@
 }
 .pillNumber,
 .pillDelta {
+  --icon-size: 13px;
   font-size: 12px;
 }
 .pillDelta[data-far='true'] {

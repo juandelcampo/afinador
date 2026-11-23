@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { noteLabel } from '~/core/notes';
 import { GROUPS, TUNINGS, type Tuning } from '~/data/tunings';
 import { useSettings } from './settings';
+import { Icon } from './ui/Icon';
 import { Field } from './ui/ui';
 import styles from './ui/ui.module.css';
 
@@ -28,7 +29,7 @@ export function TuningField({ tuning, onChange }: { tuning: Tuning; onChange: (i
 export function TuneLink({ tuning }: { tuning: Tuning }) {
   return (
     <Link className={styles.bridge} to={`/afinador/${tuning.id}`}>
-      Afinar en {tuning.name} →
+      Afinar en {tuning.name} <Icon name="right" />
     </Link>
   );
 }

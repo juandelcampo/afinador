@@ -1,5 +1,6 @@
 import { Link, type MetaFunction } from 'react-router';
 import { TUNINGS } from '~/data/tunings';
+import { Icon } from '~/shared/ui/Icon';
 import { PageTitle, Slab } from '~/shared/ui/ui';
 import styles from './inicio.module.css';
 
@@ -108,7 +109,7 @@ export default function InicioRoute() {
                 ))}
               </ul>
               <span className={styles.open} aria-hidden="true">
-                Abrir →
+                Abrir <Icon name="right" />
               </span>
             </Link>
           </li>

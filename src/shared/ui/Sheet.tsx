@@ -1,6 +1,7 @@
 // Un modal por vez: en el celular sube desde abajo, en pantallas anchas queda centrado.
 // Usa el <dialog> nativo: Esc lo cierra y lo de atrás queda inerte mientras está abierto.
 import { useEffect, useRef, type ReactNode } from 'react';
+import { Icon } from './Icon';
 import styles from './ui.module.css';
 
 export function Sheet({
@@ -46,7 +47,7 @@ export function Sheet({
             <h2>{title}</h2>
             {tools}
             <button type="button" className={styles.sheetClose} onClick={onClose} aria-label="Cerrar">
-              ✕
+              <Icon name="close" />
             </button>
           </header>
           {children}

@@ -4,6 +4,7 @@ import { setVolume } from '~/audio/engine';
 import { useSettings } from '~/shared/settings';
 import { Fader } from '~/shared/Fader';
 import { useTheme } from '~/shared/theme';
+import { Icon } from '~/shared/ui/Icon';
 import { Stepper, Toggle } from '~/shared/ui/ui';
 import styles from './shell.module.css';
 
@@ -91,7 +92,8 @@ export default function AppShell() {
           onClick={() => setSettingsOpen((open) => !open)}
         >
           {/* Solo existe en el celular, donde la barra no tiene lugar para la palabra. */}
-          <span aria-hidden="true">⚙︎ {settingsOpen ? '↑' : '↓'}</span>
+          <Icon name="settings" />
+          <Icon name={settingsOpen ? 'up' : 'down'} />
         </button>
         <div className={styles.settings} id="ajustes">
           <Toggle

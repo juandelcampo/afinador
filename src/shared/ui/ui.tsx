@@ -1,5 +1,6 @@
 // Componentes brutalistas compartidos. Son chicos a propósito: bloques, bordes y nada más.
 import type { PointerEvent, ReactNode } from 'react';
+import { Icon } from './Icon';
 import styles from './ui.module.css';
 
 interface SegmentedProps<T extends string> {
@@ -61,9 +62,7 @@ export function Toggle<T extends string>({
           </span>
         ))}
       </span>
-      <span className={styles.toggleMark} aria-hidden="true">
-        ⇄
-      </span>
+      <Icon name="swap" className={styles.toggleMark} />
     </button>
   );
 }
@@ -299,7 +298,7 @@ export function Rail({
       aria-label={ariaLabel}
       onClick={onOpen}
     >
-      <span aria-hidden="true">{side === 'left' ? '›' : '‹'}</span>
+      <Icon name={side === 'left' ? 'forward' : 'back'} />
       <span>{label}</span>
     </button>
   );

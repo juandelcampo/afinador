@@ -55,6 +55,7 @@ import { VUELTA_GROUPS, VUELTAS, type VueltaMode } from '~/data/vueltas';
 import { Fader } from '~/shared/Fader';
 import { TEMPO_RANGE, useSettings } from '~/shared/settings';
 import { useHydrated } from '~/shared/useHydrated';
+import { Icon } from '~/shared/ui/Icon';
 import { Sheet } from '~/shared/ui/Sheet';
 import { TuneLink, TuningField } from '~/shared/TuningField';
 import { Button, Field, PageTitle, Rail, Segmented, Slab, SlabHead } from '~/shared/ui/ui';
@@ -309,7 +310,7 @@ function Option({
         disabled={disabled || current}
         onClick={onApply}
       >
-        {current ? '✓' : '+'}
+        {current ? <Icon name="check" /> : '+'}
       </button>
     </li>
   );
@@ -930,7 +931,7 @@ export default function ArmoniaRoute() {
                 aria-label="Cerrar la columna de más acordes"
                 onClick={() => setLeftOpen(false)}
               >
-                <span aria-hidden="true">‹</span>
+                <Icon name="back" />
               </button>
             </div>
             <Slab>
@@ -1066,7 +1067,7 @@ export default function ArmoniaRoute() {
                       aria-label="Cerrar la columna de tu vuelta"
                       onClick={() => setRightOpen(false)}
                     >
-                      <span aria-hidden="true">›</span>
+                      <Icon name="forward" />
                     </button>
                   )}
                   {/* La flecha estira la vuelta hacia el medio y la vuelve a su lugar; en el celular, abre para abajo. */}
@@ -1079,9 +1080,7 @@ export default function ArmoniaRoute() {
                     }
                     onClick={() => setWide(!wide)}
                   >
-                    <span className={styles.widen} aria-hidden="true">
-                      {wide ? '→' : '←'}
-                    </span>
+                    <Icon name={wide ? 'right' : 'left'} className={styles.widen} />
                   </Button>
                 </div>
               </SlabHead>
@@ -1147,7 +1146,7 @@ export default function ArmoniaRoute() {
                               setSelected(null);
                             }}
                           >
-                            ✕
+                            <Icon name="close" />
                           </button>
                           {/* La manija: se arrastra con el dedo o el mouse, o se mueve con las flechas. */}
                           <button
@@ -1168,7 +1167,7 @@ export default function ArmoniaRoute() {
                               shift(index, step);
                             }}
                           >
-                            ⠿
+                            <Icon name="grip" />
                           </button>
                         </div>
                         {/* Color y figura se cambian acá mismo, sin abrir el editor. */}
@@ -1415,7 +1414,7 @@ export default function ArmoniaRoute() {
                   acorde: chordToken({ root: activeChord.root, suffix: activeChord.suffix }),
                 })}`}
               >
-                Todas las formas de {name({ root: activeChord.root, suffix: activeChord.suffix })} →
+                Todas las formas de {name({ root: activeChord.root, suffix: activeChord.suffix })} <Icon name="right" />
               </Link>
             )}
             {editorTab === 'cambiar' && (

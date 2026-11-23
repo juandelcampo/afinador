@@ -13,6 +13,7 @@ import {
 import { normalize, searchTunings } from '~/core/search';
 import { GROUPS, TUNINGS, type Tuning } from '~/data/tunings';
 import { TEMPO_RANGE, useFavorites, useSettings } from '~/shared/settings';
+import { Icon } from '~/shared/ui/Icon';
 import { Button, PageTitle, Rail, Segmented, Slab, SlabHead, Stepper, Toggle } from '~/shared/ui/ui';
 import ui from '~/shared/ui/ui.module.css';
 import styles from './afinador.module.css';
@@ -170,12 +171,8 @@ function TuningList({
             aria-label="Cerrar la lista de afinaciones"
             onClick={onClose}
           >
-            <span aria-hidden="true" data-wide>
-              ‹
-            </span>
-            <span aria-hidden="true" data-narrow>
-              ✕
-            </span>
+            <Icon name="back" data-wide />
+            <Icon name="close" data-narrow />
           </button>
         </div>
         {/* Siempre en el HTML, para que el lector de pantalla anuncie cuando cambia. */}
@@ -238,7 +235,7 @@ function TuningList({
                           title={favorite ? 'Sacar de favoritas' : 'Guardar en favoritas'}
                           onClick={() => toggleFavorite(tuning.id)}
                         >
-                          <span aria-hidden="true">{favorite ? '★' : '☆'}</span>
+                          <Icon name="star" data-filled={favorite} />
                         </button>
                       </div>
                     );
@@ -278,7 +275,7 @@ function Hero({ tuning, onChange }: { tuning: Tuning; onChange: () => void }) {
             data-testid="favorite-mark"
             onClick={() => toggleFavorite(tuning.id)}
           >
-            <span aria-hidden="true">{favorite ? '★' : '☆'}</span>
+            <Icon name="star" data-filled={favorite} />
           </button>
           <button
             type="button"
@@ -324,7 +321,7 @@ function Hero({ tuning, onChange }: { tuning: Tuning; onChange: () => void }) {
       {/* En el celular la lista no tiene columna: se abre desde acá y tapa la pantalla. */}
       <button type="button" className={styles.catalogToggle} data-narrow onClick={onChange}>
         <span>Elegir entre {TUNINGS.length} afinaciones</span>
-        <span aria-hidden="true">↓</span>
+        <Icon name="down" />
       </button>
     </Slab>
   );
@@ -401,7 +398,7 @@ function Heard({
                       setOpenIndex(open ? null : index);
                     }}
                   >
-                    <span aria-hidden="true">{open ? '✕' : '▶'}</span>
+                    {open ? <Icon name="close" /> : <span aria-hidden="true">▶</span>}
                   </button>
                 )}
               </div>
@@ -730,7 +727,7 @@ function TuningPage({
                   ariaPressed={listener.loop}
                   onClick={() => listener.setLoop(!listener.loop)}
                 >
-                  {listener.loop ? '↻ Repite' : '↻ Repetir'}
+                  <Icon name="repeat" /> {listener.loop ? 'Repite' : 'Repetir'}
                 </Button>
                 <Button
                   onClick={listener.clearFrets}
@@ -804,7 +801,7 @@ function TuningPage({
               aria-label="Cerrar la columna de temas"
               onClick={() => setAsideOpen(false)}
             >
-              <span aria-hidden="true">›</span>
+              <Icon name="forward" />
             </button>
           </div>
           <Heard

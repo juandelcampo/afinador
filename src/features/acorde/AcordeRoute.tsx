@@ -15,6 +15,7 @@ import { useSettings } from '~/shared/settings';
 import { useHydrated } from '~/shared/useHydrated';
 import { Diapason, LAST_FRET } from '~/shared/Diapason';
 import { TuneLink, TuningField } from '~/shared/TuningField';
+import { Icon } from '~/shared/ui/Icon';
 import { Button, PageTitle, Slab } from '~/shared/ui/ui';
 import ui from '~/shared/ui/ui.module.css';
 import styles from './acorde.module.css';
@@ -195,7 +196,7 @@ export default function AcordeRoute() {
           <TuneLink tuning={tuning} />
           {inversionsLink && (
             <Link className={ui.bridge} to={inversionsLink}>
-              Todas las formas de {pcName(reading!.root) + suffixSymbol(reading!.suffix)} en Inversiones →
+              Todas las formas de {pcName(reading!.root) + suffixSymbol(reading!.suffix)} en Inversiones <Icon name="right" />
             </Link>
           )}
         </div>

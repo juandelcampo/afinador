@@ -28,6 +28,8 @@
   --touch: 44px;
   --touch-small: 44px;
   --gutter: 16px;
+  /* La flecha de los desplegables dibujados con CSS (::after), con el trazo de Icon.tsx: se usa como máscara. */
+  --icon-down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='M9 2v13M4 10l5 5 5-5' fill='none' stroke='black' stroke-width='3'/%3E%3C/svg%3E");
   /* Alto de la barra de arriba cuando entra en una fila. */
   --bar: 60px;
   /* Ancho de una columna plegada a un costado, con su raya. */

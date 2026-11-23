@@ -156,8 +156,6 @@
 
 /* La flecha de agrandar: ← y → en pantallas anchas; en el celular la vuelta abre para abajo (↓ y ↑). */
 .widen {
-  display: inline-block;
-  font: 900 16px/1 var(--ui);
   transform: rotate(-90deg);
 }
 @container content (min-width: 900px) {
@@ -333,11 +331,15 @@
   text-transform: uppercase;
 }
 .group summary::after {
-  content: '↓';
+  content: '';
+  width: 18px;
+  height: 18px;
+  background: currentColor;
+  mask: var(--icon-down) center / contain no-repeat;
   margin-left: auto;
 }
 .group[open] summary::after {
-  content: '↑';
+  transform: rotate(180deg);
 }
 .group summary span {
   font: 600 13px/1.2 var(--ui);
@@ -650,11 +652,15 @@
   flex: 1;
 }
 .section > summary::after {
-  content: '↓';
-  font: 900 18px/1 var(--heavy);
+  content: '';
+  width: 18px;
+  height: 18px;
+  background: currentColor;
+  mask: var(--icon-down) center / contain no-repeat;
+  flex: none;
 }
 .section[open] > summary::after {
-  content: '↑';
+  transform: rotate(180deg);
 }
 .more {
   margin-top: 10px;
@@ -672,11 +678,15 @@
   cursor: pointer;
 }
 .more > summary::after {
-  content: ' ↓';
-  white-space: pre;
+  content: '';
+  width: 14px;
+  height: 14px;
+  background: currentColor;
+  mask: var(--icon-down) center / contain no-repeat;
+  margin-left: 6px;
 }
 .more[open] > summary::after {
-  content: ' ↑';
+  transform: rotate(180deg);
 }
 .more .controls {
   margin-top: 4px;
@@ -910,7 +920,6 @@
 .chipGrip {
   bottom: 2px;
   cursor: grab;
-  font-size: 18px;
   touch-action: none;
 }
 .chipGrip:active {
@@ -1030,11 +1039,15 @@
   text-transform: none;
 }
 .circleToggle::after {
-  content: '↓';
+  content: '';
+  width: 18px;
+  height: 18px;
+  background: currentColor;
+  mask: var(--icon-down) center / contain no-repeat;
   margin-left: auto;
 }
 .circleToggle[aria-expanded='true']::after {
-  content: '↑';
+  transform: rotate(180deg);
 }
 @container center (min-width: 940px) {
   .worldGrid {

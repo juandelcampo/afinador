@@ -25,6 +25,7 @@ import { TUNINGS } from '~/data/tunings';
 import { Diapason } from '~/shared/Diapason';
 import { useSettings } from '~/shared/settings';
 import { TuneLink, TuningField } from '~/shared/TuningField';
+import { Icon } from '~/shared/ui/Icon';
 import { Sheet } from '~/shared/ui/Sheet';
 import { Browse, Button, Field, PageTitle, Slab, SplitButton, Toggle } from '~/shared/ui/ui';
 import ui from '~/shared/ui/ui.module.css';
@@ -231,7 +232,7 @@ export default function EscalasRoute() {
           <TuneLink tuning={tuning} />
           {scale.inArmonia && (
             <Link className={ui.bridge} to={armoniaLink}>
-              Sus acordes en Armonía →
+              Sus acordes en Armonía <Icon name="right" />
             </Link>
           )}
         </div>
@@ -375,7 +376,7 @@ export default function EscalasRoute() {
             title="Volver al sonido de siempre"
             onClick={() => setSettings({ drone: { ...DEFAULT_DRONE } })}
           >
-            ↺
+            <Icon name="reset" />
           </Button>
         }
       >

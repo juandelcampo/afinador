@@ -28,6 +28,7 @@ import {
 } from '~/core/rhythm';
 import { DRUM_PRESETS } from '~/data/drums';
 import { useSettings } from '~/shared/settings';
+import { Icon } from '~/shared/ui/Icon';
 import { Button, Field, PageTitle, Segmented, Slab, Stepper, Tabs, Toggle } from '~/shared/ui/ui';
 import ui from '~/shared/ui/ui.module.css';
 import { DrumMachine } from './DrumMachine';
@@ -607,7 +608,7 @@ export default function RitmoRoute() {
                   onChange={(value) => set({ rhythmFigure: value })}
                 />
                 <Button variant="mini" id="to-drums" onClick={() => apply(rhythmToDrums(config))}>
-                  Pasar a la batería →
+                  Pasar a la batería <Icon name="right" />
                 </Button>
               </div>
               {/* Encima del margen de la figura, sin ocupar lugar: que aparezca no mueve nada. */}

@@ -42,7 +42,7 @@ test.describe('escalas', () => {
     await expect(counter).toHaveText(/^Posición (\d+) de \1$/);
 
     // El blues no está en Armonía: no hay link a sus acordes.
-    await expect(page.getByRole('link', { name: 'Sus acordes en Armonía →' })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Sus acordes en Armonía' })).toHaveCount(0);
     expect(errors).toEqual([]);
   });
 
@@ -87,7 +87,7 @@ test.describe('escalas', () => {
 
     await page.getByRole('button', { name: '▶ Comparar' }).click();
 
-    await page.getByRole('link', { name: 'Sus acordes en Armonía →' }).click();
+    await page.getByRole('link', { name: 'Sus acordes en Armonía' }).click();
     await expect(page).toHaveURL(/\/armonia\?afinacion=dadgad&tono=2&escala=mixolidio$/);
     expect(errors).toEqual([]);
   });

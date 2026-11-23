@@ -56,7 +56,7 @@ test.describe('inversiones', () => {
     await expect(
       page.getByRole('group', { name: 'Qué va en el bajo' }).getByRole('button').first(),
     ).toHaveText(/^GFundamental/);
-    await page.getByRole('link', { name: 'Afinar en DADGAD →' }).click();
+    await page.getByRole('link', { name: 'Afinar en DADGAD' }).click();
     await expect(page).toHaveURL(/\/afinador\/dadgad$/);
     expect(errors).toEqual([]);
   });

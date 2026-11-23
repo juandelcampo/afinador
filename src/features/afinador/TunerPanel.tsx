@@ -3,6 +3,7 @@ import { pluckString, preloadGuitar } from '~/audio/instrument';
 import { noteToMidi, splitNote, noteLabel, type Notation } from '~/core/notes';
 import { isFarFromStandard, stringOffsets } from '~/core/tuning';
 import { useSettings } from '~/shared/settings';
+import { Icon } from '~/shared/ui/Icon';
 import { Button, Slab, SlabHead, Toggle } from '~/shared/ui/ui';
 import styles from './afinador.module.css';
 import { needlePosition, tuningStatus, useTuner } from '~/shared/useTuner';
@@ -104,7 +105,7 @@ export function TunerPanel({ notes, onPlayOpen }: TunerPanelProps) {
                   flash(event.currentTarget);
                 }}
               >
-                <span className={styles.pillNumber}>{tuner.tuned[index] ? '✓' : number}</span>
+                <span className={styles.pillNumber}>{tuner.tuned[index] ? <Icon name="check" /> : number}</span>
                 <span className={styles.pillNote}>
                   <NoteName note={note} notation={notation} />
                 </span>
