@@ -1,10 +1,9 @@
-// La vuelta suena: un rasguido por pulso, uno solo por acorde o un arpegio, programado con el reloj de audio.
+// La vuelta suena: un rasguido por pulso, uno solo por acorde o un arpegio. Cuenta en pulsos con el reloj
+// común (`transport`): si suena con un ritmo, el tempo es el del ritmo.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getAudio } from '~/audio/engine';
 import { pluckString } from '~/audio/instrument';
-
-const LOOKAHEAD = 0.12;
-const SCHEDULE_MS = 30;
+import { transport, type Voice } from '~/audio/transport';
 
 /** Lo que suena de un acorde: el MIDI de cada cuerda, o null si va apagada. */
 export type Voicing = Array<number | null>;
@@ -69,14 +68,14 @@ export function useVuelta({
     latest.current = { steps, a4, tempo, feel };
   });
   const timers = useRef<{
-    interval: ReturnType<typeof setInterval> | null;
+    voice: Voice | null;
     marks: ReturnType<typeof setTimeout>[];
-  }>({ interval: null, marks: [] });
+  }>({ voice: null, marks: [] });
 
   const stop = useCallback(() => {
-    if (timers.current.interval !== null) clearInterval(timers.current.interval);
+    if (timers.current.voice) transport.leave(timers.current.voice);
     timers.current.marks.forEach(clearTimeout);
-    timers.current = { interval: null, marks: [] };
+    timers.current = { voice: null, marks: [] };
     setRunning(false);
     setCurrent(null);
   }, []);
@@ -88,12 +87,13 @@ export function useVuelta({
     /** El acorde que suena y el pulso dentro de él. */
     let index = 0;
     let pulse = 0;
-    let nextTime = ctx.currentTime + 0.06;
+    /** El próximo pulso del reloj común que le toca a la vuelta. */
+    let nextBeat = 0;
 
-    const schedule = () => {
-      const { steps: list, a4: pitch, tempo: bpm, feel: mode } = latest.current;
+    const schedule: Voice = (until) => {
+      const { steps: list, a4: pitch, feel: mode } = latest.current;
       if (!list.length) return stop();
-      while (nextTime < ctx.currentTime + LOOKAHEAD) {
+      while (nextBeat < until) {
         // Si mientras sonaba sacaste acordes, la cuenta vuelve al principio.
         if (index >= list.length) {
           index = 0;
@@ -101,7 +101,8 @@ export function useVuelta({
         }
         const step = list[index]!;
         const first = pulse === 0;
-        const beat = 60 / bpm;
+        const nextTime = transport.timeOf(nextBeat);
+        const beat = transport.secondsPerBeat();
         if (mode === 'arpegio') arpeggiate(step.voicing, pitch, nextTime, beat, pulse);
         else if (first || mode === 'pulso') {
           strumVoicing(step.voicing, pitch, nextTime, first ? 0.9 : 0.5, first ? 0.03 : 0.018);
@@ -114,7 +115,7 @@ export function useVuelta({
             setTimeout(() => setCurrent(playing), delay),
           ];
         }
-        nextTime += beat;
+        nextBeat += 1;
         pulse += 1;
         if (pulse >= Math.max(1, step.beats)) {
           pulse = 0;
@@ -123,12 +124,19 @@ export function useVuelta({
       }
     };
 
-    timers.current.interval = setInterval(schedule, SCHEDULE_MS);
+    // Si ya suena un ritmo, la vuelta entra en su próximo pulso y sigue su tempo.
+    nextBeat = transport.join(schedule, latest.current.tempo);
+    timers.current.voice = schedule;
     setRunning(true);
-    schedule();
+    schedule(transport.horizon());
   }, [stop]);
 
   useEffect(() => stop, [stop]);
+
+  // Sola, la vuelta lleva su tempo. Cuando haya un ritmo sonando con ella, el que manda va a ser el ritmo.
+  useEffect(() => {
+    if (running) transport.setBpm(tempo);
+  }, [running, tempo]);
 
   /** Un acorde suelto, para escucharlo antes de sumarlo. */
   const strum = useCallback((voicing: Voicing) => {

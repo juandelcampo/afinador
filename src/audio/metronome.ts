@@ -1,13 +1,11 @@
 // Metrónomo y caja de ritmos, fuera de React: su reloj no depende de los renders. La interfaz se
 // suscribe a `getState()` y consulta `playhead()` en cada cuadro. Suena solo en su página: Ritmo lo
-// para al salir.
+// para al salir. Cuenta en pulsos con el reloj común (`transport`), y su tempo es el que manda.
 import { clampBpm, cycleFor, type Cycle, type DrumId, type Hit, type RhythmConfig } from '~/core/rhythm';
 import { getAudio, rhythmBus } from './engine';
 import { playKitDrum, setKit } from './kit';
-import { createTicker } from './ticker';
+import { transport } from './transport';
 
-const LOOKAHEAD_SECONDS = 0.16;
-const TICK_MS = 25;
 const VISUAL_HISTORY = 128;
 
 export interface MetronomeState {
@@ -35,14 +33,13 @@ function setState(patch: Partial<MetronomeState>) {
   listeners.forEach((listener) => listener());
 }
 
-const timer = createTicker(TICK_MS);
-
 let cycleIndex = 0;
 let cycle: Cycle = state.cycle;
 let order: Hit[] = [];
 let position = 0;
+/** El pulso del reloj común donde empieza el ciclo que se está programando. */
 let cycleStart = 0;
-/** Cuándo suena el primer golpe: antes no hay aguja que mover. */
+/** El pulso donde suena el primer golpe: antes no hay aguja que mover. */
 let firstStart = 0;
 let queued: Array<{ time: number; lane: number; cell: number; cycle: Cycle; index: number }> = [];
 
@@ -57,20 +54,23 @@ function loadCycle(index: number) {
   position = 0;
 }
 
-const secondsPerCycle = () => (cycle.beats * 60) / state.config.bpm;
+/** Cuánto va del ciclo que suena en un pulso del reloj, en ciclos. */
+const elapsedAt = (beat: number) => (beat - cycleStart) / cycle.beats;
+const nowBeat = () => transport.beatAt(getAudio().ctx.currentTime);
 
-function schedule() {
+function schedule(until: number) {
   const { ctx } = getAudio();
   const out = rhythmBus();
   for (;;) {
     if (position >= order.length) {
-      cycleStart += secondsPerCycle();
+      cycleStart += cycle.beats;
       loadCycle(cycleIndex + 1);
     }
     const hit = order[position];
     if (!hit) return;
-    const time = cycleStart + hit.at * secondsPerCycle();
-    if (time > ctx.currentTime + LOOKAHEAD_SECONDS) return;
+    const beat = cycleStart + hit.at * cycle.beats;
+    if (beat > until) return;
+    const time = transport.timeOf(beat);
     // Todo suena con la batería: el acento con la toma fuerte; en la polirritmia el acento ya va en el volumen.
     if (hit.voice) playKitDrum(ctx, out, hit.voice, time, hit.gain ?? 1, !!hit.strong);
     queued.push({ time, lane: hit.lane, cell: hit.cell, cycle, index: cycleIndex });
@@ -100,19 +100,19 @@ export const metronome = {
   lastOfMode: (mode: RhythmConfig['mode']) => lastByMode[mode],
 
   start() {
-    const { ctx } = getAudio();
+    transport.leave(schedule);
     loadCycle(0);
     queued = [];
-    cycleStart = ctx.currentTime + 0.08;
-    firstStart = cycleStart;
+    // Si ya sonaba otra cosa (la vuelta), el ritmo entra en el próximo pulso y le impone su tempo.
+    transport.setBpm(state.config.bpm);
+    cycleStart = firstStart = transport.join(schedule, state.config.bpm);
     setState({ running: true, cycle });
-    schedule();
-    timer.start(schedule);
+    schedule(transport.horizon());
   },
 
   stop() {
     if (!state.running) return;
-    timer.stop();
+    transport.leave(schedule);
     queued = [];
     setState({ running: false });
   },
@@ -129,22 +129,21 @@ export const metronome = {
     setKit(next.kit);
     lastByMode[next.mode] = next;
     if (state.running && withoutTempo(next) === withoutTempo(state.config)) {
-      // El tempo cambia sin cortar: se recalcula el resto del ciclo desde este instante.
-      const { ctx } = getAudio();
-      const elapsed = (ctx.currentTime - cycleStart) / secondsPerCycle();
+      // El tempo cambia sin cortar: el reloj común sigue desde el pulso donde va, para todo lo que suena.
       setState({ config: next });
-      cycleStart = ctx.currentTime - elapsed * secondsPerCycle();
+      transport.setBpm(next.bpm);
       return;
     }
     if (state.running && samePattern(next, state.config)) {
       // La caja de ritmos y los instrumentos y la batería de cualquier ritmo se editan mientras suena:
       // el patrón cambia sin perder el lugar.
-      const { ctx } = getAudio();
-      const elapsed = (ctx.currentTime + LOOKAHEAD_SECONDS - cycleStart) / secondsPerCycle();
-      const nextElapsed = (ctx.currentTime - cycleStart) / secondsPerCycle();
+      const now = nowBeat();
+      const elapsed = elapsedAt(transport.horizon());
+      const nextElapsed = elapsedAt(now);
       setState({ config: next });
-      cycleStart = ctx.currentTime - nextElapsed * secondsPerCycle();
       cycle = cycleFor(next, cycleIndex);
+      // Si el ciclo nuevo dura otra cantidad de pulsos, la aguja queda en la misma fracción del ciclo.
+      cycleStart = now - nextElapsed * cycle.beats;
       order = sortHits(cycle.hits);
       position = order.findIndex((hit) => hit.at > elapsed);
       if (position < 0) position = order.length;
@@ -161,10 +160,9 @@ export const metronome = {
    */
   progress(): number | null {
     if (!state.running) return null;
-    const now = getAudio().ctx.currentTime;
+    const now = nowBeat();
     if (now < firstStart) return 0;
-    const span = secondsPerCycle();
-    const elapsed = (now - cycleStart) / span;
+    const elapsed = elapsedAt(now);
     return elapsed < 0 ? elapsed + 1 : elapsed % 1;
   },
 
