@@ -2,7 +2,7 @@
 import { useEffect, useImperativeHandle, useRef, type PointerEvent, type Ref } from 'react';
 import { midiToNote, noteLabel, noteToMidi, type Notation } from '~/core/notes';
 import styles from './afinador.module.css';
-import { flash } from './TunerPanel';
+import { flash } from '~/shared/ui/flash';
 
 const STRINGS = 6;
 /** Marcas de posición, como en el diapasón de una guitarra: una en 3, 5, 7 y 9, dos en el 12. Van en los
@@ -128,7 +128,8 @@ export function Neck({ ref, notes, capo, frets, notation, onPluck, onToggleFret 
     excite(stringIndex, velocity) {
       // El nombre de la cuerda se enciende un instante: se ve qué cuerda suena.
       const label = container.current?.querySelector<HTMLElement>(`[data-label="${stringIndex}"]`);
-      if (label) flash(label);
+      // Destella el círculo, no la casilla: en el mástil todo lo que suena es redondo.
+      if (label) flash(label.querySelector('span') ?? label);
       const state = motion.current;
       state.amplitudes[stringIndex] = Math.max(state.amplitudes[stringIndex]!, velocity);
       if (!state.frame) state.frame = requestAnimationFrame(animate);
@@ -213,6 +214,8 @@ export function Neck({ ref, notes, capo, frets, notation, onPluck, onToggleFret 
                 data-fret={`${stringIndex}:${column}`}
                 data-position={column}
                 aria-pressed={fret === column}
+                // Lo que se elige es el punto, no la casilla.
+                data-flash="::before"
                 data-bass={(isBass && fret === column) || undefined}
                 aria-label={`Cuerda ${STRINGS - stringIndex}, traste ${capo + column}`}
                 onClick={() => onToggleFret(stringIndex, column)}

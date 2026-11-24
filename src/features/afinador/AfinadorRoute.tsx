@@ -215,6 +215,7 @@ function TuningList({
                           to={`/afinador/${tuning.id}`}
                           onClick={(event) => select(event, tuning.id)}
                           className={styles.tuningItem}
+                          data-select
                           data-id={inFavorites ? undefined : tuning.id}
                           data-favorite-id={inFavorites ? tuning.id : undefined}
                           aria-current={tuning.id === currentId ? 'page' : undefined}

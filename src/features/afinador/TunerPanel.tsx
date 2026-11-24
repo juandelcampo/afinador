@@ -3,6 +3,7 @@ import { pluckString, preloadGuitar } from '~/audio/instrument';
 import { noteToMidi, splitNote, noteLabel, type Notation } from '~/core/notes';
 import { isFarFromStandard, stringOffsets } from '~/core/tuning';
 import { useSettings } from '~/shared/settings';
+import { flash } from '~/shared/ui/flash';
 import { Icon } from '~/shared/ui/Icon';
 import { Button, Slab, SlabHead, Toggle } from '~/shared/ui/ui';
 import styles from './afinador.module.css';
@@ -15,17 +16,6 @@ function NoteName({ note, notation }: { note: string; notation: Notation }) {
       <sub>{splitNote(note).octave}</sub>
     </>
   );
-}
-
-/** Un destello naranja que se apaga solo: confirma que la cuerda sonó, sin volver a renderizar. */
-export function flash(element: HTMLElement) {
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const css = getComputedStyle(element);
-  const accent = css.getPropertyValue('--accent');
-  element.animate([{ offset: 0, backgroundColor: accent, color: css.getPropertyValue('--on-accent') }], {
-    duration: 520,
-    easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
-  });
 }
 
 interface TunerPanelProps {
@@ -98,6 +88,8 @@ export function TunerPanel({ notes, onPlayOpen }: TunerPanelProps) {
                 className={styles.pill}
                 data-tuned={tuner.tuned[index]}
                 aria-pressed={index === selected}
+                // Destella en cada toque, también si ya estaba elegida: la nota vuelve a sonar.
+                data-flash="propio"
                 aria-label={`Cuerda ${number}, ${noteLabel(note, notation)} ${splitNote(note).octave}${tuner.tuned[index] ? ', afinada' : ''}. Tocar nota de referencia.`}
                 onClick={(event) => {
                   tuner.selectString(index);
@@ -105,7 +97,9 @@ export function TunerPanel({ notes, onPlayOpen }: TunerPanelProps) {
                   flash(event.currentTarget);
                 }}
               >
-                <span className={styles.pillNumber}>{tuner.tuned[index] ? <Icon name="check" /> : number}</span>
+                <span className={styles.pillNumber}>
+                  {tuner.tuned[index] ? <Icon name="check" /> : number}
+                </span>
                 <span className={styles.pillNote}>
                   <NoteName note={note} notation={notation} />
                 </span>

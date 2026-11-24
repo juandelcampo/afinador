@@ -16,6 +16,7 @@ import {
   type Step,
 } from '~/core/rhythm';
 import { DRUM_PRESETS } from '~/data/drums';
+import { flash } from '~/shared/ui/flash';
 import { Button, Field, Segmented, Stepper } from '~/shared/ui/ui';
 import ui from '~/shared/ui/ui.module.css';
 import styles from './drums.module.css';
@@ -147,13 +148,19 @@ export function DrumMachine({ config, onChange }: DrumMachineProps) {
     const value: Step = event.button === 2 ? 0 : nextStep(current, event.pointerType !== 'mouse');
     if (value === current) return;
     remember();
+    // Las casillas se prenden al apoyar, antes del clic: destellan acá, cada una al pintarla.
+    if (value > 0) flash(event.currentTarget);
     setStep(lane, step, value);
     hear(lane, value);
+    let last: Element = event.currentTarget;
     const pointer = event.pointerId;
     const move = (e: globalThis.PointerEvent) => {
       if (e.pointerId !== pointer) return;
       const cell = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('[data-lane]');
-      if (cell && Number(cell.dataset.lane) === lane) setStep(lane, Number(cell.dataset.step), value);
+      if (!cell || Number(cell.dataset.lane) !== lane) return;
+      if (value > 0 && cell !== last && cell.getAttribute('data-level') !== String(value)) flash(cell);
+      last = cell;
+      setStep(lane, Number(cell.dataset.step), value);
     };
     const stop = (e: globalThis.PointerEvent) => {
       if (e.pointerId !== pointer) return;
@@ -374,6 +381,7 @@ export function DrumMachine({ config, onChange }: DrumMachineProps) {
                       data-beat={step % 4 === 0}
                       data-level={value}
                       aria-pressed={value > 0}
+                      data-flash="propio"
                       data-lane={lane}
                       aria-label={`${name}, paso ${step + 1}`}
                       title={STEP_NAMES[value]}

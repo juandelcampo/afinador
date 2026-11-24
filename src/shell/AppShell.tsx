@@ -5,6 +5,7 @@ import { toolOf, useRememberPlace, useToolHref } from '~/shared/memoria';
 import { useSettings, type ToolKey } from '~/shared/settings';
 import { Fader } from '~/shared/Fader';
 import { useTheme } from '~/shared/theme';
+import { flashOnSelect } from '~/shared/ui/flash';
 import { Icon } from '~/shared/ui/Icon';
 import { Stepper, Toggle } from '~/shared/ui/ui';
 import styles from './shell.module.css';
@@ -35,6 +36,7 @@ function ToolLink({
     <Link
       to={useToolHref(tool)}
       className={styles.tool}
+      data-select
       onClick={onClick}
       aria-current={current ? 'page' : undefined}
     >
@@ -59,6 +61,9 @@ export default function AppShell() {
   useEffect(() => {
     document.documentElement.dataset.ready = 'true';
   }, []);
+
+  // Todo lo que se elige, en cualquier herramienta, pasa un instante por naranja.
+  useEffect(flashOnSelect, []);
 
   // Los ajustes abiertos se cierran al ir a otra herramienta, al tocar fuera de la barra o con Escape.
   useEffect(() => {
@@ -89,6 +94,7 @@ export default function AppShell() {
             to="/"
             className={styles.home}
             aria-label="Inicio"
+            data-select
             aria-current={pathname === '/' ? 'page' : undefined}
           />
           {TOOLS.map((tool) => (

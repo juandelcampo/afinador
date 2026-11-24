@@ -51,6 +51,7 @@ export function Toggle<T extends string>({
     <button
       type="button"
       className={styles.toggle}
+      data-select
       aria-label={`${label}: ${options[index]!.label}`}
       title={`Cambiar a ${next.label}`}
       onClick={() => onChange(next.value)}
