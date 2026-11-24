@@ -640,6 +640,18 @@ button:disabled {
   font: 400 12px/1.5 var(--mono);
   overflow-wrap: anywhere;
 }
+/* La lista de un Picker vive adentro de lo que la contiene (una tarjeta de la vuelta, por ejemplo), y las reglas
+   de ese lugar no la tocan: siempre la letra del listado, cortando renglón, sin scroll de costado. */
+.pickerPanel .listItem strong {
+  font: 700 15px/1.3 var(--ui);
+  letter-spacing: 0;
+  white-space: normal;
+}
+.pickerPanel .listItem small {
+  font: 400 12px/1.5 var(--mono);
+  letter-spacing: 0;
+  white-space: normal;
+}
 /* En grilla (las tónicas), cada casilla centrada y con su raya a la derecha. */
 .listOptions[data-columns] .listItem {
   border-right: 2px solid var(--ink);
