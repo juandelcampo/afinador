@@ -18,8 +18,6 @@ export interface PickerGroup {
   options: PickerOption[];
 }
 
-/** Lo que mide la lista como mínimo, aunque el campo sea más angosto. */
-const MIN_WIDTH = 280;
 const MARGIN = 8;
 
 export function Picker({
@@ -63,19 +61,18 @@ export function Picker({
   /** Los grupos abiertos: al abrir la lista, solo el que tiene lo elegido. */
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
-  /** La lista va pegada abajo del campo, o arriba si abajo no hay lugar; nunca se sale de la pantalla. */
+  /** La lista va pegada abajo del campo, o arriba si abajo no hay lugar, y mide lo mismo que el campo: no se
+   *  escapa por los costados. */
   const place = () => {
     const button = trigger.current;
     const list = panel.current;
     if (!button || !list) return;
     const rect = button.getBoundingClientRect();
-    const width = Math.min(Math.max(rect.width, MIN_WIDTH), window.innerWidth - MARGIN * 2);
-    const left = Math.min(Math.max(MARGIN, rect.left), window.innerWidth - MARGIN - width);
     const below = window.innerHeight - rect.bottom - MARGIN;
     const above = rect.top - MARGIN;
     const up = below < 260 && above > below;
-    list.style.width = `${width}px`;
-    list.style.left = `${left}px`;
+    list.style.width = `${rect.width}px`;
+    list.style.left = `${rect.left}px`;
     // Los bordes se pisan: la lista sale del campo, no flota separada.
     list.style.top = up ? 'auto' : `${rect.bottom - 3}px`;
     list.style.bottom = up ? `${window.innerHeight - rect.top - 3}px` : 'auto';
