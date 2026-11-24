@@ -1,9 +1,8 @@
-// Lo de Rooksby: vueltas en grados, transformaciones, cambios de dos acordes, cantar encima y bajo que baja.
+// Lo de Rooksby: vueltas en grados, transformaciones, cambios de dos acordes, y cantar encima.
 import { describe, expect, it } from 'vitest';
 import {
   CHORD_STEPS,
   chordName,
-  chordToken,
   findScale,
   variantsOf,
   type Chord,
@@ -14,9 +13,7 @@ import {
   relativeOf,
   romanChord,
   singOver,
-  stretch,
   twoChordMoves,
-  walkingBass,
 } from '~/core/progressions';
 import { fingeringFor } from '~/core/tuning';
 import { STANDARD } from '~/data/tunings';
@@ -104,13 +101,7 @@ describe('vueltas en grados', () => {
   });
 });
 
-describe('transformar la vuelta', () => {
-  const pop = ['I', 'VI', 'IV', 'V'].map((token) => romanChord(token, 0, 'mayor'));
-
-  it('estirar repite el primer cambio', () => {
-    expect(names(stretch(pop))).toEqual(['C', 'Am', 'C', 'Am', 'F', 'G']);
-  });
-
+describe('el relativo y la polaridad', () => {
   it('el relativo y la polaridad', () => {
     expect(relativeOf(chord(0))).toEqual(chord(9, 'm'));
     expect(relativeOf(chord(9, 'm'))).toEqual(chord(0));
@@ -119,26 +110,6 @@ describe('transformar la vuelta', () => {
     expect(relativeOf(chord(11, 'dim'))).toBeNull();
   });
 
-  it('el bajo que baja: C G Am queda C G/B Am', () => {
-    const result = walkingBass([chord(0), chord(7), chord(9, 'm')]);
-    expect(result.map(chordToken)).toEqual(['C', 'G/B', 'Am']);
-  });
-
-  it('el bajo que baja: en C Em Am F casi todos los pasos son de a uno o dos', () => {
-    const result = walkingBass([chord(0), chord(4, 'm'), chord(9, 'm'), chord(5)]);
-    const basses = result.map((item) => item.bass ?? item.root);
-    // Al menos dos de los tres pasos bajan uno o dos semitonos.
-    const steps = basses.slice(1).map((bass, index) => (basses[index]! - bass + 12) % 12);
-    expect(steps.filter((step) => step === 1 || step === 2).length).toBeGreaterThanOrEqual(2);
-  });
-
-  it('el bajo que baja no toca los acordes, solo el bajo', () => {
-    const vuelta = [chord(0), chord(9, 'm'), chord(5), chord(7, '7')];
-    walkingBass(vuelta).forEach((item, index) => {
-      expect(item.root).toBe(vuelta[index]!.root);
-      expect(item.suffix).toBe(vuelta[index]!.suffix);
-    });
-  });
 });
 
 describe('de dos en dos', () => {

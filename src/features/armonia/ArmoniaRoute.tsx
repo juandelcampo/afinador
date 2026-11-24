@@ -54,9 +54,7 @@ import {
   relativeOf,
   romanChord,
   singOver,
-  stretch,
   twoChordMoves,
-  walkingBass,
 } from '~/core/progressions';
 import { fingeringsFor, MUTED, openChord, type Fingering } from '~/core/tuning';
 import { TUNINGS, type Tuning } from '~/data/tunings';
@@ -230,9 +228,6 @@ function Pulses({ beats }: { beats: number }) {
 
 /** El grado como lo escribe Rooksby, con el bemol de verdad: "♭VII", "II M", "IIm7♭5". */
 const romanLabel = (token: string) => token.replace(/^b/, '♭').replace(/maj$/, ' M').replace(/b(\d)/g, '♭$1');
-
-const sameChords = (a: readonly Placed[], b: readonly Placed[]) =>
-  a.length === b.length && a.every((chord, index) => placedToken(chord) === placedToken(b[index]!));
 
 /** Lo que se apoya, lo que tensa y lo que choca al cantar sobre un acorde. */
 function SingOverList({ chord, keyOf, spell }: { chord: Chord; keyOf: Key; spell: (pc: number) => string }) {
@@ -676,23 +671,6 @@ export default function ArmoniaRoute() {
       ...(vueltaMode === mode ? {} : { escala: vueltaMode === 'mayor' ? 'mayor' : 'natural' }),
     });
   };
-  const transforms = [
-    {
-      id: 'estirar',
-      label: 'Estirar',
-      why: 'Repite el primer cambio antes de seguir: la vuelta respira.',
-      apply: (chords: readonly Placed[]) => stretch(chords).slice(0, MAX_CHORDS),
-    },
-    {
-      id: 'bajo',
-      label: 'Bajo que baja',
-      why: 'Inversiones para que el bajo baje de a paso.',
-      // Cambia los bajos, no lo que dura cada acorde.
-      apply: (chords: readonly Placed[]) =>
-        walkingBass(chords).map((chord, index) => ({ ...chord, beats: chords[index]!.beats })),
-    },
-  ];
-
   const circleProps = {
     keyOf: key,
     vuelta,
@@ -1298,20 +1276,6 @@ export default function ArmoniaRoute() {
                     </div>
                   </details>
 
-                  <p className={styles.label}>Transformar</p>
-                  <div className={styles.pills} role="group" aria-label="Transformar la vuelta">
-                    {transforms.map((transform) => (
-                      <button
-                        key={transform.id}
-                        type="button"
-                        title={transform.why}
-                        disabled={sameChords(transform.apply(vuelta), vuelta)}
-                        onClick={() => setVuelta((current) => transform.apply(current))}
-                      >
-                        {transform.label}
-                      </button>
-                    ))}
-                  </div>
                   <div className={styles.pills}>
                     <button type="button" aria-haspopup="dialog" onClick={() => setSheet('cerrar')}>
                       Cerrar con…

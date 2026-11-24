@@ -1,6 +1,6 @@
 // Lo que sale de Rikky Rooksby, "How to Write Songs on Guitar": las vueltas en grados (cap. 3), cómo
 // transformarlas (cap. 4), qué da cada cambio de dos acordes (cap. 3), qué notas se apoyan sobre un acorde
-// al cantar (cap. 7) y el bajo que baja de a paso con inversiones (cap. 9).
+// al cantar (cap. 7).
 import type { VueltaMode } from '~/data/vueltas';
 import { CHORD_STEPS, chordClasses, chordColor, type Chord, type Key, type Suffix } from './harmony';
 
@@ -37,10 +37,6 @@ export function romanChord(token: string, tonic: number, mode: VueltaMode): Chor
 
 // ---------------------------------------------------------------- transformar la vuelta
 
-/** Estirar: repetir el primer cambio antes de seguir (I VI I VI IV V). */
-export const stretch = (chords: readonly Chord[]): Chord[] =>
-  chords.length < 3 ? [...chords] : [chords[0]!, chords[1]!, ...chords];
-
 /** El relativo: un mayor cambia por el menor tres semitonos abajo, y al revés. */
 export function relativeOf(chord: Chord): Chord | null {
   const color = chordColor(chord.suffix);
@@ -55,51 +51,6 @@ export function polarityOf(chord: Chord): Chord | null {
   if (color === 'major') return { root: chord.root, suffix: 'm' };
   if (color === 'minor') return { root: chord.root, suffix: '' };
   return null;
-}
-
-/**
- * El bajo que baja: para cada acorde elige raíz, tercera o quinta en el bajo de modo que la línea se
- * mueva lo menos posible, mejor para abajo y de a un paso (C G/B Am).
- */
-export function walkingBass(chords: readonly Chord[]): Chord[] {
-  if (chords.length < 2) return chords.map((chord) => ({ root: chord.root, suffix: chord.suffix }));
-  const options = chords.map((chord) => {
-    const steps = CHORD_STEPS[chord.suffix]!;
-    const roles: Array<[number, number]> = [[chord.root, 0]];
-    const third = [4, 3].find((step) => steps.includes(step));
-    if (third !== undefined) roles.push([mod12(chord.root + third), 0.6]);
-    if (steps.includes(7)) roles.push([mod12(chord.root + 7), 2]);
-    return roles;
-  });
-  const move = (from: number, to: number) => {
-    const down = mod12(from - to);
-    if (down === 1 || down === 2) return 0;
-    if (down === 0) return 2.5;
-    const up = 12 - down;
-    if (up === 1 || up === 2) return 1.5;
-    return 2 + Math.min(down, up) * 0.2;
-  };
-  // Programación dinámica: para cada opción de cada acorde, el mejor camino que llega hasta ella.
-  let paths = options[0]!.map(([, penalty], option) => ({ cost: penalty * 2, path: [option] }));
-  for (let index = 1; index < options.length; index++) {
-    const previous = paths;
-    paths = options[index]!.map(([bass, penalty], option) => {
-      const best = previous
-        .map((item, prevOption) => ({
-          cost: item.cost + move(options[index - 1]![prevOption]![0], bass) + penalty,
-          path: item.path,
-        }))
-        .reduce((a, b) => (b.cost < a.cost ? b : a));
-      return { cost: best.cost, path: [...best.path, option] };
-    });
-  }
-  const { path } = paths.reduce((a, b) => (b.cost < a.cost ? b : a));
-  return chords.map((chord, index) => {
-    const bass = options[index]![path[index]!]![0];
-    return bass === chord.root
-      ? { root: chord.root, suffix: chord.suffix }
-      : { root: chord.root, suffix: chord.suffix, bass };
-  });
 }
 
 // ---------------------------------------------------------------- de dos en dos

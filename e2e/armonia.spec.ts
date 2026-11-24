@@ -101,7 +101,7 @@ test.describe('armonía', () => {
     await expect(page.getByTestId('same-pole')).toContainText('B o Db');
   });
 
-  test('una vuelta para arrancar se escucha, se usa y se transforma', async ({ page }) => {
+  test('una vuelta para arrancar se escucha, se usa y se reordena', async ({ page }) => {
     const errors = watchErrors(page);
     await goto(page, '/armonia?escala=mayor&tono=0');
     await openVuelta(page);
@@ -115,18 +115,16 @@ test.describe('armonía', () => {
     await starter.getByRole('button', { name: /^Usar/ }).click();
     await expect(page).toHaveURL(/v=C_Am_F_G/);
     await expect(page.getByTestId('starters')).toBeHidden();
-    const transforms = page.getByRole('group', { name: 'Transformar la vuelta' });
     // El C se lleva al final con la manija y las flechas del teclado.
     const grip = page.getByTestId('vuelta').getByRole('button', { name: 'Mover C' });
     for (const url of [/v=Am_C_F_G/, /v=Am_F_C_G/, /v=Am_F_G_C/]) {
       await grip.press('ArrowRight');
       await expect(page).toHaveURL(url);
     }
-    await transforms.getByRole('button', { name: /^Bajo que baja/ }).click();
-    await expect(page.getByTestId('vuelta')).toContainText('F/A');
 
     // El editor cambia un acorde por otro de su misma función (acá, su relativo) y dice qué notas se apoyan al cantar.
     const vuelta = page.getByTestId('vuelta');
+    await expect(vuelta.getByRole('listitem').last()).toContainText('C');
     await vuelta.getByRole('listitem').last().getByRole('button').first().click();
     const editor = page.getByTestId('chord-editor');
     await editor.getByRole('button', { name: 'Cantar', exact: true }).click();
