@@ -389,10 +389,10 @@
   background: var(--ink);
   color: var(--paper);
 }
-.chips small {
+.chipMain small {
   font: 700 12px/1.3 var(--mono);
 }
-.chips strong {
+.chipMain strong {
   /* Como en las tarjetas de los grados: entero, y más chico si es largo. Al costado van la ✕ y la manija. */
   font: 900 semi-expanded min(18px, calc((100cqi - 52px) / (var(--chars, 4) * 0.72)))/1.1 var(--heavy);
   white-space: nowrap;
@@ -942,7 +942,7 @@
   min-height: 150px;
   padding: 8px 36px 10px 10px;
 }
-.chips[data-wide] strong {
+.chips[data-wide] .chipMain strong {
   font-size: min(30px, calc((100cqi - 56px) / (var(--chars, 4) * 0.72)));
 }
 

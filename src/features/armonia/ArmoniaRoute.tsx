@@ -1261,11 +1261,9 @@ export default function ArmoniaRoute() {
                   </div>
                   <details className={styles.more}>
                     <summary>Cuánto dura cada acorde</summary>
-                    <p className={ui.hint}>
-                      Tocá un acorde de la vuelta para darle su propia duración. Acá los ponés todos iguales.
-                    </p>
                     <div className={ui.field}>
-                      <span>Todos a (pulsos)</span>
+                      {/* Una sola línea: qué hace esto y cómo darle a uno su propia duración. */}
+                      <span>Todos a (pulsos) · o tocá un acorde de la vuelta para darle la suya</span>
                       <Segmented
                         label="Pulsos de todos los acordes"
                         stretch
