@@ -309,16 +309,20 @@ export function PageTitle({
   eyebrow,
   title,
   mark,
+  toolName,
   children,
 }: {
   eyebrow?: string;
   title: string;
+  /** El título es el nombre de la herramienta: en el celular ya lo dice el botón Menú de la barra, así
+   *  que ahí queda solo para el lector de pantalla. */
+  toolName?: boolean;
   /** Una marca chica que va en la línea de arriba del título, junto al eyebrow. */
   mark?: ReactNode;
   children?: ReactNode;
 }) {
   return (
-    <header className={styles.pageTitle}>
+    <header className={styles.pageTitle} data-tool-name={toolName || undefined}>
       {(eyebrow || mark) && (
         <p className={styles.eyebrow}>
           {eyebrow}

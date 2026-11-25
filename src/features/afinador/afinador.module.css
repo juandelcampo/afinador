@@ -441,7 +441,9 @@
   text-decoration-thickness: 2px;
 }
 .pillNote {
-  font: 900 clamp(16px, 6.5cqi, 40px)/1.1 var(--heavy);
+  /* Cada cuerda mide un sexto de la columna: las notas se achican según cuántas letras tiene la más
+     larga de la afinación (--len, en .pills), para que "Sol#" entre igual que "E". */
+  font: 900 clamp(11px, min(6.5cqi, calc(13cqi / (0.6 * var(--len, 1) + 0.2))), 40px)/1.1 var(--heavy);
   letter-spacing: -0.03em;
   white-space: nowrap;
 }
@@ -1585,7 +1587,7 @@
     padding-block: 8px 6px;
   }
   .pillNote {
-    font-size: clamp(22px, 8cqi, 40px);
+    font-size: clamp(11px, min(8cqi, calc(13cqi / (0.6 * var(--len, 1) + 0.2))), 40px);
   }
   .meter {
     display: flex;

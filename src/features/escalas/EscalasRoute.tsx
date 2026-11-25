@@ -208,7 +208,7 @@ export default function EscalasRoute() {
   return (
     <div className={`${styles.page} ${ui.frame}`}>
       <Slab>
-        <PageTitle eyebrow="Todas las notas en el mástil" title="Escalas">
+        <PageTitle eyebrow="Todas las notas en el mástil" title="Escalas" toolName>
           <p>Elegí una escala y mirá dónde cae cada nota en tu afinación. Prendé el drone y tocá encima.</p>
         </PageTitle>
         <div className={ui.setup}>

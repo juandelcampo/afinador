@@ -293,6 +293,22 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+/* En el celular y la tableta los títulos van sin copete ni descripción, y el nombre de la herramienta
+   no se repite: ya lo dice el botón Menú de la barra (mismo corte que la barra, 960 px). */
+@media (max-width: 959px) {
+  .pageTitle .eyebrow,
+  .pageTitle > :not(h1, .eyebrow, [data-keep]) {
+    display: none;
+  }
+  .pageTitle[data-tool-name] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
 
 /* Con flex, la última fila se estira y no deja casilleros vacíos. Las rayas de adentro son el fondo que
    asoma entre los botones: así el recuadro queda entero aunque las filas se partan distinto. */
@@ -687,6 +703,13 @@ button:disabled {
   color: var(--muted);
   font-size: 12px;
   line-height: 1.5;
+}
+/* En el celular las explicaciones fijas no van: primero suena, y la pantalla es chica. Quedan las que
+   dicen algo de lo que elegiste o de lo que suena (data-keep). */
+@media (max-width: 959px) {
+  .hint:not([data-keep]) {
+    display: none;
+  }
 }
 /* La fila de escuchar: el botón grande, lo demás y el volumen. */
 .actions {

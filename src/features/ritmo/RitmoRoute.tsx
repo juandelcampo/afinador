@@ -457,7 +457,7 @@ function Rotation({
           </li>
         ))}
       </ol>
-      <p className={ui.hint} aria-live="polite">
+      <p className={ui.hint} data-keep aria-live="polite">
         {position === null || bar === null || next === null
           ? `Tocá y la figura va cambiando: cada compás suena ${barsEach === 1 ? 'una vez' : `${barsEach} veces`} y pasa al siguiente.`
           : `Compás ${bar} de ${barsEach} · después, ${meterLabel(next)}`}
@@ -542,7 +542,7 @@ export default function RitmoRoute() {
         {/* Tus ritmos van arriba a la derecha, en el lugar que deja el título: no agregan una fila. */}
         <div className={styles.head}>
           <PageTitle eyebrow="Ritmo" title={name}>
-            <p data-testid="rhythm-rule" className={styles.rule}>
+            <p data-testid="rhythm-rule" data-keep className={styles.rule}>
               {rule}
             </p>
           </PageTitle>

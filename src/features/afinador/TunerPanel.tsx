@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, type CSSProperties } from 'react';
 import { pluckString, preloadGuitar } from '~/audio/instrument';
 import { noteToMidi, splitNote, noteLabel, type Notation } from '~/core/notes';
 import { isFarFromStandard, stringOffsets } from '~/core/tuning';
@@ -78,7 +78,11 @@ export function TunerPanel({ notes, onPlayOpen }: TunerPanelProps) {
         </SlabHead>
       </div>
 
-      <div className={styles.pills}>
+      {/* Las seis notas van del mismo tamaño: el de la más larga ("Sol#"), para que entre en su cuadro. */}
+      <div
+        className={styles.pills}
+        style={{ '--len': Math.max(...notes.map((note) => noteLabel(note, notation).length)) } as CSSProperties}
+      >
         {notes.map((note, index) => {
           const offset = offsets[index]!;
           const number = notes.length - index;

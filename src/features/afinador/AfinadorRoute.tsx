@@ -551,7 +551,7 @@ function TuningPage({
   // La misma aclaración en Acordes y en Figuras; la de Acordes es la que miran las pruebas.
   const capoNote = (testId?: string) =>
     listener.capo > 0 && (
-      <p className={ui.hint} data-testid={testId}>
+      <p className={ui.hint} data-keep data-testid={testId}>
         Con capo en el traste {listener.capo}: los trastes se cuentan desde el capo y el nombre es el del
         acorde que suena.
       </p>

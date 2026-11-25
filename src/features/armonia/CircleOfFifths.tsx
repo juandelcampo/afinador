@@ -204,7 +204,7 @@ export function CircleNotes({
         </div>
       )}
       {moves.total > 0 && (
-        <p className={ui.hint} data-testid="circulo-vuelta">
+        <p className={ui.hint} data-keep data-testid="circulo-vuelta">
           En tu vuelta, {moves.fifths} de {moves.total} cambios caen o suben una quinta
           {moves.fifths === 0
             ? ': salta de un lado a otro de la rueda.'

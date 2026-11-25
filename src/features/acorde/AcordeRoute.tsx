@@ -182,7 +182,7 @@ export default function AcordeRoute() {
   return (
     <div className={`${styles.page} ${ui.frame}`}>
       <Slab>
-        <PageTitle eyebrow="Ponele nombre a lo que tocás" title="¿Qué acorde?">
+        <PageTitle eyebrow="Ponele nombre a lo que tocás" title="¿Qué acorde?" toolName>
           {/* Cómo se usa va acá arriba: se lee al entrar, sin bajar hasta el pie. */}
           <p>
             Poné los dedos donde te suena lindo y te dice cómo se llama. El nombre de cada cuerda la apaga

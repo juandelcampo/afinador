@@ -170,12 +170,12 @@ function ShapeGrid({
           <ShapeTable names={names} frets={fingering.frets} />
         </div>
       ) : (
-        <p className={ui.hint}>La mano no llega a este acorde en esta afinación: suena cerrado.</p>
+        <p className={ui.hint} data-keep>La mano no llega a este acorde en esta afinación: suena cerrado.</p>
       )}
       <div className={styles.shapeSide}>
         {children}
         {fingering && (
-          <p className={ui.hint}>
+          <p className={ui.hint} data-keep>
             Traste de cada cuerda, de grave a aguda: 0 al aire, × no suena.
             {barre && ` Cejilla en el ${barre}.`}
             {fingering.noFifth && ' Sin la quinta.'}
@@ -778,7 +778,7 @@ export default function ArmoniaRoute() {
         {/* Al medio, el mundo y sus acordes: lo principal. */}
         <div className={styles.center}>
           <Slab>
-            <PageTitle eyebrow="Acordes por emoción" title="Armonía">
+            <PageTitle eyebrow="Acordes por emoción" title="Armonía" toolName>
               <p>Elegí un mundo, escuchá qué dice cada acorde y armá tu vuelta.</p>
             </PageTitle>
             <div className={ui.setup}>
@@ -1057,7 +1057,7 @@ export default function ArmoniaRoute() {
                   ))}
                 </div>
                 {pole && (
-                  <p className={ui.hint} data-testid="same-pole">
+                  <p className={ui.hint} data-keep data-testid="same-pole">
                     Tu último acorde está en el polo {pole.pole}. Por el mismo polo pasás a otro grupo:{' '}
                     {pole.roots.map((root) => plainName(root, notation)).join(' o ')}.
                   </p>
@@ -1523,7 +1523,7 @@ export default function ArmoniaRoute() {
               />
             )}
             {neighbors.length > 0 && (
-              <p className={ui.hint} data-testid="common-tones">
+              <p className={ui.hint} data-keep data-testid="common-tones">
                 {neighbors
                   .map((index) => {
                     const common = commonTones(activeChord, vuelta[index]!);

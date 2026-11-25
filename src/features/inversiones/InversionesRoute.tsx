@@ -246,7 +246,7 @@ export default function InversionesRoute() {
   return (
     <div className={`${styles.page} ${ui.frame}`}>
       <Slab>
-        <PageTitle eyebrow="Todas las formas de un acorde" title="Inversiones">
+        <PageTitle eyebrow="Todas las formas de un acorde" title="Inversiones" toolName>
           <p>
             El mismo acorde cambia de peso según qué nota va en el bajo (en naranja). Recorré sus formas o
             tocá el mástil para armar la tuya.

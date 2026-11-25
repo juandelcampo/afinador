@@ -9,6 +9,7 @@ Una herramienta nueva tiene que cumplir el criterio del proyecto (ver CLAUDE.md)
 - **Se usa sola.** No depende de lo que hiciste en otra herramienta. Lo que pasa de una a otra viaja por la URL.
 - **Sirve en treinta segundos.** Al entrar ya hay algo para tocar y escuchar, sin configurar nada.
 - **Primero suena, después se explica.** La explicación va debajo de lo que suena, chica y en gris.
+- **En el celular no hay textos de explicación.** Debajo de 960 px el `PageTitle` pierde el copete y la descripción (y el título entero si lleva `toolName`, porque el botón Menú ya dice la herramienta), y los `ui.hint` no se ven. Un `ui.hint` que dice algo de lo que elegiste o de lo que suena (notas en común, el capo, el compás que viene) lleva `data-keep` y queda.
 - **Para gente con oído y poca teoría.** Nada de pentagramas. Los nombres técnicos van acompañados de lo que se siente ("TRISTE", "en su casa").
 - **Una por vez.** Se suma una herramienta nueva recién cuando la anterior está pulida.
 
