@@ -62,7 +62,7 @@ import { VUELTA_GROUPS, VUELTAS, type VueltaMode } from '~/data/vueltas';
 import { Fader } from '~/shared/Fader';
 import { TEMPO_RANGE, useSettings } from '~/shared/settings';
 import { useHydrated } from '~/shared/useHydrated';
-import { Icon } from '~/shared/ui/Icon';
+import { Icon, PlayIcon } from '~/shared/ui/Icon';
 import { Picker } from '~/shared/ui/Picker';
 import { Sheet } from '~/shared/ui/Sheet';
 import { TuneLink, TuningField } from '~/shared/TuningField';
@@ -1219,6 +1219,7 @@ export default function ArmoniaRoute() {
                     .join(', ')}
                   . Dejalas sonar.
                 </p>
+                      ariaLabel={player.running ? 'Parar la vuelta' : 'Tocar la vuelta'}
               )}
 
               {vuelta.length > 0 && (
@@ -1230,7 +1231,7 @@ export default function ArmoniaRoute() {
                       on={player.running}
                       onClick={() => (player.running ? player.stop() : player.start())}
                     >
-                      {player.running ? '■ Parar' : '▶ Tocar la vuelta'}
+                      <PlayIcon running={player.running} />
                     </Button>
                     <label className={ui.field}>
                       <span>Velocidad: {tempo} ppm</span>
@@ -1633,7 +1634,7 @@ export default function ArmoniaRoute() {
             ariaLabel={player.running ? 'Parar la vuelta' : 'Tocar la vuelta'}
             onClick={() => (player.running ? player.stop() : player.start())}
           >
-            {player.running ? '■' : '▶'}
+            <Icon name={player.running ? 'stop' : 'play'} data-filled="true" />
           </Button>
         </div>
       )}

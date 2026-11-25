@@ -839,3 +839,7 @@ button:disabled {
 .icon[data-filled='true'] {
   fill: currentColor;
 }
+/* El Play y el Parar de los botones grandes de tocar. */
+.icon[data-big='true'] {
+  --icon-size: 30px;
+}

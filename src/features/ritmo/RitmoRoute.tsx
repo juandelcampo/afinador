@@ -29,7 +29,7 @@ import {
 import { DRUM_PRESETS } from '~/data/drums';
 import { Guardados } from '~/shared/Guardados';
 import { useSettings } from '~/shared/settings';
-import { Icon } from '~/shared/ui/Icon';
+import { Icon, PlayIcon } from '~/shared/ui/Icon';
 import { Button, Field, PageTitle, Segmented, Slab, Stepper, Tabs, Toggle } from '~/shared/ui/ui';
 import ui from '~/shared/ui/ui.module.css';
 import { DrumMachine } from './DrumMachine';
@@ -565,10 +565,7 @@ export default function RitmoRoute() {
             onClick={() => (running ? metronome.stop() : metronome.start())}
             id="metro-toggle"
           >
-            {/* Solo el signo, grande: el botón se entiende sin leer. */}
-            <svg className={styles.playIcon} viewBox="0 0 24 24" aria-hidden="true">
-              {running ? <rect x="5" y="5" width="14" height="14" /> : <path d="M7 4 L20 12 L7 20 Z" />}
-            </svg>
+            <PlayIcon running={running} />
           </Button>
           <div className={styles.tempo}>
             <div className={styles.tempoHead}>

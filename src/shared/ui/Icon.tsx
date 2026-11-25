@@ -21,6 +21,8 @@ const PATHS = {
   settings: 'M2 5h14M2 13h14M6 2v6M12 10v6',
   sun: 'M9 6.5a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5M9 -0.5v4M9 14.5v4M-0.5 9h4M14.5 9h4M2.3 2.3l2.8 2.8M12.9 12.9l2.8 2.8M2.3 15.7l2.8-2.8M12.9 5.1l2.8-2.8',
   moon: 'M15.75 10.1A6.75 6.75 0 1 1 7.9 2.25a5.25 5.25 0 0 0 7.85 7.85z',
+  play: 'M5 2.5l11 6.5-11 6.5z',
+  stop: 'M3.5 3.5h11v11h-11z',
   star: 'M9 2.3l1.94 4.83 5.19.35-3.99 3.34 1.27 5.05L9 13.1l-4.41 2.77 1.27-5.05-3.99-3.34 5.19-.35z',
 } as const;
 
@@ -46,4 +48,9 @@ export function Icon({
       <path d={PATHS[name]} />
     </svg>
   );
+}
+
+/** Tocar o parar, solo el signo y grande: el botón se entiende sin leer (el nombre va en ariaLabel). */
+export function PlayIcon({ running }: { running: boolean }) {
+  return <Icon name={running ? 'stop' : 'play'} data-filled="true" data-big="true" />;
 }

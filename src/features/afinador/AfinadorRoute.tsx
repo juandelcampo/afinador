@@ -13,7 +13,7 @@ import {
 import { normalize, searchTunings } from '~/core/search';
 import { GROUPS, TUNINGS, type Tuning } from '~/data/tunings';
 import { TEMPO_RANGE, useFavorites, useSettings } from '~/shared/settings';
-import { Icon } from '~/shared/ui/Icon';
+import { Icon, PlayIcon } from '~/shared/ui/Icon';
 import { Button, PageTitle, Rail, Segmented, Slab, SlabHead, Stepper, Toggle } from '~/shared/ui/ui';
 import ui from '~/shared/ui/ui.module.css';
 import styles from './afinador.module.css';
@@ -669,7 +669,7 @@ function TuningPage({
                 ariaLabel={listener.running ? 'Parar' : 'Tocar'}
                 onClick={() => (listener.running ? listener.stop() : listener.start())}
               >
-                {listener.running ? '■ Parar' : '▶ Tocar'}
+                <PlayIcon running={listener.running} />
               </Button>
               {/* Cómo suena, todo junto: la forma y el patrón de esa forma. */}
               <Toggle
