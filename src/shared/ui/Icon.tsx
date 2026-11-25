@@ -6,6 +6,8 @@ import styles from './ui.module.css';
 const PATHS = {
   swap: 'M2 4.5h12M11 1.5l3 3-3 3M16 13.5H4M7 10.5l-3 3 3 3',
   reset: 'M3 10.5a6 6 0 1 0 6-6M11.5 1.5l-3 3 3 3',
+  undo: 'M6 2.5L2 6.5l4 4M2 6.5h8.5a5 5 0 0 1 0 10H7',
+  redo: 'M12 2.5l4 4-4 4M16 6.5H7.5a5 5 0 0 0 0 10H11',
   repeat: 'M15 10.5a6 6 0 1 1-6-6M6.5 1.5l3 3-3 3',
   close: 'M4 4l10 10M14 4L4 14',
   left: 'M16 9H3M8 4L3 9l5 5',

@@ -18,6 +18,7 @@ import {
 import { DRUM_PRESETS } from '~/data/drums';
 import { flash } from '~/shared/ui/flash';
 import { Button, Field, Segmented, Stepper } from '~/shared/ui/ui';
+import { Icon } from '~/shared/ui/Icon';
 import ui from '~/shared/ui/ui.module.css';
 import styles from './drums.module.css';
 import ritmo from './ritmo.module.css';
@@ -280,20 +281,24 @@ export function DrumMachine({ config, onChange }: DrumMachineProps) {
             Borrar
           </Button>
           <Button
+            variant="mini"
             id="undo-drums"
+            ariaLabel="Deshacer"
             disabled={history.past.length === 0}
-            title="Ctrl+Z"
+            title="Deshacer (Ctrl+Z)"
             onClick={() => travel('undo')}
           >
-            Deshacer
+            <Icon name="undo" />
           </Button>
           <Button
+            variant="mini"
             id="redo-drums"
+            ariaLabel="Rehacer"
             disabled={history.future.length === 0}
-            title="Ctrl+Mayús+Z"
+            title="Rehacer (Ctrl+Mayús+Z)"
             onClick={() => travel('redo')}
           >
-            Rehacer
+            <Icon name="redo" />
           </Button>
         </div>
       </div>

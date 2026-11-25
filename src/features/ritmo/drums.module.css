@@ -23,7 +23,8 @@
 .actions {
   display: grid;
   flex: 1 1 100%;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* Inventar y Borrar se reparten el ancho; deshacer y rehacer son cuadrados al final. */
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto auto;
   gap: 6px;
 }
 @container ritmo (min-width: 560px) {

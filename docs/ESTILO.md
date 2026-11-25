@@ -120,6 +120,7 @@ Si una herramienta necesita algo que no está en la tabla y le puede servir a ot
 
 - **Dos opciones** (letras o solfeo, rasgueo o arpegio): un solo `Toggle`, que muestra la elegida y al tocarlo pasa a la otra. Nunca dos botones pegados.
 - **Algo que se prende y se apaga** (Repetir, el drone): un `Button` con `ariaPressed`, nunca una casilla de verificación. Si lo prendido suena, pasale también `on` y va en naranja.
+- **Una acción que todos reconocen por su dibujo** (deshacer, rehacer, repetir, volver a lo de siempre): un cuadrado, `Button variant="mini"` con solo el `Icon` adentro, `ariaLabel` con el nombre y `title` con lo que hace (y el atajo, si tiene). Si la palabra es lo que explica qué pasa (Inventar, Pasar a la batería, Soltar), va la palabra.
 - **De tres a cinco opciones cortas:** `Segmented`.
 - **Muchas opciones cortas** (presets, compases): botones `mini` con `ariaPressed` dentro de un grupo con `role="group"` y `aria-label`, como hacen los `Chips` de Ritmo.
 - **Una lista larga** (afinaciones, escalas): un `<select>` dentro de un `Field`.

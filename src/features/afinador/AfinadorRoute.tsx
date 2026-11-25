@@ -724,12 +724,14 @@ function TuningPage({
                   />
                 </div>
                 <Button
-                  variant="ghost"
+                  variant="mini"
                   id="loop"
+                  ariaLabel="Repetir"
                   ariaPressed={listener.loop}
+                  title={listener.loop ? 'Repite: tocalo para que suene una sola vez' : 'Repetir sin parar'}
                   onClick={() => listener.setLoop(!listener.loop)}
                 >
-                  <Icon name="repeat" /> {listener.loop ? 'Repite' : 'Repetir'}
+                  <Icon name="repeat" />
                 </Button>
                 <Button
                   onClick={listener.clearFrets}

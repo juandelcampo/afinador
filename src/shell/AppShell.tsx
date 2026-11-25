@@ -7,7 +7,8 @@ import { Fader } from '~/shared/Fader';
 import { useTheme } from '~/shared/theme';
 import { flashOnSelect } from '~/shared/ui/flash';
 import { Icon } from '~/shared/ui/Icon';
-import { Stepper, Toggle } from '~/shared/ui/ui';
+import { Stepper } from '~/shared/ui/ui';
+import ui from '~/shared/ui/ui.module.css';
 import styles from './shell.module.css';
 
 /** Las herramientas, cada una por su lado. `match` dice qué rutas son de cada una. */
@@ -142,30 +143,35 @@ export default function AppShell() {
           <Icon name={settingsOpen ? 'up' : 'down'} />
         </button>
         <div className={styles.settings} id="ajustes">
-          <Toggle
-            label="Nombres de las notas"
-            value={notation}
-            options={[
-              { value: 'letters', label: 'E A D' },
-              { value: 'solfege', label: 'Mi La Re' },
-            ]}
-            onChange={(value) => set({ notation: value })}
-          />
-          <Stepper
-            label="referencia del La"
-            value={`La ${a4} Hz`}
-            onDown={() => set({ a4: Math.max(415, a4 - 1) })}
-            onUp={() => set({ a4: Math.min(466, a4 + 1) })}
-          />
-          <Toggle
-            label="Tema"
-            value={theme}
-            options={[
-              { value: 'light', label: 'Claro' },
-              { value: 'dark', label: 'Oscuro' },
-            ]}
-            onChange={chooseTheme}
-          />
+          {/* Los ajustes son cuadrados chicos: se tocan poco y la barra es de las herramientas. */}
+          <button
+            type="button"
+            className={ui.mini}
+            data-select
+            aria-label={`Nombres de las notas: ${notation === 'solfege' ? 'Mi La Re' : 'E A D'}`}
+            title={notation === 'solfege' ? 'Cambiar a E A D' : 'Cambiar a Mi La Re'}
+            onClick={() => set({ notation: notation === 'solfege' ? 'letters' : 'solfege' })}
+          >
+            {notation === 'solfege' ? 'Mi' : 'E'}
+          </button>
+          <div className={styles.pitch} title={`La de referencia: ${a4} Hz`}>
+            <Stepper
+              label="referencia del La"
+              value={String(a4)}
+              onDown={() => set({ a4: Math.max(415, a4 - 1) })}
+              onUp={() => set({ a4: Math.min(466, a4 + 1) })}
+            />
+          </div>
+          <button
+            type="button"
+            className={ui.mini}
+            data-select
+            aria-label={`Tema: ${theme === 'dark' ? 'Oscuro' : 'Claro'}`}
+            title={theme === 'dark' ? 'Cambiar a Claro' : 'Cambiar a Oscuro'}
+            onClick={() => chooseTheme(theme === 'dark' ? 'light' : 'dark')}
+          >
+            <span className={styles.themeMark} aria-hidden="true" />
+          </button>
           {/* Un solo volumen para toda la app: el mismo en todas las herramientas, siempre en este lugar. */}
           <Fader />
         </div>
