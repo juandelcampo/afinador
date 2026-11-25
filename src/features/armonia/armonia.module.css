@@ -1052,9 +1052,10 @@
     display: block;
     margin-top: 0;
   }
+  /* Se achica con el alto de la ventana: con lo que dice la casilla debajo, la columna entra sin bajar. */
   .circle > .wheel {
-    width: 100%;
-    margin: 16px 0 0;
+    width: min(100%, 36dvh);
+    margin: 12px auto 0;
   }
   .circleToggle {
     display: none;
@@ -1200,8 +1201,8 @@
 .wheelInfo {
   display: grid;
   justify-items: start;
-  gap: 8px;
-  margin-top: 12px;
+  gap: 6px;
+  margin-top: 8px;
 }
 
 /* Cómo se arma el acorde: el nombre de cada cuerda arriba y su traste abajo, grande, para leerlo tocando. */
@@ -1280,7 +1281,7 @@
 }
 .structure {
   display: flex;
-  flex-wrap: wrap;
+  width: 100%;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -1288,22 +1289,27 @@
 }
 .structure li {
   display: flex;
+  flex: 1 1 0;
   align-items: stretch;
+  min-width: 0;
+}
+.structure li:last-child {
+  flex: 0.6 1 0;
 }
 .structure li + li {
   border-left: var(--split);
 }
 .structure span {
   display: grid;
+  flex: 1;
   place-items: center;
-  min-width: 34px;
-  padding: 6px 4px;
+  padding: 6px 0;
   font: 700 15px/1 var(--mono);
 }
 .structure small {
   display: grid;
   place-items: center;
-  min-width: 22px;
+  width: 16px;
   border-left: var(--split);
   font: 700 11px/1 var(--mono);
   color: var(--muted);

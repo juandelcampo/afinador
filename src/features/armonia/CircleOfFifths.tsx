@@ -190,33 +190,30 @@ export function CircleNotes({
   const scale = pickedPlace && placeScale(pickedPlace);
   return (
     <div className={styles.circleNotes}>
-      <p className={ui.hint}>
-        Afuera los mayores, adentro sus relativos menores. Cada paso alrededor es una quinta, y cada quinta
-        gira el color: tu tónica es naranja, los vecinos tienen colores vecinos y lo de enfrente, el
-        complementario. Lo de tu mundo va más fuerte; los números son tu vuelta.
-      </p>
-      <div className={styles.legend} aria-hidden="true">
-        <span>♭</span>
-        <ol>
-          {STRIP.map((step) => (
-            <li
-              key={step}
-              data-tonic={step === 0 || undefined}
-              style={hueStyle((TONIC_HUE + 30 * step + 360) % 360)}
-            />
-          ))}
-        </ol>
-        <span>♯</span>
-      </div>
+      {/* Antes de tocar una casilla, cómo se lee la rueda; después, lo que dice la casilla: así entra sin bajar. */}
+      {!picked && (
+        <p className={ui.hint}>
+          Afuera los mayores, adentro sus relativos menores. Cada paso es una quinta y gira el color: tu
+          tónica es naranja y lo de tu mundo va más fuerte. Los números son tu vuelta.
+        </p>
+      )}
+      {!picked && (
+        <div className={styles.legend} aria-hidden="true">
+          <span>♭</span>
+          <ol>
+            {STRIP.map((step) => (
+              <li
+                key={step}
+                data-tonic={step === 0 || undefined}
+                style={hueStyle((TONIC_HUE + 30 * step + 360) % 360)}
+              />
+            ))}
+          </ol>
+          <span>♯</span>
+        </div>
+      )}
       {picked && (
         <div className={styles.wheelInfo} data-testid="circulo-info">
-          <p>
-            {outside === 0
-              ? `${name(picked)} es de tu mundo: comparte todas sus notas.`
-              : outside === 1
-                ? `${name(picked)} tiene una nota de afuera: color prestado, sin irte del mundo.`
-                : `${name(picked)} tiene ${outside} notas de afuera: ya suena a otro tono.`}
-          </p>
           {signature && scale && (
             <>
               <p className={styles.signature} data-testid="circulo-armadura">
@@ -227,6 +224,7 @@ export function CircleNotes({
               <ol
                 className={styles.structure}
                 aria-label="Las notas de su escala y lo que hay entre una y otra"
+                title="T es un tono (dos trastes) y S un semitono (uno)"
               >
                 {scale.map((item, index) => (
                   <li key={index}>
@@ -238,9 +236,15 @@ export function CircleNotes({
                   <span>{noteText(scale[0]!.note, notation)}</span>
                 </li>
               </ol>
-              <p className={ui.hint}>T es un tono (dos trastes) y S un semitono (uno).</p>
             </>
           )}
+          <p className={ui.hint} data-keep>
+            {outside === 0
+              ? `${name(picked)} es de tu mundo.`
+              : outside === 1
+                ? `${name(picked)} tiene una nota de afuera: color prestado.`
+                : `${name(picked)} tiene ${outside} notas de afuera: otro tono.`}
+          </p>
           {!sameColorChord(picked, worldTonic) && (
             <Button variant="mini" onClick={() => onMoveWorld(picked)}>
               Llevar el mundo a {name(picked)} {chordColor(picked.suffix) === 'minor' ? 'menor' : 'mayor'}
@@ -248,7 +252,8 @@ export function CircleNotes({
           )}
         </div>
       )}
-      {moves.total > 0 && (
+      {/* Con una casilla tocada, la vuelta se lee en los números de la rueda: el renglón deja lugar. */}
+      {moves.total > 0 && !picked && (
         <p className={ui.hint} data-keep data-testid="circulo-vuelta">
           En tu vuelta, {moves.fifths} de {moves.total} cambios caen o suben una quinta
           {moves.fifths === 0
