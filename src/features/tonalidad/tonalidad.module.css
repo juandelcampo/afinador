@@ -1,0 +1,263 @@
+/* ¿Qué tonalidad?: el campo arriba, la respuesta grande y, al lado en pantalla ancha, Transportar. */
+.page {
+  container: content / inline-size;
+  min-width: 0;
+}
+
+/* Qué se escribe (acordes o melodía) y el campo, en una fila. */
+.entry {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+.field {
+  min-width: 0;
+  min-height: var(--touch);
+  padding: 6px 12px;
+  border: var(--rule);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  /* 16px como mínimo: iOS no acerca el zoom al escribir. */
+  font: 700 clamp(16px, 3cqi, 20px)/1.2 var(--mono);
+}
+.field::placeholder {
+  color: var(--muted);
+  font-weight: 400;
+}
+.unread {
+  margin: 4px 0 0;
+  min-height: 1.5em;
+}
+
+/* Sin nada escrito: ejemplos para tocar. */
+.start {
+  margin: 0 0 8px;
+  font: 700 12px/1.5 var(--ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.examples button {
+  min-height: var(--touch);
+  padding: 6px 14px;
+  border: var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  font: 700 15px/1.2 var(--mono);
+}
+.examples button:hover {
+  background: var(--soft);
+}
+
+/* La respuesta y Transportar: una debajo de la otra, lado a lado en pantalla ancha. */
+.columns {
+  display: grid;
+  min-width: 0;
+}
+@container content (min-width: 900px) {
+  .columns {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .columns > * + * {
+    border-left: var(--rule);
+  }
+}
+
+/* La tonalidad grande (tocarla hace sonar la tónica) y por qué, en un recuadro. */
+.lead {
+  display: grid;
+  margin-bottom: 12px;
+  border: var(--rule);
+}
+.result {
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 4px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
+}
+.result:hover {
+  background: var(--soft);
+}
+.result:active {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.name {
+  font: 900 semi-expanded clamp(30px, 8cqi, 52px)/1 var(--heavy);
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+@container content (min-width: 900px) {
+  .name {
+    font-size: clamp(30px, 4cqi, 48px);
+  }
+}
+.words {
+  font: 600 13px/1.35 var(--ui);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.facts {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 8px 14px 10px;
+  border-top: var(--split);
+  list-style: none;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.others {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+.others > span {
+  font: 600 12px/1.5 var(--ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.others button {
+  min-height: 32px;
+  padding: 2px 10px;
+  border: var(--split);
+  background: var(--paper);
+  color: var(--ink);
+  font: 700 13px/1.2 var(--ui);
+  text-transform: uppercase;
+}
+.others button:hover {
+  background: var(--soft);
+}
+
+/* Los acordes (o las notas) con su grado: como las notas de Escalas, el nombre grande y el grado abajo. */
+.cells {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  margin: 0;
+  padding: 0;
+  border-top: var(--rule);
+  border-left: var(--rule);
+  list-style: none;
+}
+.cells li {
+  display: grid;
+  border-right: var(--split);
+  border-bottom: var(--split);
+}
+.cells button {
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  min-width: 0;
+  min-height: 56px;
+  padding: 6px 4px;
+  border: 0;
+  background: var(--paper);
+  color: var(--ink);
+  text-align: center;
+}
+.cells button:hover {
+  background: var(--soft);
+}
+.cells strong {
+  font: 900 semi-expanded clamp(15px, 3.4cqi, 20px)/1.1 var(--heavy);
+  overflow-wrap: anywhere;
+}
+.cells small {
+  font: 600 12px/1.2 var(--mono);
+}
+.cells button[data-outside] small {
+  color: var(--muted);
+}
+.cells button[data-outside] strong {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+/* Lo que suena, en naranja. */
+.cells button[data-lit] {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.cells button[data-lit] small {
+  color: inherit;
+}
+
+.play {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-top: 12px;
+}
+
+/* Transportar: las doce tónicas, como en Escalas. La de ahora, marcada con un punto. */
+.ask {
+  margin: 8px 0 6px;
+  font: 600 12px/1.5 var(--ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.roots {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  border: var(--rule);
+}
+.roots button {
+  min-width: 0;
+  min-height: var(--touch);
+  padding: 0;
+  border: 0;
+  border-right: var(--split);
+  background: var(--paper);
+  color: var(--ink);
+  font: 700 15px/1 var(--mono);
+}
+.roots button:nth-child(n + 7) {
+  border-top: var(--split);
+}
+.roots button:nth-child(6n) {
+  border-right: 0;
+}
+.roots button:hover {
+  background: var(--soft);
+}
+.roots button[data-home] {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+.roots button[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--paper);
+}
+.shift {
+  margin: 12px 0 8px;
+  font: 600 13px/1.4 var(--ui);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.shift strong {
+  font: 900 semi-expanded 18px/1 var(--heavy);
+}
+.capo {
+  min-height: 1.4em;
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+}

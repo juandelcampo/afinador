@@ -11,6 +11,7 @@ export default [
     route('escalas', 'features/escalas/EscalasRoute.tsx'),
     route('inversiones', 'features/inversiones/InversionesRoute.tsx'),
     route('acorde', 'features/acorde/AcordeRoute.tsx'),
+    route('tonalidad', 'features/tonalidad/TonalidadRoute.tsx'),
     route('ritmo', 'features/ritmo/RitmoRoute.tsx'),
   ]),
 ] satisfies RouteConfig;

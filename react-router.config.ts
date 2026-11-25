@@ -12,6 +12,7 @@ export default {
     '/armonia',
     '/escalas',
     '/inversiones',
+    '/tonalidad',
     '/ritmo',
     ...TUNINGS.map((tuning) => `/afinador/${tuning.id}`),
   ],

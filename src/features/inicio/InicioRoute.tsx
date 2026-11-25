@@ -75,6 +75,17 @@ const TOOLS: Tool[] = [
     ],
   },
   {
+    to: '/tonalidad',
+    name: '¿Qué tonalidad?',
+    pitch:
+      'Escribí los acordes o la melodía de un tema y te dice en qué tonalidad está. Después llevalo a otra.',
+    things: [
+      'El grado de cada acorde, y cuáles son de afuera',
+      'Transportar a cualquier tónica, y escucharlo',
+      'Con qué cejilla se toca con las formas de siempre',
+    ],
+  },
+  {
     to: '/ritmo',
     name: 'Ritmo',
     pitch: 'Un metrónomo para compases raros y una caja de ritmos para tocar encima.',

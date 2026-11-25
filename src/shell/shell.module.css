@@ -110,8 +110,8 @@
 }
 
 /* En el celular y la tableta la barra es una sola fila: la marca y el botón Menú, que dice en qué
-   herramienta estás. Abierto, debajo aparecen las herramientas de a dos y los ajustes. Las seis
-   herramientas en una fila miden unos 850 px: debajo de 960 no entran. */
+   herramienta estás. Abierto, debajo aparecen las herramientas de a dos y los ajustes. Las siete
+   herramientas en una fila, con la letra chica, miden unos 900 px: debajo de 960 no entran. */
 @media (max-width: 959px) {
   /* Cerrada mide justo --bar (60 px): el afinador cuenta con eso para llenar la pantalla. */
   .topBar {
@@ -197,6 +197,22 @@
     flex-wrap: nowrap;
     height: var(--bar);
     padding-block: 0;
+  }
+}
+/* Las siete herramientas en una fila miden unos 1100 px con la letra de siempre: entre 960 y 1280 van
+   con la letra más chica, así entran sin partir ningún nombre en dos renglones. */
+@media (min-width: 960px) and (max-width: 1279px) {
+  .tool {
+    padding-inline: 8px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+}
+@media (min-width: 960px) and (max-width: 1099px) {
+  .tool {
+    gap: 6px;
+    padding-inline: 6px;
+    font-size: 12px;
   }
 }
 /* Hasta 1680 los ajustes (notación, La, tema y volumen) no entran al lado de las herramientas: se abren debajo del botón, encima de la

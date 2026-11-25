@@ -7,6 +7,7 @@ Herramientas para componer con guitarra, pensadas para quien toca de oído y qui
 - **Escalas** (`/escalas`): dónde cae cada nota de una escala en tu afinación, posición por posición, con un drone para tocar encima.
 - **Inversiones** (`/inversiones`): todas las maneras de hacer un acorde en el mástil, agrupadas por la nota que va en el bajo.
 - **¿Qué acorde?** (`/acorde`): ponés los dedos en el diapasón y te dice qué acorde suena.
+- **¿Qué tonalidad?** (`/tonalidad`): escribís los acordes o la melodía de un tema y te dice en qué tonalidad está; después lo llevás a otra.
 - **Ritmo** (`/ritmo`): metrónomo para compases raros, ritmos euclidianos dibujados como figuras, polirritmias y una caja de ritmos.
 
 Cada herramienta se acuerda de dónde la dejaste: volver desde la barra o la portada, o abrirla de nuevo, trae la afinación, la escala, la forma o el ritmo que tenías (un link con algo en la URL manda). En Armonía, ¿Qué acorde? y Ritmo, "Mis vueltas", "Mis formas" y "Mis ritmos" guardan lo de ahora con un nombre, hasta diez en cada una. Todo queda en este navegador (`localStorage`, clave `afinador`); para llevarlo a otro lado, se comparte el link.
@@ -71,6 +72,16 @@ Para cuando ponés los dedos de oído, te gusta cómo suena y no sabés qué es.
 Arriba del diapasón, el nombre grande (tocarlo hace sonar la forma, rasgueada o arpegiada), el tipo en palabras y la tab. Cada dedo pasa a decir qué es en el acorde (R, 3, ♭7, 9). Debajo: las notas que suenan de grave a agudo, qué va en el bajo (con lo de De María, como en Inversiones), qué falta si falta la quinta y otras maneras de leer las mismas notas (C6 también es Am7/C). Siempre le encuentra una lectura: si no calza justo con un acorde conocido, busca uno que esté entero y nombra lo que sobra como tensión, con lo que le hace al sonido (Am7(♯11): la ♯11 brilla y flota). Dos notas a una tercera o una sexta se leen como el acorde que insinúan (Mi y Sol, un Em); las que no, como lo que son (un tritono, un choque de semitono), y las notas pegadas que no se apilan en terceras, como un racimo.
 
 El nombre sale de `core/identify.ts`: se prueba cada nota que suena como raíz contra los acordes de `CHORD_STEPS`, con la quinta (y en los de oncena, la novena) opcional; si ninguno calza, contra un acorde base con tensiones encima (♭9, 9, ♯9, 11, ♯11, ♭13, 13). Gana la lectura con la raíz en el bajo, después la que menos agrega u omite y después la más común. La afinación y la forma van en la URL (`/acorde?afinacion=dadgad&forma=0-0-0-2-0-0`); si el acorde es de los que abre Inversiones, un link lleva ahí con la misma forma.
+
+### ¿Qué tonalidad?
+
+Para cuando sacás un tema de oído y querés saber en qué tonalidad está, o llevarlo a otra para cantarlo cómodo. Se escriben los acordes como salgan (Am, lam, F#m7, Sol7, C/E, Bø; separados por espacios, comas o barras) o, con el botón Acordes ⇄ Melodía, las notas de una melodía (do re mi, E G A, con o sin octava). Lo que no se entiende queda dicho en un renglón chico y no rompe lo demás. Sin nada escrito, hay ejemplos para tocar.
+
+Arriba sale la tonalidad grande (tocarla hace sonar la tónica), cuántos acordes o notas son de ahí y por qué: si arranca o termina en la tónica, si la dominante lleva a ella. Debajo, cada acorde con su grado; los de afuera, marcados. "También puede ser" ofrece las que cierran igual de bien (casi siempre la relativa), para elegirla a mano. Escuchar toca la vuelta y cada acorde se enciende en naranja cuando suena.
+
+Transportar: las doce tónicas en el mismo modo; elegir una da los mismos acordes ahí, cuántos semitonos se movió y, si hace falta, con qué cejilla se tocan con las formas de siempre (Bb F Gm Eb: cejilla en el 3, G D Em C). Si sin cejilla ya hay tres de cada cuatro formas abiertas, no sugiere nada. Las dos filas llevan a Armonía con la tonalidad y la vuelta.
+
+Sale de `core/tonalidad.ts`. Con acordes, se prueban las 24 tonalidades mayores y menores: cuenta cuántos acordes entran enteros en la escala (en menor también la dominante con la sensible, E7 en La menor) y suma por arrancar o terminar en la tónica y por la cadencia de la dominante. Con notas, compara cuánto suena cada nota con el perfil de las tonalidades (Krumhansl y Kessler), y la nota del final pesa más. Todo va en la URL (`/tonalidad?t=Am+F+C+G&a=2`; `modo=melodia` para las notas y `tono=9m` si se eligió otra a mano).
 
 ### Ritmo
 

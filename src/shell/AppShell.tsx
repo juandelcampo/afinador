@@ -18,6 +18,7 @@ const TOOLS: { key: ToolKey; label: string }[] = [
   { key: 'escalas', label: 'Escalas' },
   { key: 'inversiones', label: 'Inversiones' },
   { key: 'acorde', label: '¿Qué acorde?' },
+  { key: 'tonalidad', label: '¿Qué tonalidad?' },
   { key: 'ritmo', label: 'Ritmo' },
 ];
 

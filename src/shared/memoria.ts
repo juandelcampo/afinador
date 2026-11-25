@@ -56,4 +56,4 @@ export function useRememberPlace() {
  * que tenía. Las páginas no leen la URL hasta hidratar, así que el HTML estático sigue coincidiendo.
  * El Afinador no entra acá: su afinación va en la ruta y la página estática de cada una es distinta.
  */
-export const RESTORE_SCRIPT = `try{var l=location,p=l.pathname.replace(/\\/+$/,''),k={'/armonia':'armonia','/escalas':'escalas','/inversiones':'inversiones','/acorde':'acorde','/ritmo':'ritmo'}[p];if(k&&!l.search){var h=JSON.parse(localStorage.getItem('afinador')).state.last[k];if(typeof h==='string'&&h.indexOf(p+'?')===0&&!/#/.test(h))history.replaceState(history.state,'',h+l.hash)}}catch(e){}`;
+export const RESTORE_SCRIPT = `try{var l=location,p=l.pathname.replace(/\\/+$/,''),k={'/armonia':'armonia','/escalas':'escalas','/inversiones':'inversiones','/acorde':'acorde','/tonalidad':'tonalidad','/ritmo':'ritmo'}[p];if(k&&!l.search){var h=JSON.parse(localStorage.getItem('afinador')).state.last[k];if(typeof h==='string'&&h.indexOf(p+'?')===0&&!/#/.test(h))history.replaceState(history.state,'',h+l.hash)}}catch(e){}`;
