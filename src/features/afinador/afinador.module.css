@@ -1132,8 +1132,10 @@
     gap: 8px;
     border: 0;
   }
+  /* El nombre ocupa lo que mide, así la estrella queda pegada a él y no en la otra punta. */
   .heroHead > header {
     display: block;
+    flex: 0 1 auto;
     padding: 0;
     pointer-events: auto;
   }
@@ -1145,12 +1147,15 @@
     font: 900 expanded clamp(34px, 6.5cqi, 60px)/0.95 var(--heavy);
     letter-spacing: -0.03em;
   }
+  /* A la altura del nombre: el margen es el que deja el título debajo. */
   .heroTools {
     gap: 6px;
     align-self: flex-end;
+    margin-bottom: 8px;
   }
   .heroTools .heroStar {
-    display: block;
+    display: grid;
+    place-items: center;
   }
   .heroTools .infoToggle {
     display: none;
