@@ -23,12 +23,12 @@ test.describe('armonía', () => {
     expect(errors).toEqual([]);
   });
 
-  test('los grados muestran su emoción y su figura, y suenan al tocarlos', async ({ page }) => {
+  test('los grados muestran su emoción, sin la figura, y suenan al tocarlos', async ({ page }) => {
     const errors = watchErrors(page);
     await goto(page, '/armonia?escala=mayor&tono=0');
     const degrees = page.getByTestId('degrees');
     await expect(degrees.getByRole('button', { name: 'Escuchar G7' })).toContainText('ALEGRE ++');
-    await expect(degrees.getByRole('button', { name: 'Escuchar C' })).toContainText('× 3 2 0 1 0');
+    await expect(degrees.getByRole('button', { name: 'Escuchar C' })).not.toContainText('× 3 2 0 1 0');
     await degrees.getByRole('button', { name: 'Escuchar C' }).click();
     await expect.poll(() => plucks(page)).toBeGreaterThanOrEqual(5);
 
@@ -241,25 +241,16 @@ test.describe('armonía', () => {
     expect(errors).toEqual([]);
   });
 
-  test('cada grado elige su color y su figura antes de sumarlo', async ({ page }) => {
+  test('la tarjeta del grado es chica: el + suma la tríada y el color se elige en la vuelta', async ({
+    page,
+  }) => {
     const errors = watchErrors(page);
     await goto(page, '/armonia?escala=mayor&tono=0');
-    const degrees = page.getByTestId('degrees');
-    const tonic = degrees.getByRole('listitem').first();
-
-    // Otro color: la tarjeta pasa a ser ese acorde y dice qué le suma.
-    await pick(page, tonic.getByRole('button', { name: /^Color de C:/ }), 'maj7');
-    await expect(tonic.locator('strong').first()).toHaveText('Cmaj7');
-    await expect(tonic).toContainText('romántico');
-    // Otra figura, y el + suma el acorde tal como quedó.
-    await tonic.getByRole('button', { name: /^Otra figura de Cmaj7: va la 1/ }).click();
-    await expect(tonic.getByRole('button', { name: /^Otra figura de Cmaj7: va la 2/ })).toBeVisible();
-    await tonic.getByRole('button', { name: 'Sumar Cmaj7 a la vuelta' }).click();
-    await expect(page).toHaveURL(/v=Cmaj7\.1(&|$)/);
-
-    // Otro mundo: los grados vuelven a sus tríadas.
-    await pick(page, 'tonica', '2');
-    await expect(degrees.getByRole('listitem').first().locator('strong').first()).toHaveText('D');
+    const tonic = page.getByTestId('degrees').getByRole('listitem').first();
+    await expect(tonic.getByRole('button', { name: /^Color de C/ })).toHaveCount(0);
+    await expect(tonic.getByRole('button', { name: /^Otra figura de C/ })).toHaveCount(0);
+    await tonic.getByRole('button', { name: 'Sumar C a la vuelta' }).click();
+    await expect(page).toHaveURL(/v=C(&|$)/);
     expect(errors).toEqual([]);
   });
 

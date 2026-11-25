@@ -408,7 +408,8 @@ const fitName = (text: string) => ({ '--chars': [...text].length }) as CSSProper
 
 /** Un acorde para escuchar (la tarjeta entera) y sumar a la vuelta (el +). */
 function ChordCard({ name, label, feeling, words, fingering, mark, bar, onListen, onAdd }: CardProps) {
-  const text = words ?? (feeling ? feeling.words.join('. ') + '.' : undefined);
+  // De la emoción del grado, las dos primeras palabras: con cuatro, la tarjeta se volvía un párrafo.
+  const text = words ?? (feeling ? feeling.words.slice(0, 2).join('. ') + '.' : undefined);
   return (
     <li className={styles.card}>
       <button type="button" className={styles.listen} onClick={onListen} aria-label={`Escuchar ${name}`}>
@@ -421,9 +422,12 @@ function ChordCard({ name, label, feeling, words, fingering, mark, bar, onListen
         </strong>
         {feeling && <Feeling feeling={feeling} />}
         {text && <span className={styles.words}>{text}</span>}
-        <span className={styles.tab} data-missing={!fingering}>
-          {fingering ? fingering.label + (fingering.noFifth ? ' · sin 5.ª' : '') : 'La mano no llega'}
-        </span>
+        {/* Cómo se arma se ve en la vuelta: acá solo se avisa si la mano no llega. */}
+        {!fingering && (
+          <span className={styles.tab} data-missing>
+            La mano no llega
+          </span>
+        )}
       </button>
       <button type="button" className={styles.add} onClick={onAdd} aria-label={`Sumar ${name} a la vuelta`}>
         +
@@ -471,14 +475,6 @@ export default function ArmoniaRoute() {
   const [circleOpen, setCircleOpen] = useState(false);
   /** El acorde que tocaste en la rueda: va al medio con su +. */
   const [circlePick, setCirclePick] = useState<Chord | null>(null);
-  /**
-   * El color y la figura que elegiste en cada grado del mundo, antes de sumarlo. Son de ese mundo: al
-   * cambiar de tónica o de escala, los grados vuelven a sus tríadas.
-   */
-  const [picks, setPicks] = useState<{ world: string; byDegree: Record<number, Placed> }>({
-    world: '',
-    byDegree: {},
-  });
   /** Sin lugar para las tres columnas, abrir un costado pliega el otro: el medio no se aplasta. */
   const openSide = (side: 'left' | 'right') => {
     const cramped = window.matchMedia('(max-width: 1179px)').matches;
@@ -680,16 +676,6 @@ export default function ArmoniaRoute() {
     picked: circlePick,
   };
 
-  const world = `${tonic}|${scale.id}`;
-  const pickOf = (degree: number) => (picks.world === world ? picks.byDegree[degree] : undefined);
-  /** Elige el color o la figura de un grado, y suena. */
-  const pickAt = (degree: number, chord: Placed) => {
-    setPicks((current) => ({
-      world,
-      byDegree: { ...(current.world === world ? current.byDegree : {}), [degree]: chord },
-    }));
-    listen(chord);
-  };
   const card = (chord: Placed, label: string, extra: Partial<CardProps> = {}, id?: string) => (
     <ChordCard
       key={id ?? chordToken(chord) + label}
@@ -853,20 +839,14 @@ export default function ArmoniaRoute() {
                 <h3 className={styles.subhead}>Sus acordes</h3>
                 <p className={ui.hint}>Tocá un acorde para escucharlo; el + lo suma a tu vuelta.</p>
                 <ul className={styles.cards} data-testid="degrees">
-                  {degrees.map((item, degree) => {
-                    const chord: Placed = pickOf(degree) ?? item.chord;
-                    const shapeCount = shapesOf(chord).length;
-                    // Con otro color, en lugar de la emoción del grado se lee qué le suma la tensión.
-                    const variant =
-                      chord.suffix === item.chord.suffix
-                        ? undefined
-                        : variantsOf(item.chord).find((other) => other.suffix === chord.suffix);
-                    return card(
-                      chord,
-                      degreeLabel(chord, key),
+                  {/* La tarjeta del grado dice solo lo que hace falta para elegir de oído: el nombre, su
+                      emoción y el +. Cómo se arma, el color y la figura se cambian ya en la vuelta. */}
+                  {degrees.map((item, degree) =>
+                    card(
+                      item.chord,
+                      degreeLabel(item.chord, key),
                       {
                         feeling: item.feeling,
-                        words: variant?.why,
                         mark: item.characteristic ? (
                           <span className={styles.star} title="Grado característico">
                             ★
@@ -876,21 +856,10 @@ export default function ArmoniaRoute() {
                             OJO
                           </span>
                         ) : undefined,
-                        bar: (
-                          <ColorShape
-                            chord={chord}
-                            name={name}
-                            shapeAt={Math.min(chord.shape ?? 0, Math.max(0, shapeCount - 1))}
-                            shapeCount={shapeCount}
-                            onColor={(suffix) => pickAt(degree, { root: chord.root, suffix })}
-                            onShape={(shape) => pickAt(degree, { ...chord, shape: shape || undefined })}
-                          />
-                        ),
                       },
-                      // La tarjeta es la del grado: cambiarle el color no la rearma, y el foco queda.
                       `grado-${degree}`,
-                    );
-                  })}
+                    ),
+                  )}
                 </ul>
               </div>
               <button
