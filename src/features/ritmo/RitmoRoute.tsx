@@ -565,7 +565,10 @@ export default function RitmoRoute() {
             onClick={() => (running ? metronome.stop() : metronome.start())}
             id="metro-toggle"
           >
-            {running ? '■ Parar' : '▶ Tocar'}
+            {/* Solo el signo, grande: el botón se entiende sin leer. */}
+            <svg className={styles.playIcon} viewBox="0 0 24 24" aria-hidden="true">
+              {running ? <rect x="5" y="5" width="14" height="14" /> : <path d="M7 4 L20 12 L7 20 Z" />}
+            </svg>
           </Button>
           <div className={styles.tempo}>
             <div className={styles.tempoHead}>

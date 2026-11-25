@@ -14,7 +14,7 @@ test.describe('ritmo', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('4/4');
 
     await page.locator('#metro-toggle').click();
-    await expect(page.locator('#metro-toggle')).toHaveText('■ Parar');
+    await expect(page.locator('#metro-toggle')).toHaveAttribute('aria-label', 'Parar');
     await expect.poll(() => clicks(page)).toBeGreaterThan(2);
 
     // Cuatro golpes cada 400 ms: unos 150 por minuto. Se dan desde la página, con el reloj de la página,

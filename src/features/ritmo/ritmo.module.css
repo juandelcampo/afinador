@@ -122,6 +122,13 @@
 .transport > button:first-child {
   grid-area: play;
 }
+.playIcon {
+  display: block;
+  width: 36px;
+  height: 36px;
+  margin: 0 auto;
+  fill: currentColor;
+}
 .tap {
   grid-area: tap;
 }
