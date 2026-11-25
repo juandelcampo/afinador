@@ -5,6 +5,7 @@ import {
   describeRhythm,
   drumConfig,
   euclid,
+  pulseGrid,
   randomDrumPattern,
   rhythmFromParams,
   rhythmToDrums,
@@ -17,6 +18,7 @@ import {
   type RhythmConfig,
 } from '~/core/rhythm';
 import { DRUM_PRESETS } from '~/data/drums';
+import { FONDOS, fondoFromParam, fondoToParam } from '~/shared/RitmoDeFondo';
 
 describe('ritmo', () => {
   it('reparte los golpes euclidianos de forma pareja', () => {
@@ -366,5 +368,93 @@ describe('marcar el tempo', () => {
   it('no se sale del rango del metrónomo', () => {
     expect(tapTempo([0, 100])).toBe(300);
     expect(tapTempo([0, 1900, 3800])).toBe(32);
+  });
+});
+
+describe('los pulsos del compás, para tocar una vuelta encima', () => {
+  const meter = (groups: number[], denom: 4 | 8): RhythmConfig => ({
+    mode: 'meter',
+    groups,
+    denom,
+    bpm: 100,
+  });
+  const ats = (config: RhythmConfig, bar = 0) => pulseGrid(config, bar).pulses.map((pulse) => pulse.at);
+
+  it('en /4 cada negra es un pulso, también en 5/4 de 3+2', () => {
+    expect(ats(meter([1, 1, 1, 1], 4))).toEqual([0, 1, 2, 3]);
+    expect(ats(meter([3, 2], 4))).toEqual([0, 1, 2, 3, 4]);
+  });
+
+  it('en /8 el pulso es cada grupo: dos en 6/8, tres desparejos en 7/8', () => {
+    expect(pulseGrid(meter([3, 3], 8), 0)).toEqual({
+      beats: 3,
+      pulses: [
+        { at: 0, length: 1.5 },
+        { at: 1.5, length: 1.5 },
+      ],
+    });
+    expect(ats(meter([2, 2, 3], 8))).toEqual([0, 1, 2]);
+    expect(pulseGrid(meter([2, 2, 3], 8), 0).pulses[2]!.length).toBe(1.5);
+  });
+
+  it('el mutante da los pulsos del compás que suena', () => {
+    const mutante: RhythmConfig = {
+      mode: 'mutante',
+      meters: [
+        { groups: [1, 1, 1, 1], denom: 4 },
+        { groups: [3, 3], denom: 8 },
+      ],
+      barsEach: 2,
+      bpm: 100,
+    };
+    expect(ats(mutante, 1)).toEqual([0, 1, 2, 3]);
+    expect(ats(mutante, 2)).toEqual([0, 1.5]);
+  });
+
+  it('la batería cuenta negras, y el medio pulso que sobra va con el último', () => {
+    const rock = DRUM_PRESETS.find((preset) => preset.id === 'rock')!.config;
+    expect(ats(rock)).toEqual([0, 1, 2, 3]);
+    const sieteOcho = DRUM_PRESETS.find((preset) => preset.name === '7/8')!.config;
+    const grid = pulseGrid(sieteOcho, 0);
+    expect(grid.beats).toBe(3.5);
+    expect(grid.pulses.at(-1)).toEqual({ at: 2, length: 1.5 });
+  });
+
+  it('los pulsos llenan el compás justo, sin huecos', () => {
+    const configs: RhythmConfig[] = [
+      meter([2, 2, 2, 3], 8),
+      { mode: 'euclid', pulses: 5, steps: 16, rotation: 0, bpm: 90 },
+      { mode: 'poly', a: 3, b: 2, bpm: 90 },
+      ...DRUM_PRESETS.map((preset) => preset.config),
+    ];
+    for (const config of configs) {
+      const { beats, pulses } = pulseGrid(config, 0);
+      expect(beats).toBe(cycleFor(config, 0).beats);
+      pulses.forEach((pulse, index) => expect(pulse.at + pulse.length).toBe(pulses[index + 1]?.at ?? beats));
+    }
+  });
+});
+
+describe('los ritmos de fondo de una vuelta', () => {
+  it('los de siempre existen y van y vuelven por la URL sin cambiar', () => {
+    const all = [...FONDOS.compases, ...FONDOS.baterias];
+    expect(all.map((fondo) => fondo.name)).toEqual([
+      '4/4',
+      '3/4',
+      '6/8',
+      '7/8',
+      'Rock',
+      'Balada',
+      'Bossa',
+      'Cumbia',
+      'Shuffle',
+      'Vals',
+    ]);
+    for (const { config } of all) expect(fondoFromParam(fondoToParam(config))).toEqual(config);
+  });
+
+  it('sin ritmo o con uno que no se entiende, no hay fondo', () => {
+    expect(fondoFromParam(null)).toBeNull();
+    expect(fondoFromParam('m=meter')).toBeNull();
   });
 });

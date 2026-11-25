@@ -1,7 +1,7 @@
 // Ritmo: metrónomo para compases raros, ritmos euclidianos con su figura, polirritmias, compases que
 // mutan y una caja de ritmos. Suena solo acá: al irse de la página, para.
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { useSearchParams, type MetaFunction } from 'react-router';
+import { Link, useSearchParams, type MetaFunction } from 'react-router';
 import { metronome } from '~/audio/metronome';
 import {
   clampBpm,
@@ -28,6 +28,8 @@ import {
 } from '~/core/rhythm';
 import { DRUM_PRESETS } from '~/data/drums';
 import { Guardados } from '~/shared/Guardados';
+import { useToolHref } from '~/shared/memoria';
+import { fondoToParam } from '~/shared/RitmoDeFondo';
 import { useSettings } from '~/shared/settings';
 import { Icon, PlayIcon } from '~/shared/ui/Icon';
 import { Button, Field, PageTitle, Segmented, Slab, Stepper, Tabs, Toggle } from '~/shared/ui/ui';
@@ -535,6 +537,10 @@ export default function RitmoRoute() {
   }, []);
 
   const { name, rule } = describeRhythm(config);
+  // Armonía donde la dejaste, con este ritmo de fondo: la vuelta suena encima, a este tempo.
+  const [armoniaPath, armoniaQuery = ''] = useToolHref('armonia').split('?');
+  const withVuelta = new URLSearchParams(armoniaQuery);
+  withVuelta.set('ritmo', fondoToParam(config));
   // El compás, el euclidiano y la polirritmia se dibujan como figura; el mutante cambia de compás y va en grilla.
   // Lo que se dibuja: en el mutante, el compás que está sonando; en los demás, el ritmo tal cual.
   const playing = usePlaying(config);
@@ -554,15 +560,20 @@ export default function RitmoRoute() {
               {rule}
             </p>
           </PageTitle>
-          <Guardados
-            tool="ritmo"
-            label="Mis ritmos"
-            title="Tus ritmos"
-            noun="este ritmo"
-            name={name}
-            detail={`${MODES.find((item) => item.value === config.mode)?.label ?? ''} · ${config.bpm} ppm`}
-            search={params.toString()}
-          />
+          <div className={styles.headTools}>
+            <Link to={`${armoniaPath}?${withVuelta}`} className={ui.bridge}>
+              Con una vuelta →
+            </Link>
+            <Guardados
+              tool="ritmo"
+              label="Mis ritmos"
+              title="Tus ritmos"
+              noun="este ritmo"
+              name={name}
+              detail={`${MODES.find((item) => item.value === config.mode)?.label ?? ''} · ${config.bpm} ppm`}
+              search={params.toString()}
+            />
+          </div>
         </div>
 
         {/* La barra de tocar y las pestañas, siempre en el mismo lugar y a lo ancho: lo que cambia pasa abajo. */}

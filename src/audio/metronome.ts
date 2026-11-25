@@ -1,6 +1,6 @@
 // Metrónomo y caja de ritmos, fuera de React: su reloj no depende de los renders. La interfaz se
 // suscribe a `getState()` y consulta `playhead()` en cada cuadro. Suena solo en su página: Ritmo lo
-// para al salir. Cuenta en pulsos con el reloj común (`transport`), y su tempo es el que manda.
+// para al salir, y Armonía, que lo usa de fondo de la vuelta, también. Cuenta en pulsos con el reloj común (`transport`), y su tempo es el que manda.
 import { clampBpm, cycleFor, type Cycle, type DrumId, type Hit, type RhythmConfig } from '~/core/rhythm';
 import { getAudio, rhythmBus } from './engine';
 import { playKitDrum, setKit } from './kit';
@@ -98,6 +98,9 @@ export const metronome = {
   getState: () => state,
 
   lastOfMode: (mode: RhythmConfig['mode']) => lastByMode[mode],
+
+  /** El pulso del reloj común donde dio su primer golpe: ahí entra una vuelta que suena encima. */
+  startBeat: () => firstStart,
 
   start() {
     transport.leave(schedule);

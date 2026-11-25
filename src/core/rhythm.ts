@@ -598,3 +598,59 @@ export function withSoundOf(from: RhythmConfig, to: RhythmConfig): RhythmConfig 
   const { voices: _voices, ...bare } = next;
   return { ...bare, ...(from.voices && { voices: from.voices }) } as RhythmConfig;
 }
+
+// --- Los pulsos de cada compás, para que una vuelta suene encima ---
+
+/** Un pulso del compás: dónde cae y cuánto dura, en negras. */
+export interface Pulse {
+  at: number;
+  length: number;
+}
+
+/** Un compás del ritmo: cuánto dura, en negras, y dónde están sus pulsos. */
+export interface PulseGrid {
+  beats: number;
+  pulses: Pulse[];
+}
+
+/** Sin ritmo, la vuelta cuenta negras: un compás de un pulso. */
+export const QUARTER_GRID: PulseGrid = { beats: 1, pulses: [{ at: 0, length: 1 }] };
+
+/** Negras parejas; lo que sobra al final (el medio pulso de un 7/8) se suma al último. */
+function quarters(beats: number): Pulse[] {
+  const count = Math.max(1, Math.floor(beats + 1e-9));
+  return Array.from({ length: count }, (_, index) => ({
+    at: index,
+    length: index === count - 1 ? beats - index : 1,
+  }));
+}
+
+/**
+ * En /4 cada negra es un pulso (el 5/4 tiene cinco). En /8 y /16 el pulso es cada grupo: el 6/8 tiene dos
+ * y el 7/8 de 2+2+3, tres desparejos, que es como se sienten y como se rasguea encima.
+ */
+function meterPulses({ groups, denom }: Meter): PulseGrid {
+  const unit = 4 / denom;
+  const beats = groups.reduce((sum, group) => sum + group, 0) * unit;
+  if (denom === 4) return { beats, pulses: quarters(beats) };
+  let at = 0;
+  const pulses = groups.map((group) => {
+    const pulse = { at, length: group * unit };
+    at += pulse.length;
+    return pulse;
+  });
+  return { beats, pulses };
+}
+
+/**
+ * Los pulsos del compás `index` del ritmo (solo el mutante cambia de un compás a otro). Una vuelta que
+ * suena encima rasguea en cada pulso y cambia de acorde contándolos, así queda pegada al compás.
+ */
+export function pulseGrid(config: RhythmConfig, index: number): PulseGrid {
+  if (config.mode === 'meter') return meterPulses(config);
+  if (config.mode === 'mutante') {
+    return meterPulses(config.meters[Math.floor(index / config.barsEach) % config.meters.length]!);
+  }
+  const { beats } = cycleFor(config, index);
+  return { beats, pulses: quarters(beats) };
+}

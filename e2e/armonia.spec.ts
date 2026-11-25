@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { countSounds, goto, pick, plucks, watchErrors } from './fixtures/helpers';
+import { clicks, countSounds, goto, pick, plucks, watchErrors } from './fixtures/helpers';
 
 // En pantalla ancha los dos costados arrancan plegados: tu vuelta se abre desde su franja.
 const openVuelta = (page: Page) => page.getByRole('button', { name: 'Abrir tu vuelta' }).click();
@@ -343,5 +343,57 @@ test.describe('armonía', () => {
       .getByRole('button', { name: /^Plagal/ })
       .click();
     await expect(page).toHaveURL(/v=C_G$/);
+  });
+  test('la vuelta suena con un ritmo de fondo: llega desde Ritmo, se cambia acá y manda su tempo', async ({
+    page,
+  }) => {
+    const errors = watchErrors(page);
+    await goto(page, '/ritmo?m=meter&bpm=96&g=3%2B3&d=8');
+    await page.getByRole('link', { name: 'Con una vuelta →' }).click();
+    await expect(page).toHaveURL(/\/armonia\?.*ritmo=/);
+    // Sin vuelta guardada, arranca con una de las de siempre, y la vuelta queda abierta.
+    await expect(page.getByTestId('vuelta')).toBeVisible();
+    const fondo = page.getByRole('button', { name: /^Ritmo de fondo:/ });
+    await expect(fondo).toHaveText('6/8');
+    await expect(page.getByText('Velocidad: 96 ppm')).toBeVisible();
+    await expect(page.getByText('Pulsos por acorde · 2 por compás')).toBeVisible();
+
+    const toggle = page.locator('#vuelta-toggle');
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-label', 'Parar la vuelta');
+    const notes = await plucks(page);
+    const hits = await clicks(page);
+    await expect.poll(() => plucks(page)).toBeGreaterThan(notes + 6);
+    await expect
+      .poll(async () => (await plucks(page)) + (await clicks(page)))
+      .toBeGreaterThan(notes + hits + 12);
+
+    // Sacar el ritmo deja la vuelta sola, sonando; uno de los de siempre toma el tempo que había.
+    await fondo.click();
+    const sheet = page.getByTestId('ritmo-de-fondo');
+    await sheet.getByRole('button', { name: 'Sin ritmo' }).click();
+    await expect(page).not.toHaveURL(/ritmo=/);
+    await expect(fondo).toHaveText('Sin ritmo');
+    await expect(toggle).toHaveAttribute('aria-label', 'Parar la vuelta');
+    await expect(page.getByText(/· \d por compás/)).toHaveCount(0);
+
+    await fondo.click();
+    await sheet.getByRole('button', { name: 'Rock' }).click();
+    await expect(fondo).toHaveText('Rock');
+    await expect(page).toHaveURL(/ritmo=m%3Ddrum%26bpm%3D95/);
+    await expect(toggle).toHaveAttribute('aria-label', 'Parar la vuelta');
+
+    // Al irse de la página, para todo.
+    await page
+      .getByRole('navigation', { name: 'Herramientas' })
+      .getByRole('link', { name: 'Escalas' })
+      .click();
+    await expect(page).toHaveURL(/\/escalas/);
+    // Lo que ya estaba programado (lo que entra en el próximo instante) puede llegar a sonar; después, nada.
+    await page.waitForTimeout(300);
+    const after = (await plucks(page)) + (await clicks(page));
+    await page.waitForTimeout(800);
+    expect((await plucks(page)) + (await clicks(page))).toBe(after);
+    expect(errors).toEqual([]);
   });
 });

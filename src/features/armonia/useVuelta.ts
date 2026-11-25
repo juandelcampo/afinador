@@ -1,9 +1,11 @@
 // La vuelta suena: un rasguido por pulso, uno solo por acorde o un arpegio. Cuenta en pulsos con el reloj
-// común (`transport`): si suena con un ritmo, el tempo es el del ritmo.
+// común (`transport`): si suena con un ritmo, el tempo es el del ritmo, y los pulsos son los de su compás
+// (`pulseGrid`): en un 6/8 rasguea dos veces por compás, en un 7/8 de 2+2+3, tres desparejas.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getAudio } from '~/audio/engine';
 import { pluckString } from '~/audio/instrument';
 import { transport, type Voice } from '~/audio/transport';
+import { QUARTER_GRID, type PulseGrid } from '~/core/rhythm';
 
 /** Lo que suena de un acorde: el MIDI de cada cuerda, o null si va apagada. */
 export type Voicing = Array<number | null>;
@@ -27,45 +29,59 @@ function strumVoicing(voicing: Voicing, a4: number, when: number, velocity: numb
 }
 
 /**
- * Un pulso de arpegio, en dos corcheas: el bajo al entrar al acorde y después las otras cuerdas, subiendo y
- * bajando (como p i m a m i). `pulse` es el pulso dentro del acorde, para seguir la cuenta donde quedó.
+ * Un pulso de arpegio, en corcheas: dos en una negra, tres en un pulso de 6/8. El bajo al entrar al
+ * acorde y después las otras cuerdas, subiendo y bajando (como p i m a m i). `eighth` es la corchea dentro
+ * del acorde donde empieza este pulso, para seguir la cuenta donde quedó.
  */
-function arpeggiate(voicing: Voicing, a4: number, when: number, beat: number, pulse: number) {
+function arpeggiate(
+  voicing: Voicing,
+  a4: number,
+  when: number,
+  beat: number,
+  length: number,
+  eighth: number,
+) {
   const sounding = voicing.flatMap((midi, stringIndex) => (midi === null ? [] : [{ midi, stringIndex }]));
   if (!sounding.length) return;
   const [bass, ...upper] = sounding;
   const cycle = upper.length > 1 ? [...upper, ...upper.slice(1, -1).reverse()] : upper;
-  for (let half = 0; half < 2; half++) {
-    const eighth = pulse * 2 + half;
-    const note = eighth === 0 || !cycle.length ? bass! : cycle[(eighth - 1) % cycle.length]!;
+  const notes = Math.max(1, Math.round(length * 2));
+  for (let index = 0; index < notes; index++) {
+    const count = eighth + index;
+    const note = count === 0 || !cycle.length ? bass! : cycle[(count - 1) % cycle.length]!;
     pluckString(note.stringIndex, note.midi, {
       a4,
-      when: when + (half * beat) / 2,
-      velocity: eighth === 0 ? 0.9 : 0.6,
+      when: when + (index * length * beat) / notes,
+      velocity: count === 0 ? 0.9 : 0.6,
     });
   }
 }
+
+const gridOfQuarters = () => QUARTER_GRID;
 
 export function useVuelta({
   steps,
   a4,
   tempo,
   feel,
+  grid = gridOfQuarters,
 }: {
-  /** Cada acorde con lo que dura: la duración va acorde por acorde. */
+  /** Cada acorde con lo que dura en pulsos: la duración va acorde por acorde. */
   steps: Step[];
   a4: number;
   tempo: number;
   feel: Feel;
+  /** Los pulsos de cada compás, si suena con un ritmo. Sin ritmo, negras. */
+  grid?: (bar: number) => PulseGrid;
 }) {
   const [running, setRunning] = useState(false);
   /** El acorde que está sonando en la vuelta, para encenderlo. */
   const [current, setCurrent] = useState<number | null>(null);
 
   // El secuenciador corre fuera de los renders: siempre lee lo último.
-  const latest = useRef({ steps, a4, tempo, feel });
+  const latest = useRef({ steps, a4, tempo, feel, grid });
   useEffect(() => {
-    latest.current = { steps, a4, tempo, feel };
+    latest.current = { steps, a4, tempo, feel, grid };
   });
   const timers = useRef<{
     voice: Voice | null;
@@ -80,60 +96,84 @@ export function useVuelta({
     setCurrent(null);
   }, []);
 
-  const start = useCallback(() => {
-    stop();
-    if (!latest.current.steps.length) return;
-    const { ctx } = getAudio();
-    /** El acorde que suena y el pulso dentro de él. */
-    let index = 0;
-    let pulse = 0;
-    /** El próximo pulso del reloj común que le toca a la vuelta. */
-    let nextBeat = 0;
+  /**
+   * Arranca la vuelta. Sola, entra cuando puede; con un ritmo, `at` es el pulso del reloj donde el ritmo da
+   * su primer golpe, así el primer acorde cae en el uno del compás.
+   */
+  const start = useCallback(
+    (at?: number) => {
+      stop();
+      if (!latest.current.steps.length) return;
+      const { ctx } = getAudio();
+      /** El acorde que suena y en qué pulso y corchea va dentro de él. */
+      let index = 0;
+      let pulse = 0;
+      let eighth = 0;
+      /** El compás que se está programando, dónde empieza en el reloj y en qué pulso suyo va. */
+      let bar = 0;
+      let barStart = 0;
+      let barGrid = latest.current.grid(0);
+      let slot = 0;
 
-    const schedule: Voice = (until) => {
-      const { steps: list, a4: pitch, feel: mode } = latest.current;
-      if (!list.length) return stop();
-      while (nextBeat < until) {
-        // Si mientras sonaba sacaste acordes, la cuenta vuelve al principio.
-        if (index >= list.length) {
-          index = 0;
-          pulse = 0;
+      const schedule: Voice = (until) => {
+        const { steps: list, a4: pitch, feel: mode } = latest.current;
+        if (!list.length) return stop();
+        for (;;) {
+          if (slot >= barGrid.pulses.length) {
+            barStart += barGrid.beats;
+            bar += 1;
+            barGrid = latest.current.grid(bar);
+            slot = 0;
+          }
+          const { at: offset, length } = barGrid.pulses[slot]!;
+          const nextBeat = barStart + offset;
+          if (nextBeat >= until) return;
+          // Si mientras sonaba sacaste acordes, la cuenta vuelve al principio.
+          if (index >= list.length) {
+            index = 0;
+            pulse = 0;
+            eighth = 0;
+          }
+          const step = list[index]!;
+          const first = pulse === 0;
+          const nextTime = transport.timeOf(nextBeat);
+          const beat = transport.secondsPerBeat();
+          if (mode === 'arpegio') arpeggiate(step.voicing, pitch, nextTime, beat, length, eighth);
+          else if (first || mode === 'pulso') {
+            strumVoicing(step.voicing, pitch, nextTime, first ? 0.9 : 0.5, first ? 0.03 : 0.018);
+          }
+          if (first) {
+            const playing = index;
+            const delay = Math.max(0, (nextTime - ctx.currentTime) * 1000);
+            timers.current.marks = [
+              ...timers.current.marks.slice(-8),
+              setTimeout(() => setCurrent(playing), delay),
+            ];
+          }
+          slot += 1;
+          pulse += 1;
+          eighth += Math.max(1, Math.round(length * 2));
+          if (pulse >= Math.max(1, step.beats)) {
+            pulse = 0;
+            eighth = 0;
+            index = (index + 1) % list.length;
+          }
         }
-        const step = list[index]!;
-        const first = pulse === 0;
-        const nextTime = transport.timeOf(nextBeat);
-        const beat = transport.secondsPerBeat();
-        if (mode === 'arpegio') arpeggiate(step.voicing, pitch, nextTime, beat, pulse);
-        else if (first || mode === 'pulso') {
-          strumVoicing(step.voicing, pitch, nextTime, first ? 0.9 : 0.5, first ? 0.03 : 0.018);
-        }
-        if (first) {
-          const playing = index;
-          const delay = Math.max(0, (nextTime - ctx.currentTime) * 1000);
-          timers.current.marks = [
-            ...timers.current.marks.slice(-8),
-            setTimeout(() => setCurrent(playing), delay),
-          ];
-        }
-        nextBeat += 1;
-        pulse += 1;
-        if (pulse >= Math.max(1, step.beats)) {
-          pulse = 0;
-          index = (index + 1) % list.length;
-        }
-      }
-    };
+      };
 
-    // Si ya suena un ritmo, la vuelta entra en su próximo pulso y sigue su tempo.
-    nextBeat = transport.join(schedule, latest.current.tempo);
-    timers.current.voice = schedule;
-    setRunning(true);
-    schedule(transport.horizon());
-  }, [stop]);
+      // Si ya suena un ritmo, la vuelta entra donde él empezó, o en su próximo pulso, y sigue su tempo.
+      const joined = transport.join(schedule, latest.current.tempo);
+      barStart = at ?? joined;
+      timers.current.voice = schedule;
+      setRunning(true);
+      schedule(transport.horizon());
+    },
+    [stop],
+  );
 
   useEffect(() => stop, [stop]);
 
-  // Sola, la vuelta lleva su tempo. Cuando haya un ritmo sonando con ella, el que manda va a ser el ritmo.
+  // Sola, la vuelta lleva su tempo. Con un ritmo, el tempo que le llega es el del ritmo: manda él.
   useEffect(() => {
     if (running) transport.setBpm(tempo);
   }, [running, tempo]);

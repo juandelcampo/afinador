@@ -16,6 +16,15 @@
 .head > button {
   flex: none;
 }
+/* Arriba a la derecha, en el lugar que deja el título: tus ritmos y, debajo, el link a Armonía. Uno debajo
+   del otro, así en el celular el título no se angosta. */
+.headTools {
+  display: flex;
+  flex: none;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+  gap: 2px;
+}
 .board {
   display: grid;
   gap: 16px 28px;

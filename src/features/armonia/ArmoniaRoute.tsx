@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import { Link, useSearchParams, type MetaFunction } from 'react-router';
+import { metronome } from '~/audio/metronome';
 import {
   BASS_ROLES,
   bassFor,
@@ -49,10 +50,12 @@ import { INVERSION_CHORDS } from '~/core/inversions';
 import { findWorld, WORLDS } from '~/core/scales';
 import { noteLabel, noteToMidi } from '~/core/notes';
 import { polarityOf, relativeOf, romanChord, singOver, twoChordMoves } from '~/core/progressions';
+import { pulseGrid, QUARTER_GRID, type RhythmConfig } from '~/core/rhythm';
 import { fingeringsFor, MUTED, openChord, type Fingering } from '~/core/tuning';
 import { TUNINGS, type Tuning } from '~/data/tunings';
 import { VUELTA_GROUPS, VUELTAS, type VueltaMode } from '~/data/vueltas';
 import { Fader } from '~/shared/Fader';
+import { fondoFromParam, fondoToParam, RitmoDeFondo } from '~/shared/RitmoDeFondo';
 import { TEMPO_RANGE, useSettings } from '~/shared/settings';
 import { useHydrated } from '~/shared/useHydrated';
 import { Icon, PlayIcon } from '~/shared/ui/Icon';
@@ -103,6 +106,9 @@ function voicingOf(tuning: Tuning, chord: Chord, fingering: Fingering | null): V
 /** Lo que dura cada acorde si no se dice otra cosa, y las duraciones que se ofrecen, en pulsos. */
 const DEFAULT_BEATS = 4;
 const BEAT_OPTIONS = [1, 2, 3, 4, 6, 8] as const;
+
+/** Un tempo que entra en el deslizador: el de un ritmo puede venir de más lejos. */
+const clampTempo = (bpm: number) => Math.min(TEMPO_RANGE.max, Math.max(TEMPO_RANGE.min, Math.round(bpm)));
 
 /**
  * Un acorde puesto en la vuelta: el acorde, cuántos pulsos dura y con qué figura se toca (0 es la más
@@ -460,7 +466,11 @@ export default function ArmoniaRoute() {
   const vuelta = useMemo(() => readVuelta(vueltaParam), [vueltaParam]);
 
   const [selected, setSelected] = useState<number | null>(null);
-  const [tempo, setTempo] = useState(80);
+  const [ownTempo, setOwnTempo] = useState(80);
+  /** El ritmo de fondo viene en la URL; con él, manda su tempo. */
+  const fondoParam = params.get('ritmo');
+  const fondo = useMemo(() => fondoFromParam(fondoParam), [fondoParam]);
+  const tempo = fondo ? clampTempo(fondo.bpm) : ownTempo;
   const [feel, setFeel] = useState<Feel>('pulso');
   const [geometry, setGeometry] = useState<Geometry>('cuadrado');
   /** Un modal por vez: el editor del acorde, las vueltas para arrancar o las cadencias. */
@@ -579,7 +589,54 @@ export default function ArmoniaRoute() {
     voicing: voicingOf(tuning, chord, finger(chord)),
     beats: beatsOf(chord),
   }));
-  const player = useVuelta({ steps, a4, tempo, feel });
+  const grid = useMemo(() => (fondo ? (bar: number) => pulseGrid(fondo, bar) : () => QUARTER_GRID), [fondo]);
+  const player = useVuelta({ steps, a4, tempo, feel, grid });
+
+  /** Con ritmo, arranca el ritmo y la vuelta entra en su primer golpe: el primer acorde cae en el uno. */
+  const play = () => {
+    player.stop();
+    metronome.stop();
+    if (!fondo) return player.start();
+    metronome.setConfig({ ...fondo, bpm: tempo });
+    metronome.start();
+    player.start(metronome.startBeat());
+  };
+  const stop = () => {
+    player.stop();
+    metronome.stop();
+  };
+  const setTempo = (value: number) =>
+    fondo ? update({ ritmo: fondoToParam({ ...fondo, bpm: value }) }) : setOwnTempo(value);
+  /** Elegir un ritmo lo hace sonar con la vuelta; sacarlo deja la vuelta sola, sonando si sonaba. */
+  const playNext = useRef(false);
+  const chooseFondo = (config: RhythmConfig | null) => {
+    playNext.current = vuelta.length > 0 && (config !== null || player.running);
+    // Sin ritmo, la vuelta sigue al tempo que traía el ritmo, al paso del deslizador.
+    if (!config && fondo) setOwnTempo(clampTempo(Math.round(tempo / TEMPO_RANGE.step) * TEMPO_RANGE.step));
+    update({ ritmo: config && fondoToParam({ ...config, bpm: clampTempo(config.bpm) }) });
+  };
+  // Cambió el ritmo (no el tempo): la vuelta y el ritmo vuelven a empezar juntos, para no quedar corridos.
+  const fondoPattern = fondo && fondoToParam({ ...fondo, bpm: 0 });
+  const restart = useEffectEvent(() => {
+    if (playNext.current || player.running) play();
+    playNext.current = false;
+  });
+  const lastPattern = useRef(fondoPattern);
+  useEffect(() => {
+    if (lastPattern.current === fondoPattern) return;
+    lastPattern.current = fondoPattern;
+    restart();
+  }, [fondoPattern]);
+  // El tempo cambia sin cortar: el ritmo lo lleva y la vuelta lo sigue.
+  useEffect(() => {
+    if (fondo && metronome.getState().running) metronome.setConfig({ ...fondo, bpm: tempo });
+  }, [fondo, tempo]);
+  // Si la vuelta deja de sonar (se vació, se tocó una de muestra), el ritmo también. Y al irse, para.
+  useEffect(() => {
+    if (!player.running) metronome.stop();
+  }, [player.running]);
+  useEffect(() => () => metronome.stop(), []);
+  const barPulses = fondo && fondo.mode !== 'mutante' ? pulseGrid(fondo, 0).pulses.length : null;
 
   const name = (chord: Chord) => chordName(chord, key, notation);
   const listen = (chord: Placed) => player.strum(voicingOf(tuning, chord, finger(chord)));
@@ -662,6 +719,21 @@ export default function ArmoniaRoute() {
       ...(vueltaMode === mode ? {} : { escala: vueltaMode === 'mayor' ? 'mayor' : 'natural' }),
     });
   };
+  // Llegar con un ritmo (desde Ritmo, "Con una vuelta") abre tu vuelta para tocarla encima; si no había
+  // ninguna, arranca con la primera de las de siempre en tu tónica, así ya hay algo que suene.
+  const arrivedWithFondo = useRef(false);
+  const arriveWithFondo = useEffectEvent(() => {
+    openSide('right');
+    if (vuelta.length) return;
+    const group = VUELTA_GROUPS.find((item) => item.mode === mode);
+    const first = group && VUELTAS.find((item) => item.group === group.id);
+    if (group && first) applyStarter(starter(first.degrees, group.mode), group.mode);
+  });
+  useEffect(() => {
+    if (!hydrated || !fondo || arrivedWithFondo.current) return;
+    arrivedWithFondo.current = true;
+    arriveWithFondo();
+  }, [hydrated, fondo]);
   const circleProps = {
     keyOf: key,
     notation,
@@ -1188,7 +1260,7 @@ export default function ArmoniaRoute() {
                       id="vuelta-toggle"
                       on={player.running}
                       ariaLabel={player.running ? 'Parar la vuelta' : 'Tocar la vuelta'}
-                      onClick={() => (player.running ? player.stop() : player.start())}
+                      onClick={() => (player.running ? stop() : play())}
                     >
                       <PlayIcon running={player.running} />
                     </Button>
@@ -1198,11 +1270,13 @@ export default function ArmoniaRoute() {
                         type="range"
                         min={TEMPO_RANGE.min}
                         max={TEMPO_RANGE.max}
-                        step={TEMPO_RANGE.step}
+                        // El tempo de un ritmo puede ser cualquiera (112): se mueve de a uno para no redondearlo.
+                        step={fondo ? 1 : TEMPO_RANGE.step}
                         value={tempo}
                         onChange={(event) => setTempo(Number(event.target.value))}
                       />
                     </label>
+                    <RitmoDeFondo value={fondo} tempo={tempo} onChange={chooseFondo} />
                     <div className={`${ui.field} ${styles.fullRow}`}>
                       <span>Cómo se toca</span>
                       <Segmented
@@ -1220,7 +1294,12 @@ export default function ArmoniaRoute() {
                     {/* Va con lo que dice cómo suena, no con Cerrar con… y Otra vuelta…: pegado a esos parecía
                         su título. Cada acorde de la vuelta puede tener la suya tocándolo. */}
                     <div className={`${ui.field} ${styles.fullRow}`}>
-                      <span>Pulsos por acorde</span>
+                      {/* Con un ritmo, cuántos pulsos tiene su compás: con eso se ve cuánto dura cada acorde. Va en
+                          el mismo renglón del rótulo, así aparecer no mueve nada. */}
+                      <span>
+                        Pulsos por acorde
+                        {barPulses !== null && ` · ${barPulses} por compás`}
+                      </span>
                       <Segmented
                         label="Pulsos de todos los acordes"
                         stretch
@@ -1589,7 +1668,7 @@ export default function ArmoniaRoute() {
             variant="primary"
             on={player.running}
             ariaLabel={player.running ? 'Parar la vuelta' : 'Tocar la vuelta'}
-            onClick={() => (player.running ? player.stop() : player.start())}
+            onClick={() => (player.running ? stop() : play())}
           >
             <Icon name={player.running ? 'stop' : 'play'} data-filled="true" />
           </Button>

@@ -1,0 +1,32 @@
+/* El ritmo de fondo: un campo con el nombre del que suena y un modal con todos a la vista, sin bajar. */
+/* Solo el botón del campo: el modal vive adentro y sus botones miden lo suyo. */
+.field > button {
+  width: 100%;
+}
+/* El nombre cambia de largo (4/4, Cuatro al piso, uno tuyo): se corta en una línea y no mueve nada. */
+.name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.groups {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.groups h3 {
+  margin: 0 0 6px;
+}
+/* En grilla pareja: en el celular entran tres por fila sin partir las palabras. */
+.group {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 104px), 1fr));
+  gap: 6px;
+}
+.group button {
+  padding-inline: 8px;
+}
+.empty {
+  margin: 0;
+}

@@ -111,6 +111,7 @@ Todo está en `src/shared/`. Antes de escribir CSS para un control, fijate si ya
 | Una columna plegada a un costado          | `Rail`                                       | `ui/ui.tsx`        |
 | Un modal                                  | `Sheet`                                      | `ui/Sheet.tsx`     |
 | Guardar con nombre y abrir lo guardado    | `Guardados`                                  | `Guardados.tsx`    |
+| Un ritmo que suena de fondo               | `RitmoDeFondo` (va en la URL como `ritmo=`)  | `RitmoDeFondo.tsx` |
 | El diapasón                               | `Diapason`                                   | `Diapason.tsx`     |
 | Rasgueo o arpegio de un acorde suelto     | `ShapeStyleToggle`                           | `ShapeStyle.tsx`   |
 | Explicación chica en gris                 | `className={ui.hint}`                        | `ui/ui.module.css` |
