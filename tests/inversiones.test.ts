@@ -1,10 +1,11 @@
 // Inversiones: todas las figuras de un acorde, agrupadas por la nota del bajo.
 import { describe, expect, it } from 'vitest';
-import { CHORD_STEPS } from '~/core/harmony';
+import { CHORD_STEPS, rootSpelling, spellTone } from '~/core/harmony';
 import {
   describeShape,
   encodeFrets,
   INVERSION_CHORDS,
+  invertible,
   inversionsOf,
   parseFrets,
   tabOf,
@@ -157,5 +158,36 @@ describe('una forma armada a mano', () => {
     expect(parseFrets('x-3-2-0-1', 6, 15)).toBeNull();
     expect(parseFrets('x-3-2-0-1-99', 6, 15)).toBeNull();
     expect(parseFrets('x-3-2-a-1-0', 6, 15)).toBeNull();
+  });
+});
+
+describe('cómo se escriben las notas del acorde', () => {
+  it('la raíz en las teclas negras va como su tonalidad más común, o como se eligió', () => {
+    expect(rootSpelling(1, '')).toBe('Db');
+    expect(rootSpelling(1, 'm')).toBe('C#');
+    expect(rootSpelling(8, 'm7b5')).toBe('G#');
+    expect(rootSpelling(6, '')).toBe('F#');
+    expect(rootSpelling(6, '', 'b')).toBe('Gb');
+    expect(rootSpelling(10, '7', '#')).toBe('A#');
+    expect(rootSpelling(4, 'm', 'b')).toBe('E');
+  });
+
+  it('las demás notas salen de la letra de la raíz', () => {
+    // E mayor: la 3 es G#, no A♭.
+    expect(spellTone(8, 'E', '3')).toBe('G#');
+    expect(spellTone(3, 'F', '♭7')).toBe('Eb');
+    expect(spellTone(5, 'C#', '3')).toBe('E#');
+    expect(spellTone(6, 'D', '3')).toBe('F#');
+    // La 9 de B♭ es C; la ♭13 de E es C.
+    expect(spellTone(0, 'Bb', '9')).toBe('C');
+    expect(spellTone(0, 'E', '♭13')).toBe('C');
+  });
+
+  it('solo se invierten las tríadas y los de séptima', () => {
+    expect(invertible('')).toBe(true);
+    expect(invertible('m7b5')).toBe(true);
+    expect(invertible('6')).toBe(false);
+    expect(invertible('add9')).toBe(false);
+    expect(invertible('7#9')).toBe(false);
   });
 });

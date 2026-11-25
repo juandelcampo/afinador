@@ -23,12 +23,13 @@ import {
 } from '~/core/scales';
 import { TUNINGS } from '~/data/tunings';
 import { Diapason } from '~/shared/Diapason';
-import { useSettings, type FretLabels } from '~/shared/settings';
+import { useSettings } from '~/shared/settings';
+import { FretLabelsToggle } from '~/shared/FretLabels';
 import { TuneLink, TuningField } from '~/shared/TuningField';
 import { Icon } from '~/shared/ui/Icon';
 import { Picker } from '~/shared/ui/Picker';
 import { Sheet } from '~/shared/ui/Sheet';
-import { Browse, Button, PageTitle, Setup, Slab, SplitButton, Toggle } from '~/shared/ui/ui';
+import { Browse, Button, PageTitle, Setup, Slab, SplitButton } from '~/shared/ui/ui';
 import ui from '~/shared/ui/ui.module.css';
 import { useHydrated } from '~/shared/useHydrated';
 import { DronePanel } from './DronePanel';
@@ -85,7 +86,6 @@ export default function EscalasRoute() {
   const positionIndex = view.key === viewKey ? Math.min(view.position, positions.length - 1) : -1;
   const position = positionIndex >= 0 ? positions[positionIndex]! : null;
   const labels = useSettings((s) => s.fretLabels);
-  const setLabels = (fretLabels: FretLabels) => setSettings({ fretLabels });
   const [droneOn, setDroneOn] = useState(false);
   const [droneSheet, setDroneSheet] = useState(false);
   /** La nota que está sonando en el recorrido, para iluminarla. */
@@ -334,15 +334,7 @@ export default function EscalasRoute() {
           >
             Drone en {name(tonic)}
           </SplitButton>
-          <Toggle
-            label="Qué dice cada nota"
-            value={labels}
-            options={[
-              { value: 'notas', label: 'Notas' },
-              { value: 'grados', label: '1 ♭3 5' },
-            ]}
-            onChange={setLabels}
-          />
+          <FretLabelsToggle degrees="1 ♭3 5" />
         </div>
 
         <p className={styles.why}>

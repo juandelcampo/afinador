@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { Link, useSearchParams, type MetaFunction } from 'react-router';
 import { getAudio } from '~/audio/engine';
 import { pluckString, strumShape } from '~/audio/instrument';
-import { CHORD_STEPS, chordToken, plainName, suffixSymbol } from '~/core/harmony';
+import { CHORD_STEPS, chordToken, pitchName, rootSpelling, spellTone, suffixSymbol } from '~/core/harmony';
 import { CHORD_WORDS, clusterSense, identifyChord, type ChordReading } from '~/core/identify';
 import { bassReading, encodeFrets, INVERSION_CHORDS, parseFrets, tabOf, toneName } from '~/core/inversions';
 import { intervalName, noteToMidi } from '~/core/notes';
@@ -82,12 +82,21 @@ export default function AcordeRoute() {
     .slice(0, 2);
 
   // Con el bemol de verdad: en mayúsculas "Db" se leería como dos letras.
-  const pcName = (pc: number) => plainName(mod12(pc), notation).replace(/b$/, '♭');
+  const shown = (note: string) => pitchName(note, notation).replace(/b$/, '♭');
+  /**
+   * Cada nota se escribe según el acorde que forma: la raíz como su tonalidad más común (C#m, D♭) y las
+   * demás a partir de la letra de la raíz (en E, la 3 es G# y no A♭).
+   */
+  const spellFor = (item: ChordReading, pc: number) => {
+    const role = roleOf(item, pc);
+    return role ? spellTone(pc, rootSpelling(item.root, item.suffix), role) : rootSpelling(pc, item.suffix);
+  };
+  const pcName = (pc: number) => shown(reading ? spellFor(reading, pc) : rootSpelling(pc, ''));
   const nameOf = (item: ChordReading) =>
-    pcName(item.root) +
+    shown(spellFor(item, item.root)) +
     suffixSymbol(item.suffix) +
     (item.extras.length ? `(${item.extras.map((extra) => extra.label).join(',')})` : '') +
-    (item.bass === item.root ? '' : `/${pcName(item.bass)}`);
+    (item.bass === item.root ? '' : `/${shown(spellFor(item, item.bass))}`);
 
   /** Qué dice cada dedo: su función si el acorde tiene nombre, si no el nombre de la nota. */
   const toneAt = (stringIndex: number, fret: number) => {

@@ -173,6 +173,15 @@ export const INVERSION_GROUPS: ReadonlyArray<{ id: InversionChordGroup; name: st
   { id: 'extendidos', name: 'Extendidos' },
 ];
 
+/**
+ * Si al acorde le sirve pensarlo invertido: las tríadas y los de séptima. Una sexta o un add9 con otra nota
+ * en el bajo ya tiene un nombre más fácil (C6/A es Am7), y en los de cinco notas no se usa.
+ */
+export const invertible = (suffix: Suffix) =>
+  INVERSION_CHORDS.some(
+    (item) => item.suffix === suffix && (item.group === 'triadas' || item.group === 'septimas'),
+  );
+
 /** Si el acorde tiene tercera: entonces el 2 es una novena agregada y no reemplaza a la tercera. */
 const hasThird = (steps: readonly number[]) => steps.includes(3) || steps.includes(4);
 

@@ -2,12 +2,23 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams, type MetaFunction } from 'react-router';
 import { getAudio } from '~/audio/engine';
 import { pluckString, strumShape } from '~/audio/instrument';
-import { CHORD_STEPS, chordToken, parseChord, plainName, type Chord, type Suffix } from '~/core/harmony';
+import {
+  CHORD_STEPS,
+  chordToken,
+  parseChord,
+  pitchName,
+  rootAccidental,
+  rootSpelling,
+  spellTone,
+  type Chord,
+  type Suffix,
+} from '~/core/harmony';
 import {
   describeShape,
   encodeFrets,
   INVERSION_CHORDS,
   INVERSION_GROUPS,
+  invertible,
   inversionsOf,
   parseFrets,
   tabOf,
@@ -20,11 +31,12 @@ import { MUTED, openChord } from '~/core/tuning';
 import { TUNINGS, type Tuning } from '~/data/tunings';
 import { ShapeStyleToggle } from '~/shared/ShapeStyle';
 import { useSettings } from '~/shared/settings';
+import { FretLabelsToggle, readAccidental } from '~/shared/FretLabels';
 import { useHydrated } from '~/shared/useHydrated';
 import { Diapason, LAST_FRET } from '~/shared/Diapason';
 import { TuneLink, TuningField } from '~/shared/TuningField';
 import { Picker } from '~/shared/ui/Picker';
-import { Browse, Button, PageTitle, Setup, Slab } from '~/shared/ui/ui';
+import { Browse, Button, PageTitle, Setup, Slab, Toggle } from '~/shared/ui/ui';
 import ui from '~/shared/ui/ui.module.css';
 import styles from './inversiones.module.css';
 
@@ -76,6 +88,16 @@ function easiest(group: InversionGroup): Voicing | undefined {
   return [...pool].sort((a, b) => a.effort - b.effort)[0];
 }
 
+/**
+ * Por qué este acorde no tiene inversiones: con otra nota en el bajo pasa a tener un nombre más fácil.
+ * En las sextas se dice cuál.
+ */
+function notInverted(chord: Chord, name: string, relative: string): string {
+  if (chord.suffix === '6') return `Con la 6 en el bajo ya no es ${name}: es ${relative}m7.`;
+  if (chord.suffix === 'm6') return `Con la 6 en el bajo ya no es ${name}: es ${relative}m7♭5.`;
+  return `Con otra nota en el bajo deja de ser ${name} y se llama de otra manera: por eso va solo en su fundamental.`;
+}
+
 interface View {
   /** Para qué acorde y afinación vale: si cambian, se vuelve a la fundamental. */
   key: string;
@@ -92,14 +114,18 @@ export default function InversionesRoute() {
   const notation = useSettings((s) => s.notation);
   const a4 = useSettings((s) => s.a4);
   const style = useSettings((s) => s.chordStyle);
+  const labels = useSettings((s) => s.fretLabels);
 
   const tuning = findTuning(params.get('afinacion'));
   const chord = readChord(params.get('acorde')) ?? homeChord(tuning);
   const open = useMemo(() => tuning.notes.map(noteToMidi), [tuning.notes]);
-  const groups = useMemo(
-    () => inversionsOf(open, chord.root, chord.suffix, { lastFret: LAST_FRET }),
-    [open, chord.root, chord.suffix],
-  );
+  // Las sextas, los add9 y los de cinco notas van solo en su fundamental: con otra nota en el bajo ya
+  // tienen un nombre más fácil (C6 con la A abajo es Am7).
+  const groups = useMemo(() => {
+    const all = inversionsOf(open, chord.root, chord.suffix, { lastFret: LAST_FRET });
+    return invertible(chord.suffix) ? all : all.slice(0, 1);
+  }, [open, chord.root, chord.suffix]);
+  const prefer = readAccidental(params.get('alt'));
 
   /** La nota de esa cuerda en ese traste, en semitonos desde la raíz. */
   const stepAt = (stringIndex: number, fret: number) => (open[stringIndex]! + fret - chord.root + 120) % 12;
@@ -178,10 +204,19 @@ export default function InversionesRoute() {
     });
 
   // Con el bemol de verdad: en mayúsculas "Db" se leería como dos letras.
-  const rootName = (pc: number) => plainName(pc, notation).replace(/b$/, '♭');
+  const shown = (note: string) => pitchName(note, notation).replace(/b$/, '♭');
+  /** La raíz en las teclas negras se escribe como pide el acorde, o como se eligió. */
+  const rootName = (pc: number) => shown(rootSpelling(pc, chord.suffix, prefer));
+  const rootLetters = rootSpelling(chord.root, chord.suffix, prefer);
+  /** Cada nota del acorde, a partir de la letra de la raíz: la 3 de E es G#, no A♭. */
+  const toneNote = (step: number) =>
+    shown(spellTone(chord.root + step, rootLetters, toneName(step, chord.suffix)));
   const name = rootName(chord.root) + suffixLabel(chord.suffix);
   const nameWithBass = (item: InversionGroup) =>
-    item.inversion === 0 ? name : `${name}/${rootName(chord.root + item.bass)}`;
+    item.inversion === 0 ? name : `${name}/${toneNote(item.bass)}`;
+  // Lo que muestra el ♯/♭: el de la raíz si es negra, si no el que usaría en C#/D♭.
+  const accidental =
+    rootAccidental(chord.root, chord.suffix, prefer) ?? rootAccidental(1, chord.suffix, prefer)!;
 
   const play = (shape: Voicing | null | undefined) => {
     if (!shape) return;
@@ -273,6 +308,15 @@ export default function InversionesRoute() {
             }))}
             onChange={(value) => setChord({ suffix: value })}
           />
+          <Toggle
+            label="Las teclas negras"
+            value={accidental}
+            options={[
+              { value: '#', label: 'C# D#' },
+              { value: 'b', label: 'D♭ E♭' },
+            ]}
+            onChange={(value) => update({ alt: value === '#' ? 's' : 'b' })}
+          />
           <TuneLink tuning={tuning} />
         </Setup>
       </Slab>
@@ -313,7 +357,7 @@ export default function InversionesRoute() {
                 <strong>
                   {rootName(chord.root)}
                   <span className={styles.long}>{suffixLabel(chord.suffix)}</span>
-                  {item.inversion > 0 && `/${rootName(chord.root + item.bass)}`}
+                  {item.inversion > 0 && `/${toneNote(item.bass)}`}
                 </strong>
                 <small>
                   {item.inversion === 0 ? (
@@ -337,7 +381,11 @@ export default function InversionesRoute() {
           notes={tuning.notes}
           voicing={voicing}
           notation={notation}
-          toneAt={(stringIndex, fret) => toneName(stepAt(stringIndex, fret), chord.suffix)}
+          toneAt={(stringIndex, fret) =>
+            labels === 'notas'
+              ? toneNote(stepAt(stringIndex, fret))
+              : toneName(stepAt(stringIndex, fret), chord.suffix)
+          }
           canPlace={(stringIndex, fret) => chordSteps.has(stepAt(stringIndex, fret))}
           onToggle={toggle}
         />
@@ -454,6 +502,7 @@ export default function InversionesRoute() {
             </Button>
           )}
           <ShapeStyleToggle />
+          <FretLabelsToggle degrees="R 3 5" />
         </div>
 
         <p className={styles.why}>
@@ -465,6 +514,7 @@ export default function InversionesRoute() {
                 {shownGroup.inversion === 0 ? 'La raíz en el bajo.' : `La ${shownGroup.tone} en el bajo.`}
               </strong>{' '}
               {shownGroup.why}
+              {!invertible(chord.suffix) && <> {notInverted(chord, name, toneNote(9))}</>}
             </>
           )}
         </p>

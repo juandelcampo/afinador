@@ -122,12 +122,10 @@
    de a dos. Escuchar y el Toggle toman lo justo y Armar la mía, lo que queda. */
 .play {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  /* En el celular, de a dos: Escuchar y Armar la mía arriba, cómo suena y qué dice cada nota abajo. */
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin-top: 12px;
-}
-.play[data-editing] {
-  grid-template-columns: 1fr 1fr;
 }
 .play > * {
   padding-inline: 6px;

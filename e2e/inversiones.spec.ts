@@ -40,6 +40,11 @@ test.describe('inversiones', () => {
     await expect(bass.getByRole('button', { name: /C\/E/ })).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByText('La 3 en el bajo.')).toBeVisible();
     await expect(
+      page.getByTestId('diapason').getByRole('button', { name: /^Sacar el dedo de la 6\.ª cuerda.*\(E\)$/ }),
+    ).toBeVisible();
+    // Con los grados, la misma nota dice qué es en el acorde.
+    await page.getByRole('button', { name: 'Qué dice cada nota: Notas' }).click();
+    await expect(
       page.getByTestId('diapason').getByRole('button', { name: /^Sacar el dedo de la 6\.ª cuerda.*\(3\)$/ }),
     ).toBeVisible();
 
@@ -61,25 +66,54 @@ test.describe('inversiones', () => {
     expect(errors).toEqual([]);
   });
 
-  test('los extendidos: el tipo se elige por grupo y tienen cinco notas en el bajo', async ({ page }) => {
+  test('los extendidos y las sextas van solo en su fundamental: invertidos tienen otro nombre', async ({
+    page,
+  }) => {
     const errors = watchErrors(page);
     await goto(page, '/inversiones?acorde=E');
     await pick(page, 'tipo', '7#9');
     await expect(page).toHaveURL(/acorde=E7%239/);
     const bass = page.getByRole('group', { name: 'Qué va en el bajo' }).getByRole('button');
-    await expect(bass).toHaveCount(5);
-    await expect(bass.last()).toHaveAccessibleName('E7♯9/G: 4.ª inversión');
-    await bass.last().click();
-    await expect(page.getByText('La ♯9 en el bajo.')).toBeVisible();
+    await expect(bass).toHaveCount(1);
+    await expect(page.getByText(/deja de ser E7♯9/)).toBeVisible();
+    // G6 con la E abajo es Em7: lo dice en vez de llamarlo G6/E.
+    await goto(page, '/inversiones?acorde=G6');
+    await expect(bass).toHaveCount(1);
+    await expect(page.getByText('Con la 6 en el bajo ya no es G6: es Em7.')).toBeVisible();
     expect(errors).toEqual([]);
   });
 
-  test('en el celular las cinco inversiones entran en una fila', async ({ page }) => {
+  test('las notas se escriben según el acorde, y las teclas negras se pueden pasar a ♯ o ♭', async ({
+    page,
+  }) => {
+    const errors = watchErrors(page);
+    await goto(page, '/inversiones?acorde=E');
+    const bass = page.getByRole('group', { name: 'Qué va en el bajo' }).getByRole('button');
+    // La 3 de E es G#, no A♭.
+    await expect(bass.nth(1)).toHaveAccessibleName('E/G#: 1.ª inversión');
+    // El mástil arranca con el nombre de las notas.
+    await expect(
+      page
+        .getByTestId('diapason')
+        .getByRole('button', { name: /\(G#\)/ })
+        .first(),
+    ).toBeVisible();
+    const roots = page.getByRole('group', { name: 'Nota del acorde' });
+    await roots.getByRole('button', { name: 'D♭' }).click();
+    await expect(page).toHaveURL(/acorde=Db/);
+    await page.getByRole('button', { name: 'Las teclas negras: D♭ E♭' }).click();
+    await expect(page).toHaveURL(/alt=s/);
+    await expect(roots.getByRole('button', { name: 'C#' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(bass.nth(1)).toHaveAccessibleName('C#/E#: 1.ª inversión');
+    expect(errors).toEqual([]);
+  });
+
+  test('en el celular las cuatro inversiones entran en una fila', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await goto(page, '/inversiones?acorde=Ebmaj7%2311');
+    await goto(page, '/inversiones?acorde=Ebmaj7');
     const group = page.getByRole('group', { name: 'Qué va en el bajo' });
-    await expect(group.getByRole('button').nth(1)).toHaveText(/^E♭maj7♯11\/G1\.ª inversión/);
-    await expect(group.getByRole('button').nth(1)).toHaveAccessibleName('E♭maj7♯11/G: 1.ª inversión');
+    await expect(group.getByRole('button')).toHaveCount(4);
+    await expect(group.getByRole('button').nth(1)).toHaveAccessibleName('E♭maj7/G: 1.ª inversión');
     for (const button of await group.getByRole('button').all()) {
       const fits = await button.evaluate((element) =>
         [...element.children].every((child) => child.scrollWidth <= child.clientWidth),
@@ -93,7 +127,7 @@ test.describe('inversiones', () => {
     await goto(page, '/inversiones?acorde=C');
     const neck = page.getByTestId('diapason');
     // Del C de siempre: la 6.ª al aire pone el Mi en el bajo.
-    await neck.getByRole('button', { name: 'Dejar sonar al aire la 6.ª cuerda (3)' }).click();
+    await neck.getByRole('button', { name: 'Dejar sonar al aire la 6.ª cuerda (E)' }).click();
     await expect(page).toHaveURL(/forma=0-3-2-0-1-0/);
     await expect.poll(() => plucks(page)).toBeGreaterThanOrEqual(1);
     const mine = page.getByTestId('mi-forma');
@@ -104,8 +138,8 @@ test.describe('inversiones', () => {
     ).toHaveAttribute('aria-pressed', 'true');
 
     // Sacar dedos hasta que falte la quinta.
-    await neck.getByRole('button', { name: 'Sacar el dedo de la 3.ª cuerda, al aire (5)' }).click();
-    await neck.getByRole('button', { name: 'Sacar el dedo de la 1.ª cuerda, al aire (3)' }).click();
+    await neck.getByRole('button', { name: 'Sacar el dedo de la 3.ª cuerda, al aire (G)' }).click();
+    await neck.getByRole('button', { name: 'Sacar el dedo de la 1.ª cuerda, al aire (E)' }).click();
     await expect(page).toHaveURL(/forma=0-3-2-x-1-x/);
     await expect(mine).toContainText('Le falta la 5');
 

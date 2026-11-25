@@ -137,6 +137,40 @@ export function spellWithLetter(pc: number, letterIndex: number): string | null 
   return null;
 }
 
+export type Accidental = '#' | 'b';
+const ALL_SHARPS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+const ALL_FLATS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+
+/**
+ * Cómo se escribe la raíz de un acorde. En las teclas negras manda lo que se eligió; si no se eligió nada,
+ * la tonalidad más común del acorde: D♭, E♭, F#, A♭ y B♭ los mayores, C#, E♭, F#, G# y B♭ los menores (y
+ * los disminuidos, que tienen tercera menor).
+ */
+export function rootSpelling(pc: number, suffix: Suffix, prefer?: Accidental | null): string {
+  const index = mod12(pc);
+  if (prefer) return (prefer === '#' ? ALL_SHARPS : ALL_FLATS)[index]!;
+  const steps = CHORD_STEPS[suffix] ?? [];
+  const minorish = steps.includes(3) && !steps.includes(4);
+  return (minorish ? SHARP_KEYS : PLAIN)[index]!;
+}
+
+/** Si en la tecla negra de esa raíz se lee sostenido o bemol, o null si es una tecla blanca. */
+export function rootAccidental(pc: number, suffix: Suffix, prefer?: Accidental | null): Accidental | null {
+  const name = rootSpelling(pc, suffix, prefer);
+  return name.length > 1 ? (name[1] as Accidental) : null;
+}
+
+/**
+ * Una nota del acorde escrita a partir de la letra de su raíz, según qué grado es: la 3 de E es G#, la ♭7
+ * de F es E♭, la 3 de C# es E#. Si hiciera falta una doble alteración, va la nota más simple.
+ */
+export function spellTone(pc: number, rootName: string, degree: string): string {
+  const number = degree === 'R' ? 1 : Number(degree.replace(/[^0-9]/g, ''));
+  const letter = LETTERS.indexOf(rootName[0] as (typeof LETTERS)[number]);
+  if (!number || letter < 0) return PLAIN[mod12(pc)]!;
+  return spellWithLetter(mod12(pc), letter + number - 1) ?? PLAIN[mod12(pc)]!;
+}
+
 /** El nombre de una clase de altura en la notación elegida. */
 export function pitchName(name: string, notation: Notation): string {
   return noteLabel(`${name}4`, notation);
