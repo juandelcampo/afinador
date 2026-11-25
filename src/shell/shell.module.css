@@ -242,13 +242,15 @@
 }
 
 /* La de referencia: solo el número, con flechas angostas. Que no ocupe más que dos cuadrados, y que mida
-   lo mismo de alto que los de al lado: el borde va por fuera de los botones. */
-.pitch > * > button {
+   lo mismo de alto que los de al lado: el borde va por fuera de los botones.
+   El [role='group'] sube la especificidad a propósito: en el build cada pantalla trae su copia de los
+   estilos del Stepper y, si carga después, con empatar perdíamos y volvía a ocupar lo de siempre. */
+.pitch > [role='group'] > button {
   width: 24px;
   min-height: calc(var(--touch) - 2 * var(--rule-width));
   font-size: 17px;
 }
-.pitch output {
+.pitch > [role='group'] > output {
   min-width: 30px;
   padding: 0;
 }
