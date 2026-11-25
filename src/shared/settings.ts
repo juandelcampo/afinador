@@ -11,6 +11,8 @@ export type TunerMode = 'guided' | 'auto';
 export type PlayStyle = 'arp' | 'strum';
 /** El tema de la pantalla: el del sistema hasta que se elige uno. */
 export type Theme = 'system' | 'light' | 'dark';
+/** Qué dice cada nota sobre el mástil: su nombre o su grado. Primero el nombre: hay que ubicarlas. */
+export type FretLabels = 'notas' | 'grados';
 
 /** Cómo suena Escuchar: arpegio o rasgueo, y el patrón elegido para cada uno. */
 export interface ListenPrefs {
@@ -29,6 +31,7 @@ export const TOOL_PATHS = {
   escalas: '/escalas',
   inversiones: '/inversiones',
   acorde: '/acorde',
+  tonalidad: '/tonalidad',
   ritmo: '/ritmo',
 } as const;
 export type ToolKey = keyof typeof TOOL_PATHS;
@@ -57,6 +60,8 @@ interface Settings {
   listen: ListenPrefs;
   /** Cómo suena un acorde suelto: rasgueado o arpegiado, nota por nota. */
   chordStyle: PlayStyle;
+  /** Qué dice cada nota en el mástil de Escalas e Inversiones. */
+  fretLabels: FretLabels;
   /** Con qué suena el metrónomo de Ritmo. */
   /** Cómo se dibuja el ritmo: como polígono o como estrella. */
   rhythmFigure: FigureKind;
@@ -162,6 +167,7 @@ export function sanitize(
     };
   }
   if (saved.chordStyle === 'arp' || saved.chordStyle === 'strum') clean.chordStyle = saved.chordStyle;
+  if (saved.fretLabels === 'notas' || saved.fretLabels === 'grados') clean.fretLabels = saved.fretLabels;
   if (saved.rhythmFigure === 'poligono' || saved.rhythmFigure === 'estrella')
     clean.rhythmFigure = saved.rhythmFigure;
   if (saved.theme === 'system' || saved.theme === 'light' || saved.theme === 'dark')
@@ -188,6 +194,7 @@ export const useSettings = create<Settings>()(
       tunerMode: 'auto',
       listen: { ...DEFAULT_LISTEN, patterns: { ...DEFAULT_LISTEN.patterns } },
       chordStyle: 'strum',
+      fretLabels: 'notas',
       rhythmFigure: 'poligono',
       theme: 'system',
       drone: { ...DEFAULT_DRONE },

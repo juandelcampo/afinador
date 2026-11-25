@@ -23,7 +23,7 @@ import {
 } from '~/core/scales';
 import { TUNINGS } from '~/data/tunings';
 import { Diapason } from '~/shared/Diapason';
-import { useSettings } from '~/shared/settings';
+import { useSettings, type FretLabels } from '~/shared/settings';
 import { TuneLink, TuningField } from '~/shared/TuningField';
 import { Icon } from '~/shared/ui/Icon';
 import { Picker } from '~/shared/ui/Picker';
@@ -84,7 +84,8 @@ export default function EscalasRoute() {
   const [view, setView] = useState({ key: viewKey, position: -1 });
   const positionIndex = view.key === viewKey ? Math.min(view.position, positions.length - 1) : -1;
   const position = positionIndex >= 0 ? positions[positionIndex]! : null;
-  const [labels, setLabels] = useState<'grados' | 'notas'>('grados');
+  const labels = useSettings((s) => s.fretLabels);
+  const setLabels = (fretLabels: FretLabels) => setSettings({ fretLabels });
   const [droneOn, setDroneOn] = useState(false);
   const [droneSheet, setDroneSheet] = useState(false);
   /** La nota que está sonando en el recorrido, para iluminarla. */
@@ -337,8 +338,8 @@ export default function EscalasRoute() {
             label="Qué dice cada nota"
             value={labels}
             options={[
-              { value: 'grados', label: '1 ♭3 5' },
               { value: 'notas', label: 'Notas' },
+              { value: 'grados', label: '1 ♭3 5' },
             ]}
             onChange={setLabels}
           />
