@@ -666,35 +666,6 @@
 .section[open] > summary::after {
   transform: rotate(180deg);
 }
-.more {
-  margin-top: 10px;
-}
-.more > summary,
-.pills button {
-  font: 700 12px/1.2 var(--ui);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-.more > summary {
-  display: flex;
-  align-items: center;
-  min-height: 32px;
-  cursor: pointer;
-}
-.more > summary::after {
-  content: '';
-  width: 14px;
-  height: 14px;
-  background: currentColor;
-  mask: var(--icon-down) center / contain no-repeat;
-  margin-left: 6px;
-}
-.more[open] > summary::after {
-  transform: rotate(180deg);
-}
-.more .controls {
-  margin-top: 4px;
-}
 .pills {
   display: flex;
   flex-wrap: wrap;
@@ -702,6 +673,9 @@
   margin-top: 6px;
 }
 .pills button {
+  font: 700 12px/1.2 var(--ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   flex: 1 1 auto;
   min-height: 40px;
   padding: 4px 10px;

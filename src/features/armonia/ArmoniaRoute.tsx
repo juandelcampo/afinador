@@ -48,13 +48,7 @@ import {
 import { INVERSION_CHORDS } from '~/core/inversions';
 import { findWorld, WORLDS } from '~/core/scales';
 import { noteLabel, noteToMidi } from '~/core/notes';
-import {
-  polarityOf,
-  relativeOf,
-  romanChord,
-  singOver,
-  twoChordMoves,
-} from '~/core/progressions';
+import { polarityOf, relativeOf, romanChord, singOver, twoChordMoves } from '~/core/progressions';
 import { fingeringsFor, MUTED, openChord, type Fingering } from '~/core/tuning';
 import { TUNINGS, type Tuning } from '~/data/tunings';
 import { VUELTA_GROUPS, VUELTAS, type VueltaMode } from '~/data/vueltas';
@@ -66,7 +60,7 @@ import { Picker } from '~/shared/ui/Picker';
 import { Sheet } from '~/shared/ui/Sheet';
 import { TuneLink, TuningField } from '~/shared/TuningField';
 import { Guardados } from '~/shared/Guardados';
-import { Button, PageTitle, Rail, Segmented, Slab, SlabHead } from '~/shared/ui/ui';
+import { Button, PageTitle, Rail, Segmented, Setup, Slab, SlabHead } from '~/shared/ui/ui';
 import ui from '~/shared/ui/ui.module.css';
 import styles from './armonia.module.css';
 import { CircleNotes, CircleWheel } from './CircleOfFifths';
@@ -169,7 +163,9 @@ function ShapeGrid({
           <ShapeTable names={names} frets={fingering.frets} />
         </div>
       ) : (
-        <p className={ui.hint} data-keep>La mano no llega a este acorde en esta afinación: suena cerrado.</p>
+        <p className={ui.hint} data-keep>
+          La mano no llega a este acorde en esta afinación: suena cerrado.
+        </p>
       )}
       <div className={styles.shapeSide}>
         {children}
@@ -780,7 +776,9 @@ export default function ArmoniaRoute() {
             <PageTitle eyebrow="Acordes por emoción" title="Armonía" toolName>
               <p>Elegí un mundo, escuchá qué dice cada acorde y armá tu vuelta.</p>
             </PageTitle>
-            <div className={ui.setup}>
+            <Setup
+              summary={`${tuning.name} · ${pitchName(tonicNames(scale)[tonic]!, notation)} ${scale.name.toLowerCase()}`}
+            >
               <TuningField
                 tuning={tuning}
                 // La tónica vuelve a la que mejor cae sobre las cuerdas al aire de la nueva afinación.
@@ -825,7 +823,7 @@ export default function ArmoniaRoute() {
                 search={params.toString()}
                 canSave={vuelta.length > 0}
               />
-            </div>
+            </Setup>
           </Slab>
 
           {/* Sin rótulo "Mundo": el nombre del mundo ya lo dice, y el desplegable para cambiarlo está arriba. */}
@@ -1249,13 +1247,10 @@ export default function ArmoniaRoute() {
                         onChange={setFeel}
                       />
                     </div>
-                    <Fader />
-                  </div>
-                  <details className={styles.more}>
-                    <summary>Cuánto dura cada acorde</summary>
-                    <div className={ui.field}>
-                      {/* Una sola línea: qué hace esto y cómo darle a uno su propia duración. */}
-                      <span>Todos a (pulsos) · o tocá un acorde de la vuelta para darle la suya</span>
+                    {/* Va con lo que dice cómo suena, no con Cerrar con… y Otra vuelta…: pegado a esos parecía
+                        su título. Cada acorde de la vuelta puede tener la suya tocándolo. */}
+                    <div className={`${ui.field} ${styles.fullRow}`}>
+                      <span>Pulsos por acorde</span>
                       <Segmented
                         label="Pulsos de todos los acordes"
                         stretch
@@ -1264,8 +1259,8 @@ export default function ArmoniaRoute() {
                         onChange={(value) => setBeatsAt(null, Number(value))}
                       />
                     </div>
-                  </details>
-
+                    <Fader />
+                  </div>
                   <div className={styles.pills}>
                     <button type="button" aria-haspopup="dialog" onClick={() => setSheet('cerrar')}>
                       Cerrar con…
@@ -1416,7 +1411,8 @@ export default function ArmoniaRoute() {
                   acorde: chordToken({ root: activeChord.root, suffix: activeChord.suffix }),
                 })}`}
               >
-                Todas las formas de {name({ root: activeChord.root, suffix: activeChord.suffix })} <Icon name="right" />
+                Todas las formas de {name({ root: activeChord.root, suffix: activeChord.suffix })}{' '}
+                <Icon name="right" />
               </Link>
             )}
             {editorTab === 'cambiar' && (

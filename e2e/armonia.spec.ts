@@ -318,7 +318,6 @@ test.describe('armonía', () => {
     await page.keyboard.press('Escape');
 
     // Todos iguales de una, y en arpegio suena nota por nota.
-    await page.getByText('Cuánto dura cada acorde').click();
     await page
       .getByRole('group', { name: 'Pulsos de todos los acordes' })
       .getByRole('button', { name: '8' })
