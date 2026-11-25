@@ -37,7 +37,6 @@ import {
   FAMILY_LABEL,
   type Scale,
   scaleDegrees,
-  SCALES,
   spellIn,
   tonicNames,
   variantsOf,
@@ -843,14 +842,6 @@ export default function ArmoniaRoute() {
                   </span>
                 </p>
                 <p>{scale.character}</p>
-                {!SCALES.includes(scale) && (
-                  <p className={ui.hint}>
-                    Esta escala no está en el libro de De María: sus acordes no traen la emoción de cada
-                    grado. Escuchalos y elegí con el oído.
-                    {scale.steps.length !== 7 &&
-                      ' Tiene menos acordes que las de siete notas: solo los que entran enteros en la escala.'}
-                  </p>
-                )}
                 {!!scale.characteristic?.length && (
                   <p className={ui.hint}>
                     Para que {scale.family === 'modo' ? 'el modo' : 'la escala'} se sienta, usá los acordes
@@ -1219,7 +1210,6 @@ export default function ArmoniaRoute() {
                     .join(', ')}
                   . Dejalas sonar.
                 </p>
-                      ariaLabel={player.running ? 'Parar la vuelta' : 'Tocar la vuelta'}
               )}
 
               {vuelta.length > 0 && (
@@ -1229,6 +1219,7 @@ export default function ArmoniaRoute() {
                       variant="primary"
                       id="vuelta-toggle"
                       on={player.running}
+                      ariaLabel={player.running ? 'Parar la vuelta' : 'Tocar la vuelta'}
                       onClick={() => (player.running ? player.stop() : player.start())}
                     >
                       <PlayIcon running={player.running} />

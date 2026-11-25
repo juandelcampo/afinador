@@ -1147,15 +1147,22 @@
     font: 900 expanded clamp(34px, 6.5cqi, 60px)/0.95 var(--heavy);
     letter-spacing: -0.03em;
   }
-  /* A la altura del nombre: el margen es el que deja el título debajo. */
+  /* La estrella mide lo mismo que las mayúsculas del nombre: arriba toca la altura de las letras y abajo
+     la línea donde se apoyan. Tiene la letra del título para que sus em sean los mismos. Medidas de
+     Archivo 900, sacadas de capturas: las mayúsculas miden 0,683 em, y con interlínea 0,95 la línea de apoyo queda 0,15 em
+     por encima del borde de abajo del renglón. Los 8 px son el margen de abajo del título. */
   .heroTools {
     gap: 6px;
     align-self: flex-end;
-    margin-bottom: 8px;
+    margin-bottom: calc(8px + 0.15 * clamp(34px, 6.5cqi, 60px));
   }
   .heroTools .heroStar {
     display: grid;
     place-items: center;
+    --cap: calc(0.683 * clamp(34px, 6.5cqi, 60px));
+    width: var(--cap);
+    height: var(--cap);
+    --icon-size: calc(var(--cap) * 0.45);
   }
   .heroTools .infoToggle {
     display: none;

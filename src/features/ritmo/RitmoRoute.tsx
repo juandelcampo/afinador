@@ -564,6 +564,7 @@ export default function RitmoRoute() {
             on={running}
             onClick={() => (running ? metronome.stop() : metronome.start())}
             id="metro-toggle"
+            ariaLabel={running ? 'Parar' : 'Tocar'}
           >
             <PlayIcon running={running} />
           </Button>
