@@ -96,6 +96,9 @@
   content: ' ★';
   color: var(--accent);
 }
+.notes button[data-quiet] {
+  opacity: 0.45;
+}
 .notes button[data-lit] {
   background: var(--ink);
   color: var(--paper);
@@ -248,4 +251,78 @@
 }
 .droneFields > :first-child {
   grid-column: 1 / -1;
+}
+
+/* La vuelta de fondo en el botón: todos sus acordes, con el que suena subrayado. El texto es siempre el
+   mismo, así que sonar no mueve nada; si no entra, se corta. */
+.vueltaNames {
+  display: block;
+  /* Los acordes se escriben como son: Am no es AM. */
+  text-transform: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vueltaNames > span[data-now] {
+  text-decoration: underline 3px;
+  text-underline-offset: 4px;
+}
+
+/* El modal del fondo: arriba qué suena (drone o vuelta) y debajo lo de cada uno. */
+.fondoKind {
+  margin-bottom: 12px;
+}
+.vueltaPanel {
+  display: grid;
+  gap: 12px;
+}
+.vueltaPanel h3 {
+  margin: 0 0 6px;
+}
+.vueltaChords {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.vueltaChords button {
+  width: 100%;
+  min-height: var(--touch);
+  border: var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  font: 900 semi-expanded 16px/1.1 var(--heavy);
+}
+.vueltaChords button:hover {
+  background: var(--soft);
+}
+/* El que suena, en naranja: es lo que suena. */
+.vueltaChords button[data-now] {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.vueltaFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
+  gap: 8px 12px;
+}
+.vueltaFields input[type='range'] {
+  width: 100%;
+}
+.vueltaFeel {
+  grid-column: 1 / -1;
+}
+/* Una por renglón en el celular, de a dos donde entran: así el modal no baja. */
+.starters {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 6px;
+}
+.starters > button {
+  text-align: left;
+  text-transform: none;
+  font: 700 15px/1.2 var(--mono);
 }

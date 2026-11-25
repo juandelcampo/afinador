@@ -1319,3 +1319,8 @@
   background: var(--ink);
   color: var(--paper);
 }
+
+/* Debajo de Cerrar con… y Otra vuelta…: el link para tocar la escala encima de la vuelta. */
+.escalasLink {
+  margin-top: 6px;
+}

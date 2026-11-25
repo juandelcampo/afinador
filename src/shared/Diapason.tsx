@@ -23,6 +23,8 @@ export interface NoteMark {
   color?: boolean;
   dim?: boolean;
   lit?: boolean;
+  /** Fuera del acorde que suena de fondo: un poco apagada, así se ven las que se apoyan. */
+  quiet?: boolean;
 }
 
 interface DiapasonProps {
@@ -51,6 +53,7 @@ const markData = (mark: NoteMark | undefined) => ({
   'data-color': mark?.color || undefined,
   'data-dim': mark?.dim || undefined,
   'data-lit': mark?.lit || undefined,
+  'data-quiet': mark?.quiet || undefined,
 });
 
 export function Diapason({

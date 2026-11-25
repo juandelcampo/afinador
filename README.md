@@ -53,6 +53,8 @@ Pariente de Armonía: las mismas escalas, con el mismo carácter, y los mismos p
 
 Las marcadas con ★ son las que la separan de la mayor o de la menor natural, según su tercera; "Comparar" toca primero esa y después la elegida. En el diapasón van todas las notas de la escala: la tónica en naranja y las de color con aro blanco. Con ◀ ▶ se recorren las posiciones, una caja de cuatro trastes (cinco si la escala tiene siete notas o más) por cada nota de la escala en la cuerda más grave; lo de afuera se apaga. "Escuchar" la toca de tónica a tónica dentro de la caja, subiendo y bajando, y el diapasón va marcando cada nota. El drone deja sonando la tónica grave con su quinta (`audio/drone.ts`) hasta que se apaga o te vas de la página.
 
+El fondo puede ser también **una vuelta**: el botón partido del drone toca lo que se elija en su modal (Drone o Una vuelta). La vuelta es la de Armonía, que la manda con "Tocar encima en Escalas" (`v=`, con su ritmo en `ritmo=` y `fondo=vuelta`); sin vuelta, arranca con una de las de siempre en la tónica, y el modal ofrece otras, la velocidad, el ritmo y cómo se toca. Mientras suena, en el diapasón y en la fila de notas se apagan un poco las que no son del acorde de ese momento: las que quedan fuertes son las que se apoyan. Escuchar la escala no corta la vuelta. La vuelta (leerla de la URL y lo que suena de cada acorde) está en `core/vuelta.ts`, y tocarla con su ritmo, en `shared/useAcompanamiento.ts`, que usan Armonía y Escalas.
+
 Las escalas, los grados, el deletreo y las posiciones están en `core/scales.ts`.
 
 ### Inversiones

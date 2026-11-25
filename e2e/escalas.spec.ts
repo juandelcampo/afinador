@@ -95,6 +95,74 @@ test.describe('escalas', () => {
     expect(errors).toEqual([]);
   });
 
+  test('una vuelta de fondo: llega desde Armonía, suena y en el diapasón quedan fuertes las notas del acorde', async ({
+    page,
+  }) => {
+    const errors = watchErrors(page);
+    await goto(page, '/armonia?escala=mayor&tono=0&v=C_G_Am_F');
+    await page.getByRole('button', { name: 'Abrir tu vuelta' }).click();
+    await page.getByRole('link', { name: 'Tocar encima en Escalas' }).click();
+    await expect(page).toHaveURL(/\/escalas\?.*v=C_G_Am_F.*fondo=vuelta/);
+
+    // El botón del fondo dice la vuelta; el ▶ la toca.
+    const fondo = page
+      .getByRole('group', { name: 'Elegir la vuelta y cómo suena' })
+      .getByRole('button')
+      .last();
+    await expect(fondo).toContainText('C · G · Am · F');
+    const before = await plucks(page);
+    await page.getByRole('button', { name: 'Tocar la vuelta' }).click();
+    await expect(page.getByRole('button', { name: 'Parar la vuelta' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await expect.poll(() => plucks(page)).toBeGreaterThan(before + 5);
+    // Mientras suena C, en la fila de notas se apagan un poco las que no son de C: D, F, A y B.
+    const notes = page.getByRole('group', { name: 'Notas de la escala' });
+    await expect(notes.locator('button[data-quiet]')).toHaveCount(4);
+    await expect(page.locator('[data-quiet]').first()).toBeVisible();
+
+    // Escuchar la escala no corta la vuelta.
+    await page.getByRole('button', { name: '▶ Escuchar' }).click();
+    await expect(page.getByRole('button', { name: 'Parar la vuelta' })).toBeVisible();
+
+    // En el modal: otra vuelta de las de siempre, y volver al drone.
+    await fondo.click();
+    const sheet = page.getByTestId('drone');
+    await expect(
+      sheet.getByRole('list', { name: 'Los acordes de la vuelta' }).getByRole('button'),
+    ).toHaveCount(4);
+    const size = await sheet.evaluate((dialog) => ({
+      height: dialog.clientHeight,
+      scroll: dialog.scrollHeight,
+    }));
+    expect(size.scroll).toBeLessThanOrEqual(size.height);
+    await sheet.getByRole('button', { name: 'Fondo: Una vuelta' }).click();
+    await expect(page).not.toHaveURL(/fondo=vuelta/);
+    await expect(sheet.getByRole('button', { name: 'Fondo: Drone en C' })).toBeVisible();
+    await sheet.getByRole('button', { name: 'Cerrar' }).click();
+    await expect(page.getByRole('button', { name: 'Prender el drone en C' })).toBeVisible();
+    const after = await plucks(page);
+    await page.waitForTimeout(700);
+    expect(await plucks(page)).toBeLessThanOrEqual(after + 6);
+    expect(errors).toEqual([]);
+  });
+
+  test('sin vuelta, elegir Una vuelta arranca con una de las de siempre en la tónica', async ({ page }) => {
+    const errors = watchErrors(page);
+    await goto(page, '/escalas?tono=9&escala=natural');
+    await page.getByRole('button', { name: /Drone en A/ }).click();
+    const sheet = page.getByTestId('drone');
+    await sheet.getByRole('button', { name: 'Fondo: Drone en A' }).click();
+    await expect(page).toHaveURL(/fondo=vuelta/);
+    await expect(page).toHaveURL(/v=Am_/);
+    await sheet.getByRole('region', { name: 'Otra vuelta' }).getByRole('button').nth(1).click();
+    await expect(
+      sheet.getByRole('region', { name: 'Otra vuelta' }).locator('[aria-pressed="true"]'),
+    ).toHaveCount(1);
+    expect(errors).toEqual([]);
+  });
+
   test('en el celular la afinación y la escala se pliegan en un renglón que las dice', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await goto(page, '/escalas?afinacion=dadgad&escala=mixolidio');

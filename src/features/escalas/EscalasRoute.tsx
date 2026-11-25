@@ -1,10 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams, type MetaFunction } from 'react-router';
 import { drone } from '~/audio/drone';
 import { getAudio } from '~/audio/engine';
 import { pluckString, stopInstrument } from '~/audio/instrument';
 import { DEFAULT_DRONE, droneVoices } from '~/core/drone';
-import { pitchName } from '~/core/harmony';
+import { chordClasses, chordName, chordToken, findScale, pitchName, type Chord } from '~/core/harmony';
+import { romanChord } from '~/core/progressions';
+import { readVuelta, voicingOf, fingerOf, vueltaSteps } from '~/core/vuelta';
+import { VUELTA_GROUPS, VUELTAS } from '~/data/vueltas';
+import { fondoFromParam, fondoToParam } from '~/shared/RitmoDeFondo';
+import { useAcompanamiento } from '~/shared/useAcompanamiento';
+import type { Feel } from '~/shared/useVuelta';
 import { noteToMidi } from '~/core/notes';
 import {
   ALL_SCALES,
@@ -29,10 +35,11 @@ import { TuneLink, TuningField } from '~/shared/TuningField';
 import { Icon } from '~/shared/ui/Icon';
 import { Picker } from '~/shared/ui/Picker';
 import { Sheet } from '~/shared/ui/Sheet';
-import { Browse, Button, PageTitle, Setup, Slab, SplitButton } from '~/shared/ui/ui';
+import { Browse, Button, Field, PageTitle, Setup, Slab, SplitButton, Toggle } from '~/shared/ui/ui';
 import ui from '~/shared/ui/ui.module.css';
 import { useHydrated } from '~/shared/useHydrated';
 import { DronePanel } from './DronePanel';
+import { VueltaPanel } from './VueltaPanel';
 import styles from './escalas.module.css';
 
 export const meta: MetaFunction = () => [
@@ -87,7 +94,9 @@ export default function EscalasRoute() {
   const position = positionIndex >= 0 ? positions[positionIndex]! : null;
   const labels = useSettings((s) => s.fretLabels);
   const [droneOn, setDroneOn] = useState(false);
+  /** El modal del fondo: el drone o la vuelta. */
   const [droneSheet, setDroneSheet] = useState(false);
+  const [feel, setFeel] = useState<Feel>('pulso');
   /** La nota que está sonando en el recorrido, para iluminarla. */
   const [lit, setLit] = useState<ScaleNote | null>(null);
   const [litStep, setLitStep] = useState<number | null>(null);
@@ -138,6 +147,59 @@ export default function EscalasRoute() {
   };
 
   const name = (pc: number) => pitchName(spellScaleNote(pc, tonic, scale), notation).replace(/b$/, '♭');
+
+  // El fondo puede ser una vuelta en vez del drone: la misma de Armonía (`v=`), con su ritmo (`ritmo=`).
+  const vueltaParam = params.get('v') ?? '';
+  const vuelta = useMemo(() => readVuelta(vueltaParam), [vueltaParam]);
+  const ritmoParam = params.get('ritmo');
+  const ritmo = useMemo(() => fondoFromParam(ritmoParam), [ritmoParam]);
+  const conVuelta = params.get('fondo') === 'vuelta' && vuelta.length > 0;
+  const acomp = useAcompanamiento({
+    steps: vueltaSteps(tuning.notes, vuelta),
+    a4,
+    feel,
+    fondo: ritmo,
+    writeFondo: (config) => update({ ritmo: config && fondoToParam(config) }),
+  });
+  /** Los acordes se nombran como en Armonía: en la mayor o la menor que tiene más cerca esta escala. */
+  const mode = color.reference === 'natural' ? 'menor' : 'mayor';
+  const chordKey = {
+    tonic,
+    scale: findScale(scale.id) ?? findScale(mode === 'menor' ? 'natural' : 'mayor')!,
+  };
+  const chordLabel = (chord: Chord) => chordName(chord, chordKey, notation);
+  /** Unas vueltas de siempre en esta tónica: las primeras del grupo de su modo. */
+  const startGroup = VUELTA_GROUPS.find((group) => group.mode === mode)!;
+  const starters = VUELTAS.filter((item) => item.group === startGroup.id)
+    .slice(0, 4)
+    .map((item) => {
+      const chords = item.degrees.map((token) => romanChord(token, tonic, mode));
+      return { id: item.id, chords, names: chords.map(chordLabel) };
+    });
+  /** El acorde que suena: sus notas quedan fuertes en el diapasón, las demás se apagan un poco. */
+  const sounding = conVuelta && acomp.running && acomp.current !== null ? vuelta[acomp.current] : null;
+  const chordPcs = sounding ? new Set(chordClasses(sounding)) : null;
+  const quiet = (step: number) => chordPcs !== null && !chordPcs.has(mod12(tonic + step));
+
+  const setFondoKind = (kind: 'drone' | 'vuelta') => {
+    if (kind === 'vuelta') {
+      setDroneOn(false);
+      // Sin vuelta, arranca con la primera de las de siempre.
+      update({
+        fondo: 'vuelta',
+        ...(vuelta.length ? {} : { v: starters[0]!.chords.map(chordToken).join('_') }),
+      });
+    } else {
+      acomp.stop();
+      update({ fondo: null });
+    }
+  };
+  const toggleFondo = () => {
+    if (!conVuelta) return setDroneOn((on) => !on);
+    if (acomp.running) return acomp.stop();
+    setDroneOn(false);
+    acomp.play();
+  };
   const stepAt = (stringIndex: number, fret: number) => mod12(open[stringIndex]! + fret - tonic);
   const inScale = (stringIndex: number, fret: number) => scale.steps.includes(stepAt(stringIndex, fret));
 
@@ -148,7 +210,8 @@ export default function EscalasRoute() {
   /** Programa notas una detrás de otra y va iluminando cada una. */
   const schedule = (notes: Array<{ midi: number; stringIndex: number; on?: ScaleNote }>) => {
     stopRun();
-    stopInstrument();
+    // Con la vuelta sonando de fondo, la escala suena encima: no se corta la guitarra.
+    if (!acomp.running) stopInstrument();
     const { ctx } = getAudio();
     const start = ctx.currentTime + 0.05;
     setPlaying(true);
@@ -171,7 +234,7 @@ export default function EscalasRoute() {
   const playRun = () => {
     if (playing) {
       stopRun();
-      stopInstrument();
+      if (!acomp.running) stopInstrument();
       return;
     }
     const box = position ?? positions[0];
@@ -201,6 +264,8 @@ export default function EscalasRoute() {
     ...(tuning.id === DEFAULT_TUNING ? {} : { afinacion: tuning.id }),
     tono: String(tonic),
     escala: scale.id,
+    ...(vuelta.length ? { v: vueltaParam } : {}),
+    ...(ritmoParam ? { ritmo: ritmoParam } : {}),
   })}`;
 
   /** La tónica como se escribe en esta escala: C#, Db. */
@@ -264,6 +329,7 @@ export default function EscalasRoute() {
                 data-tonic={item === 0 || undefined}
                 data-color={color.steps.includes(item) || undefined}
                 data-lit={litStep === item || undefined}
+                data-quiet={quiet(item) || undefined}
                 aria-label={`Escuchar ${name(tonic + item)}, ${degreeName(item, scale.steps)}`}
                 onClick={() => pluck(middle + item, index)}
               >
@@ -292,6 +358,7 @@ export default function EscalasRoute() {
               color: color.steps.includes(item),
               dim: position !== null && (fret < position.from || fret > position.to),
               lit: lit?.stringIndex === stringIndex && lit.fret === fret,
+              quiet: quiet(item),
             };
           }}
           onToggle={(stringIndex, fret) => pluckString(stringIndex, open[stringIndex]! + fret, { a4 })}
@@ -326,13 +393,35 @@ export default function EscalasRoute() {
           </Button>
           <SplitButton
             className={styles.droneButton}
-            on={droneOn}
-            playLabel={droneOn ? `Apagar el drone en ${name(tonic)}` : `Prender el drone en ${name(tonic)}`}
-            onPlay={() => setDroneOn((on) => !on)}
-            openLabel="Elegir cómo suena el drone"
+            on={conVuelta ? acomp.running : droneOn}
+            playLabel={
+              conVuelta
+                ? acomp.running
+                  ? 'Parar la vuelta'
+                  : 'Tocar la vuelta'
+                : droneOn
+                  ? `Apagar el drone en ${name(tonic)}`
+                  : `Prender el drone en ${name(tonic)}`
+            }
+            onPlay={toggleFondo}
+            openLabel={conVuelta ? 'Elegir la vuelta y cómo suena' : 'Elegir cómo suena el drone'}
             onOpen={() => setDroneSheet(true)}
           >
-            Drone en {name(tonic)}
+            {conVuelta ? (
+              // Los acordes de la vuelta, con el que suena subrayado: el texto no cambia de largo.
+              <span className={styles.vueltaNames}>
+                {vuelta.map((chord, index) => (
+                  <Fragment key={index}>
+                    {index > 0 && ' · '}
+                    <span data-now={(acomp.running && acomp.current === index) || undefined}>
+                      {chordLabel(chord)}
+                    </span>
+                  </Fragment>
+                ))}
+              </span>
+            ) : (
+              <>Drone en {name(tonic)}</>
+            )}
           </SplitButton>
           <FretLabelsToggle degrees="1 ♭3 5" />
         </div>
@@ -361,30 +450,63 @@ export default function EscalasRoute() {
 
       <Sheet
         open={droneSheet}
-        title={`Drone en ${name(tonic)}`}
+        title="Fondo"
         onClose={() => setDroneSheet(false)}
         testId="drone"
+        fixed
         tools={
-          <Button
-            variant="mini"
-            ariaLabel="Volver al sonido de siempre"
-            title="Volver al sonido de siempre"
-            onClick={() => setSettings({ drone: { ...DEFAULT_DRONE } })}
-          >
-            <Icon name="reset" />
-          </Button>
+          !conVuelta && (
+            <Button
+              variant="mini"
+              ariaLabel="Volver al sonido de siempre"
+              title="Volver al sonido de siempre"
+              onClick={() => setSettings({ drone: { ...DEFAULT_DRONE } })}
+            >
+              <Icon name="reset" />
+            </Button>
+          )
         }
       >
-        <DronePanel
-          on={droneOn}
-          onToggle={() => setDroneOn((on) => !on)}
-          sound={droneSound}
-          onChange={(drone) => setSettings({ drone })}
-          voices={droneNotes.map((midi) => name(mod12(midi)))}
-          scaleSteps={scale.steps}
-          name={name}
-          tonic={tonic}
-        />
+        <Field label="Qué suena de fondo" as="div" className={styles.fondoKind}>
+          <Toggle
+            label="Fondo"
+            value={conVuelta ? 'vuelta' : 'drone'}
+            options={[
+              { value: 'drone', label: `Drone en ${name(tonic)}` },
+              { value: 'vuelta', label: 'Una vuelta' },
+            ]}
+            onChange={setFondoKind}
+          />
+        </Field>
+        {conVuelta ? (
+          <VueltaPanel
+            chords={vuelta.map(chordLabel)}
+            current={acomp.running ? acomp.current : null}
+            onListen={(index) =>
+              acomp.strum(voicingOf(tuning.notes, vuelta[index]!, fingerOf(tuning.notes, vuelta[index]!)))
+            }
+            tempo={acomp.tempo}
+            onTempo={acomp.setTempo}
+            fondo={ritmo}
+            onFondo={acomp.chooseFondo}
+            feel={feel}
+            onFeel={setFeel}
+            starters={starters}
+            onStarter={(chords) => update({ v: chords.map(chordToken).join('_') })}
+            armoniaHref={armoniaLink}
+          />
+        ) : (
+          <DronePanel
+            on={droneOn}
+            onToggle={() => setDroneOn((on) => !on)}
+            sound={droneSound}
+            onChange={(drone) => setSettings({ drone })}
+            voices={droneNotes.map((midi) => name(mod12(midi)))}
+            scaleSteps={scale.steps}
+            name={name}
+            tonic={tonic}
+          />
+        )}
       </Sheet>
     </div>
   );

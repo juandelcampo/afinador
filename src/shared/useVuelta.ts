@@ -6,9 +6,9 @@ import { getAudio } from '~/audio/engine';
 import { pluckString } from '~/audio/instrument';
 import { transport, type Voice } from '~/audio/transport';
 import { QUARTER_GRID, type PulseGrid } from '~/core/rhythm';
+import type { Voicing } from '~/core/vuelta';
 
-/** Lo que suena de un acorde: el MIDI de cada cuerda, o null si va apagada. */
-export type Voicing = Array<number | null>;
+export type { Voicing };
 
 export type Feel = 'pulso' | 'acorde' | 'arpegio';
 

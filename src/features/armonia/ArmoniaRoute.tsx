@@ -8,7 +8,6 @@ import {
   type ReactNode,
 } from 'react';
 import { Link, useSearchParams, type MetaFunction } from 'react-router';
-import { metronome } from '~/audio/metronome';
 import {
   BASS_ROLES,
   bassFor,
@@ -16,7 +15,6 @@ import {
   CADENCES,
   cadenceChords,
   cardinalGroups,
-  CHORD_STEPS,
   chordColor,
   chordName,
   chordToken,
@@ -28,7 +26,6 @@ import {
   findScale,
   functionOf,
   functionSubstitutes,
-  parseChord,
   pedalStrings,
   pitchName,
   plainName,
@@ -50,12 +47,26 @@ import { INVERSION_CHORDS } from '~/core/inversions';
 import { findWorld, WORLDS } from '~/core/scales';
 import { noteLabel, noteToMidi } from '~/core/notes';
 import { polarityOf, relativeOf, romanChord, singOver, twoChordMoves } from '~/core/progressions';
-import { pulseGrid, QUARTER_GRID, type RhythmConfig } from '~/core/rhythm';
-import { fingeringsFor, MUTED, openChord, type Fingering } from '~/core/tuning';
+import { MUTED, openChord, type Fingering } from '~/core/tuning';
 import { TUNINGS, type Tuning } from '~/data/tunings';
 import { VUELTA_GROUPS, VUELTAS, type VueltaMode } from '~/data/vueltas';
+import {
+  BEAT_OPTIONS,
+  beatsOf,
+  DEFAULT_BEATS,
+  fingerOf,
+  MAX_CHORDS,
+  placedToken,
+  readVuelta,
+  shapesOf as shapesOfIn,
+  voicingOf,
+  vueltaSteps,
+  type Placed,
+} from '~/core/vuelta';
 import { Fader } from '~/shared/Fader';
 import { fondoFromParam, fondoToParam, RitmoDeFondo } from '~/shared/RitmoDeFondo';
+import { useAcompanamiento } from '~/shared/useAcompanamiento';
+import type { Feel } from '~/shared/useVuelta';
 import { TEMPO_RANGE, useSettings } from '~/shared/settings';
 import { useHydrated } from '~/shared/useHydrated';
 import { Icon, PlayIcon } from '~/shared/ui/Icon';
@@ -67,7 +78,6 @@ import { Button, PageTitle, Rail, Segmented, Setup, Slab, SlabHead } from '~/sha
 import ui from '~/shared/ui/ui.module.css';
 import styles from './armonia.module.css';
 import { CircleNotes, CircleWheel } from './CircleOfFifths';
-import { useVuelta, type Feel, type Voicing } from './useVuelta';
 
 export const meta: MetaFunction = () => [
   { title: 'Armonía por emociones para guitarra · Afinador' },
@@ -79,7 +89,6 @@ export const meta: MetaFunction = () => [
 ];
 
 const DEFAULT_TUNING = 'estandar';
-const MAX_CHORDS = 16;
 const EMPTY = new URLSearchParams();
 
 /** La tonalidad que mejor cae sobre las cuerdas al aire: la del acorde que forman, mayor o menor. */
@@ -90,62 +99,6 @@ function homeKey(tuning: Tuning): { tonic: number; scale: string } {
   const minor = /^m(?!aj)/.test(chord.suffix);
   return { tonic: midis[chord.root]! % 12, scale: minor ? 'natural' : 'mayor' };
 }
-
-/** Lo que suena de cada cuerda con una figura, o un acorde cerrado si la mano no llega. */
-function voicingOf(tuning: Tuning, chord: Chord, fingering: Fingering | null): Voicing {
-  if (fingering) {
-    return fingering.frets.map((fret, index) =>
-      fret === MUTED ? null : noteToMidi(tuning.notes[index]!) + fret,
-    );
-  }
-  const base = 48 + (chord.bass ?? chord.root);
-  const steps = CHORD_STEPS[chord.suffix]!.map((step) => 48 + chord.root + step);
-  return [base - 12, ...steps.map((midi) => (midi < base ? midi + 12 : midi))];
-}
-
-/** Lo que dura cada acorde si no se dice otra cosa, y las duraciones que se ofrecen, en pulsos. */
-const DEFAULT_BEATS = 4;
-const BEAT_OPTIONS = [1, 2, 3, 4, 6, 8] as const;
-
-/** Un tempo que entra en el deslizador: el de un ritmo puede venir de más lejos. */
-const clampTempo = (bpm: number) => Math.min(TEMPO_RANGE.max, Math.max(TEMPO_RANGE.min, Math.round(bpm)));
-
-/**
- * Un acorde puesto en la vuelta: el acorde, cuántos pulsos dura y con qué figura se toca (0 es la más
- * fácil, las otras van de a una más difícil).
- */
-type Placed = Chord & { beats?: number; shape?: number };
-
-const beatsOf = (item: Placed) => item.beats ?? DEFAULT_BEATS;
-
-/**
- * En la URL, la duración y la figura van pegadas al acorde: "C*2" es C durante dos pulsos y "C.1", C con
- * su segunda figura (el punto no pide codificarse en la URL; ~ sí). Así se mueven con él.
- */
-function readPlaced(token: string): Placed | null {
-  const [, text = '', count, figure] = /^(.*?)(?:\*(\d+))?(?:\.(\d+))?$/.exec(token) ?? [];
-  const chord = parseChord(text);
-  if (!chord) return null;
-  const placed: Placed = { ...chord };
-  const beats = Number(count);
-  if (BEAT_OPTIONS.includes(beats as (typeof BEAT_OPTIONS)[number]) && beats !== DEFAULT_BEATS) {
-    placed.beats = beats;
-  }
-  const shape = Number(figure);
-  if (Number.isInteger(shape) && shape > 0) placed.shape = shape;
-  return placed;
-}
-const placedToken = (item: Placed) =>
-  chordToken(item) +
-  (beatsOf(item) === DEFAULT_BEATS ? '' : `*${beatsOf(item)}`) +
-  (item.shape ? `.${item.shape}` : '');
-
-const readVuelta = (text: string) =>
-  text
-    .split('_')
-    .map(readPlaced)
-    .filter((item): item is Placed => item !== null)
-    .slice(0, MAX_CHORDS);
 
 /**
  * Cómo se arma el acorde: cada cuerda con su traste, de la 6.ª a la 1.ª. Al lado, lo que se pase en
@@ -474,11 +427,9 @@ export default function ArmoniaRoute() {
   const vuelta = useMemo(() => readVuelta(vueltaParam), [vueltaParam]);
 
   const [selected, setSelected] = useState<number | null>(null);
-  const [ownTempo, setOwnTempo] = useState(80);
   /** El ritmo de fondo viene en la URL; con él, manda su tempo. */
   const fondoParam = params.get('ritmo');
   const fondo = useMemo(() => fondoFromParam(fondoParam), [fondoParam]);
-  const tempo = fondo ? clampTempo(fondo.bpm) : ownTempo;
   const [feel, setFeel] = useState<Feel>('pulso');
   const [geometry, setGeometry] = useState<Geometry>('cuadrado');
   /** Un modal por vez: el editor del acorde, las vueltas para arrancar o las cadencias. */
@@ -573,13 +524,9 @@ export default function ArmoniaRoute() {
     });
 
   /** Las figuras de un acorde en esta afinación, de la más fácil a la más difícil. */
-  const shapesOf = (chord: Chord) =>
-    fingeringsFor(tuning.notes, chord.root, CHORD_STEPS[chord.suffix]!, chord.bass ?? chord.root);
+  const shapesOf = (chord: Chord) => shapesOfIn(tuning.notes, chord);
   /** La figura con que se toca: la elegida en la vuelta, o la más fácil. */
-  const finger = (chord: Placed) => {
-    const shapes = shapesOf(chord);
-    return shapes[chord.shape ?? 0] ?? shapes[0] ?? null;
-  };
+  const finger = (chord: Placed) => fingerOf(tuning.notes, chord);
   /** Elige la figura de un acorde de la vuelta, y suena. */
   const setShapeAt = (index: number, shape: number) => {
     setVuelta((current) => {
@@ -593,61 +540,26 @@ export default function ArmoniaRoute() {
   /** El color de un acorde de la vuelta, como en el editor: la misma raíz, otro color. */
   const setColorAt = (index: number, suffix: string) =>
     replaceAt(index, (item) => ({ root: item.root, suffix }));
-  const steps = vuelta.map((chord) => ({
-    voicing: voicingOf(tuning, chord, finger(chord)),
-    beats: beatsOf(chord),
-  }));
-  const grid = useMemo(() => (fondo ? (bar: number) => pulseGrid(fondo, bar) : () => QUARTER_GRID), [fondo]);
-  const player = useVuelta({ steps, a4, tempo, feel, grid });
-
-  /** Con ritmo, arranca el ritmo y la vuelta entra en su primer golpe: el primer acorde cae en el uno. */
-  const play = () => {
-    player.stop();
-    metronome.stop();
-    if (!fondo) return player.start();
-    metronome.setConfig({ ...fondo, bpm: tempo });
-    metronome.start();
-    player.start(metronome.startBeat());
-  };
-  const stop = () => {
-    player.stop();
-    metronome.stop();
-  };
-  const setTempo = (value: number) =>
-    fondo ? update({ ritmo: fondoToParam({ ...fondo, bpm: value }) }) : setOwnTempo(value);
-  /** Elegir un ritmo lo hace sonar con la vuelta; sacarlo deja la vuelta sola, sonando si sonaba. */
-  const playNext = useRef(false);
-  const chooseFondo = (config: RhythmConfig | null) => {
-    playNext.current = vuelta.length > 0 && (config !== null || player.running);
-    // Sin ritmo, la vuelta sigue al tempo que traía el ritmo, al paso del deslizador.
-    if (!config && fondo) setOwnTempo(clampTempo(Math.round(tempo / TEMPO_RANGE.step) * TEMPO_RANGE.step));
-    update({ ritmo: config && fondoToParam({ ...config, bpm: clampTempo(config.bpm) }) });
-  };
-  // Cambió el ritmo (no el tempo): la vuelta y el ritmo vuelven a empezar juntos, para no quedar corridos.
-  const fondoPattern = fondo && fondoToParam({ ...fondo, bpm: 0 });
-  const restart = useEffectEvent(() => {
-    if (playNext.current || player.running) play();
-    playNext.current = false;
+  const player = useAcompanamiento({
+    steps: vueltaSteps(tuning.notes, vuelta),
+    a4,
+    feel,
+    fondo,
+    writeFondo: (config) => update({ ritmo: config && fondoToParam(config) }),
   });
-  const lastPattern = useRef(fondoPattern);
-  useEffect(() => {
-    if (lastPattern.current === fondoPattern) return;
-    lastPattern.current = fondoPattern;
-    restart();
-  }, [fondoPattern]);
-  // El tempo cambia sin cortar: el ritmo lo lleva y la vuelta lo sigue.
-  useEffect(() => {
-    if (fondo && metronome.getState().running) metronome.setConfig({ ...fondo, bpm: tempo });
-  }, [fondo, tempo]);
-  // Si la vuelta deja de sonar (se vació, se tocó una de muestra), el ritmo también. Y al irse, para.
-  useEffect(() => {
-    if (!player.running) metronome.stop();
-  }, [player.running]);
-  useEffect(() => () => metronome.stop(), []);
-  const barPulses = fondo && fondo.mode !== 'mutante' ? pulseGrid(fondo, 0).pulses.length : null;
+  const { play, stop, tempo, setTempo, chooseFondo, barPulses } = player;
+  /** Escalas en la misma tonalidad, con esta vuelta (y su ritmo) de fondo. */
+  const escalasHref = `/escalas?${new URLSearchParams({
+    ...(tuning.id === DEFAULT_TUNING ? {} : { afinacion: tuning.id }),
+    tono: String(tonic),
+    escala: scale.id,
+    v: vueltaParam,
+    ...(fondoParam ? { ritmo: fondoParam } : {}),
+    fondo: 'vuelta',
+  })}`;
 
   const name = (chord: Chord) => chordName(chord, key, notation);
-  const listen = (chord: Placed) => player.strum(voicingOf(tuning, chord, finger(chord)));
+  const listen = (chord: Placed) => player.strum(voicingOf(tuning.notes, chord, finger(chord)));
   /** Suma un acorde al final: dura lo mismo que el último, así una vuelta de dos pulsos sigue en dos. */
   const add = (chord: Placed) => {
     listen(chord);
@@ -789,7 +701,7 @@ export default function ArmoniaRoute() {
     listen(vuelta[index]!);
   };
   const previewChords = (chords: Chord[]) =>
-    player.preview(chords.map((chord) => voicingOf(tuning, chord, finger(chord))));
+    player.preview(chords.map((chord) => voicingOf(tuning.notes, chord, finger(chord))));
   const shown = drag ? moveItem(vuelta, drag.from, drag.to) : vuelta;
   /** Soltar: el acorde arrastrado queda donde cayó. */
   const drop = useEffectEvent((from: number, to: number) => {
@@ -1341,6 +1253,10 @@ export default function ArmoniaRoute() {
                       Vaciar
                     </button>
                   </div>
+                  {/* Para improvisar o buscar una melodía: la escala en el mástil, con esta vuelta de fondo. */}
+                  <Link className={`${ui.bridge} ${styles.escalasLink}`} to={escalasHref}>
+                    Tocar encima en Escalas <Icon name="right" />
+                  </Link>
                 </>
               )}
             </Slab>
@@ -1615,7 +1531,7 @@ export default function ArmoniaRoute() {
                         className={styles.starterListen}
                         aria-label={`Escuchar ${chords.map(name).join(' ')}`}
                         onClick={() =>
-                          player.preview(chords.map((chord) => voicingOf(tuning, chord, finger(chord))))
+                          player.preview(chords.map((chord) => voicingOf(tuning.notes, chord, finger(chord))))
                         }
                       >
                         <span className={styles.starterDegrees}>

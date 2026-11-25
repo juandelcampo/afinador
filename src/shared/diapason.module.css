@@ -211,6 +211,12 @@
   color: var(--neck-ink);
   border-style: solid;
 }
+/* Con una vuelta de fondo, las que no son del acorde que suena se apagan un poco (menos que lo de afuera
+   de la caja): las fuertes son las que se apoyan. */
+.ghost[data-quiet],
+.openName[data-quiet] {
+  opacity: 0.45;
+}
 .ghost[data-dim],
 .openName[data-dim] {
   opacity: 0.3;
