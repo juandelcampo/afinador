@@ -22,7 +22,7 @@ Para darla de alta:
 ## 2. El esqueleto
 
 ```tsx
-import { Browse, Button, PageTitle, Slab, Toggle } from '~/shared/ui/ui';
+import { Browse, Button, PageTitle, Setup, Slab, Toggle } from '~/shared/ui/ui';
 import { TuneLink, TuningField } from '~/shared/TuningField';
 import ui from '~/shared/ui/ui.module.css';
 import styles from './nueva.module.css';
@@ -35,10 +35,10 @@ export default function NuevaRoute() {
         <PageTitle eyebrow="Lo que hace, en pocas palabras" title="Nueva">
           <p>Cómo se usa, en una o dos oraciones. Se lee sin bajar.</p>
         </PageTitle>
-        <div className={ui.setup}>
+        <Setup summary={`${tuning.name} · ${lo que se eligió}`}>
           <TuningField tuning={tuning} onChange={…} />
           <TuneLink tuning={tuning} />
-        </div>
+        </Setup>
       </Slab>
 
       {/* 2. Lo que suena */}
@@ -59,7 +59,7 @@ export default function NuevaRoute() {
 
 - `ui.frame` hace que todas las herramientas tengan el mismo ancho y las mismas rayas a los costados. Va siempre.
 - Cada bloque es un `Slab`. Si lleva título, usá `SlabHead`; lo que va a la derecha del título (botones chicos) va como hijo.
-- `ui.setup` es la fila de lo que se elige arriba: la afinación primero (`TuningField`, que toma el lugar ancho) y el link para afinarla.
+- `Setup` es la fila de lo que se elige arriba: la afinación primero (`TuningField`, que toma el lugar ancho) y el link para afinarla. En el celular (hasta 719 px) se pliega en un renglón que dice lo elegido (`summary`, por ejemplo "Estándar · Menor natural"), así lo principal de la herramienta queda arriba; tocarlo despliega los campos ahí mismo.
 - `ui.actions` es la fila de escuchar: el botón principal primero, después los secundarios y al final las elecciones.
 
 ## 3. Color y estados
@@ -97,6 +97,7 @@ Todo está en `src/shared/`. Antes de escribir CSS para un control, fijate si ya
 | Título de la herramienta                  | `PageTitle` (eyebrow, title, texto)          | `ui/ui.tsx`        |
 | Un bloque de la página                    | `Slab`, `SlabHead`                           | `ui/ui.tsx`        |
 | Un campo con su rótulo                    | `Field` (`as="div"` si adentro hay botones)  | `ui/ui.tsx`        |
+| Lo que se elige arriba (plegado en celu)  | `Setup` (summary, y los campos adentro)      | `ui/ui.tsx`        |
 | Elegir la afinación                       | `TuningField` + `TuneLink`                   | `TuningField.tsx`  |
 | La acción principal                       | `Button variant="primary"`                   | `ui/ui.tsx`        |
 | Una acción secundaria                     | `Button variant="ghost"`                     | `ui/ui.tsx`        |

@@ -445,6 +445,35 @@ button:disabled {
   gap: 8px 12px;
   margin-top: 12px;
 }
+/* El renglón que pliega lo de arriba en el celular: se ve como el selector de afinación del Afinador. */
+.setupSummary {
+  display: none;
+}
+@media (max-width: 719px) {
+  .setupSummary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    min-height: var(--touch);
+    padding: 0 12px;
+    border: var(--rule);
+    background: var(--paper);
+    color: var(--ink);
+    font: 800 semi-expanded 15px/1.2 var(--ui);
+    text-align: left;
+  }
+  .setupSummary > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .setupWrap:not([data-open]) > .setup {
+    display: none;
+  }
+}
 .setup > .field {
   flex: 1 1 120px;
   max-width: 220px;

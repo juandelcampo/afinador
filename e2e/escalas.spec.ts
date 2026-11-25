@@ -94,4 +94,16 @@ test.describe('escalas', () => {
     await expect(page).toHaveURL(/\/armonia\?afinacion=dadgad&tono=2&escala=mixolidio$/);
     expect(errors).toEqual([]);
   });
+
+  test('en el celular la afinación y la escala se pliegan en un renglón que las dice', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await goto(page, '/escalas?afinacion=dadgad&escala=mixolidio');
+    const fold = page.getByRole('button', { name: 'DADGAD · Mixolidio' });
+    await expect(fold).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.locator('#afinacion')).toBeHidden();
+    await expect(page.getByRole('button', { name: /Escuchar/ }).first()).toBeInViewport();
+    await fold.click();
+    await expect(page.locator('#afinacion')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Sus acordes en Armonía' })).toBeVisible();
+  });
 });

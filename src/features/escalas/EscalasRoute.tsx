@@ -28,7 +28,7 @@ import { TuneLink, TuningField } from '~/shared/TuningField';
 import { Icon } from '~/shared/ui/Icon';
 import { Picker } from '~/shared/ui/Picker';
 import { Sheet } from '~/shared/ui/Sheet';
-import { Browse, Button, PageTitle, Slab, SplitButton, Toggle } from '~/shared/ui/ui';
+import { Browse, Button, PageTitle, Setup, Slab, SplitButton, Toggle } from '~/shared/ui/ui';
 import ui from '~/shared/ui/ui.module.css';
 import { useHydrated } from '~/shared/useHydrated';
 import { DronePanel } from './DronePanel';
@@ -211,7 +211,7 @@ export default function EscalasRoute() {
         <PageTitle eyebrow="Todas las notas en el mástil" title="Escalas" toolName>
           <p>Elegí una escala y mirá dónde cae cada nota en tu afinación. Prendé el drone y tocá encima.</p>
         </PageTitle>
-        <div className={ui.setup}>
+        <Setup summary={`${tuning.name} · ${scale.name}`}>
           <TuningField
             tuning={tuning}
             // La tónica vuelve a la que mejor cae sobre las cuerdas al aire de la nueva afinación.
@@ -236,7 +236,7 @@ export default function EscalasRoute() {
           <Link className={ui.bridge} to={armoniaLink}>
             Sus acordes en Armonía <Icon name="right" />
           </Link>
-        </div>
+        </Setup>
       </Slab>
 
       <Slab>

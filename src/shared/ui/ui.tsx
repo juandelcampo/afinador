@@ -1,5 +1,5 @@
 // Componentes brutalistas compartidos. Son chicos a propósito: bloques, bordes y nada más.
-import type { PointerEvent, ReactNode } from 'react';
+import { useId, useState, type PointerEvent, type ReactNode } from 'react';
 import { Icon } from './Icon';
 import styles from './ui.module.css';
 
@@ -302,6 +302,34 @@ export function Rail({
       <Icon name={side === 'left' ? 'forward' : 'back'} />
       <span>{label}</span>
     </button>
+  );
+}
+
+/**
+ * Lo que se elige debajo del título (la afinación, la escala, el tipo) y los links de al lado. En el
+ * celular se pliega en un renglón que dice lo elegido: lo principal de la herramienta queda arriba, y
+ * tocar el renglón despliega los campos ahí mismo, sin modal (los campos abren su propia lista). En
+ * pantallas anchas se ve todo, como siempre.
+ */
+export function Setup({ summary, children }: { summary: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  return (
+    <div className={styles.setupWrap} data-open={open || undefined}>
+      <button
+        type="button"
+        className={styles.setupSummary}
+        aria-expanded={open}
+        aria-controls={id}
+        onClick={() => setOpen(!open)}
+      >
+        <span>{summary}</span>
+        <Icon name={open ? 'up' : 'down'} />
+      </button>
+      <div id={id} className={styles.setup}>
+        {children}
+      </div>
+    </div>
   );
 }
 

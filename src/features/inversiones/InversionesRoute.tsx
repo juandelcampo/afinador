@@ -23,7 +23,7 @@ import { useHydrated } from '~/shared/useHydrated';
 import { Diapason, LAST_FRET } from '~/shared/Diapason';
 import { TuneLink, TuningField } from '~/shared/TuningField';
 import { Picker } from '~/shared/ui/Picker';
-import { Browse, Button, PageTitle, Slab } from '~/shared/ui/ui';
+import { Browse, Button, PageTitle, Setup, Slab } from '~/shared/ui/ui';
 import ui from '~/shared/ui/ui.module.css';
 import styles from './inversiones.module.css';
 
@@ -251,7 +251,9 @@ export default function InversionesRoute() {
             tocá el mástil para armar la tuya.
           </p>
         </PageTitle>
-        <div className={ui.setup}>
+        <Setup
+          summary={`${tuning.name} · ${INVERSION_CHORDS.find((item) => item.suffix === chord.suffix)?.label ?? ''}`}
+        >
           <TuningField
             tuning={tuning}
             onChange={(id) => update({ afinacion: id === DEFAULT_TUNING ? null : id, forma: null })}
@@ -264,7 +266,7 @@ export default function InversionesRoute() {
             onChange={(value) => setChord({ suffix: value })}
           />
           <TuneLink tuning={tuning} />
-        </div>
+        </Setup>
       </Slab>
 
       <Slab>

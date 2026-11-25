@@ -17,7 +17,7 @@ import { useHydrated } from '~/shared/useHydrated';
 import { Diapason, LAST_FRET } from '~/shared/Diapason';
 import { TuneLink, TuningField } from '~/shared/TuningField';
 import { Icon } from '~/shared/ui/Icon';
-import { Button, PageTitle, Slab } from '~/shared/ui/ui';
+import { Button, PageTitle, Setup, Slab } from '~/shared/ui/ui';
 import ui from '~/shared/ui/ui.module.css';
 import styles from './acorde.module.css';
 
@@ -189,7 +189,7 @@ export default function AcordeRoute() {
             (×); el bajo, en naranja.
           </p>
         </PageTitle>
-        <div className={ui.setup}>
+        <Setup summary={tuning.name}>
           <TuningField
             tuning={tuning}
             onChange={(id) => update(() => ({ afinacion: id === DEFAULT_TUNING ? null : id }))}
@@ -207,10 +207,11 @@ export default function AcordeRoute() {
           />
           {inversionsLink && (
             <Link className={ui.bridge} to={inversionsLink}>
-              Todas las formas de {pcName(reading!.root) + suffixSymbol(reading!.suffix)} en Inversiones <Icon name="right" />
+              Todas las formas de {pcName(reading!.root) + suffixSymbol(reading!.suffix)} en Inversiones{' '}
+              <Icon name="right" />
             </Link>
           )}
-        </div>
+        </Setup>
       </Slab>
 
       <Slab>
