@@ -27,12 +27,12 @@
   min-height: var(--touch);
   padding: 0;
   border: 0;
-  border-right: 2px solid var(--ink);
+  border-right: var(--split);
   background: var(--paper);
   font: 700 16px/1 var(--mono);
 }
 .roots button:nth-child(n + 7) {
-  border-top: 2px solid var(--ink);
+  border-top: var(--split);
 }
 .roots button:nth-child(6n) {
   border-right: 0;
@@ -45,7 +45,7 @@
     border-top: 0;
   }
   .roots button:nth-child(6n) {
-    border-right: 2px solid var(--ink);
+    border-right: var(--split);
   }
   .roots button:last-child {
     border-right: 0;
@@ -78,7 +78,7 @@
   text-align: center;
 }
 .notes button + button {
-  border-left: var(--rule);
+  border-left: var(--split);
 }
 .notes button:hover {
   background: var(--soft);

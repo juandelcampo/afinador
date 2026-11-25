@@ -13,6 +13,10 @@
   --neck-soft: #222222;
   --rule-width: 3px;
   --rule: var(--rule-width) solid var(--ink);
+  /* Las rayas de adentro de un recuadro (entre las notas de una grilla, entre botones pegados): finas,
+     así el contorno grueso dice dónde empieza y termina, y adentro la grilla respira. */
+  --split-width: 1px;
+  --split: var(--split-width) solid var(--ink);
   /* Tres voces: Archivo ancha y negra para títulos, Archivo para botones y rótulos, Plex Mono para los
      datos (notas, números, intervalos). Las dos vienen con la app (root.tsx). */
   --heavy: 'Archivo Variable', 'Arial Black', 'Helvetica Neue', Arial, sans-serif;

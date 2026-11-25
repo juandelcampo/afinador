@@ -26,7 +26,7 @@
     color 120ms var(--ease);
 }
 .segmented button + button {
-  border-left: var(--rule);
+  border-left: var(--split);
 }
 .segmented button:hover {
   background: var(--soft);
@@ -203,10 +203,10 @@
   font: 700 18px/1 var(--ui);
 }
 .browseArrow:first-child {
-  border-right: var(--rule);
+  border-right: var(--split);
 }
 .browseArrow:last-child {
-  border-left: var(--rule);
+  border-left: var(--split);
 }
 .browseArrow:hover:not(:disabled),
 .browseCurrent:hover {
@@ -315,7 +315,7 @@
 .tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 2px;
+  gap: var(--split-width);
   border: var(--rule);
   background: var(--ink);
 }

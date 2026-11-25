@@ -78,7 +78,7 @@ Hay un solo color de acento. Cada color dice siempre lo mismo:
 
 ## 4. Bordes, sombras y letra
 
-- **Bordes:** 3 px de contorno (`var(--rule)`) y 2 px para dividir adentro de un recuadro. Esquinas siempre rectas.
+- **Bordes:** 3 px de contorno (`var(--rule)`) y 1 px para dividir adentro de un recuadro (`var(--split)`: entre las notas de una grilla, entre botones pegados). El contorno grueso dice dónde empieza y termina; adentro, la grilla respira. Lo elegido va en tinta llena, no con más borde. Esquinas siempre rectas.
 - **Sombra:** solo en el botón principal (`--lift`) y en el modal o panel flotante. En nada más.
 - **Letra:** tres voces.
   - `--heavy` (Archivo ancha y negra): títulos.

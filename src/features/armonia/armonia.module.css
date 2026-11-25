@@ -271,7 +271,7 @@
   flex: none;
   width: var(--touch);
   border: 0;
-  border-left: 2px solid var(--ink);
+  border-left: var(--split);
   background: var(--paper);
   font: 900 24px/1 var(--heavy);
   transition:
@@ -827,7 +827,7 @@
 /* En los grados, la barra es la última fila de la tarjeta, a todo lo ancho. */
 .card > .pickBar {
   grid-column: 1 / -1;
-  border-top: 2px solid var(--ink);
+  border-top: var(--split);
 }
 /* El color es un Picker chico; la figura, un botón con la misma letra y el mismo alto, al lado. */
 .pickColor {
@@ -841,7 +841,7 @@
   min-height: 34px;
   padding: 0 8px;
   border: 0;
-  border-left: 2px solid var(--ink);
+  border-left: var(--split);
   background: var(--paper);
   color: var(--ink);
   font: 700 13px/1.2 var(--ui);
@@ -950,7 +950,7 @@
   min-height: 0;
   padding: 0;
   border: 0;
-  border-left: 2px solid var(--ink);
+  border-left: var(--split);
 }
 .variants .add:hover:enabled,
 .cadences .add:hover:enabled {
