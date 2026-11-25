@@ -96,7 +96,7 @@ export default function InversionesRoute() {
   const chord = readChord(params.get('acorde')) ?? homeChord(tuning);
   const open = useMemo(() => tuning.notes.map(noteToMidi), [tuning.notes]);
   const groups = useMemo(
-    () => inversionsOf(open, chord.root, chord.suffix),
+    () => inversionsOf(open, chord.root, chord.suffix, { lastFret: LAST_FRET }),
     [open, chord.root, chord.suffix],
   );
 
@@ -216,7 +216,6 @@ export default function InversionesRoute() {
   // Para comparar de oído: la forma más fácil de cada inversión, una detrás de otra, y el diapasón la sigue.
   const playTour = () => {
     stopTour();
-    if (editing) update({ forma: null });
     const { ctx } = getAudio();
     const start = ctx.currentTime + 0.04;
     // Cada inversión espera a que la anterior termine de sonar: el arpegio tarda más que el rasgueo.
@@ -390,9 +389,22 @@ export default function InversionesRoute() {
               En esta afinación la mano no llega a ninguna forma de {name}.
             </p>
           )}
-          <Button variant="primary" ariaLabel="Escuchar las inversiones" onClick={playTour}>
-            ▶ Escuchar
-          </Button>
+          {/* Mientras armás la tuya, Escuchar toca la tuya: el recorrido la borraría. El texto no cambia,
+              así el botón no se mueve. */}
+          {editing ? (
+            <Button
+              variant="primary"
+              ariaLabel="Escuchar tu forma"
+              disabled={!custom}
+              onClick={() => play(custom)}
+            >
+              ▶ Escuchar
+            </Button>
+          ) : (
+            <Button variant="primary" ariaLabel="Escuchar las inversiones" onClick={playTour}>
+              ▶ Escuchar
+            </Button>
+          )}
           {editing ? (
             <>
               <Button variant="ghost" onClick={startEmpty}>

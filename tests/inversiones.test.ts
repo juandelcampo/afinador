@@ -74,6 +74,15 @@ describe('inversionsOf', () => {
     expect(tabs(root!.full)).not.toContain('× 3 2 0 1 ×');
   });
 
+  it('la misma figura aparece también una octava arriba, mientras entre en el diapasón', () => {
+    // Fa/La en las tres agudas: × × × 2 1 1 abajo y ×-×-×-14-13-13 arriba.
+    const [, third] = inversionsOf(standard, 5, '');
+    const all = [...third!.bare, ...third!.full];
+    expect(tabs(all)).toContain('× × × 2 1 1');
+    expect(tabs(all)).toContain('×-×-×-14-13-13');
+    expect(all.every((voicing) => voicing.frets.every((fret) => fret <= 15))).toBe(true);
+  });
+
   it('un acorde de cuatro notas tiene cuatro grupos, apilados en terceras', () => {
     expect(inversionsOf(standard, 0, 'maj7').map((group) => group.tone)).toEqual(['R', '3', '5', '7']);
     expect(inversionsOf(standard, 0, 'add9').map((group) => group.tone)).toEqual(['R', '3', '5', '9']);

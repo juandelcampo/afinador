@@ -82,6 +82,12 @@ test.describe('inversiones', () => {
     await expect(page).toHaveURL(/forma=0-3-2-x-1-x/);
     await expect(mine).toContainText('Le falta la 5');
 
+    // Escuchar toca tu forma y no la borra.
+    const plucked = await plucks(page);
+    await page.getByRole('button', { name: 'Escuchar tu forma', exact: true }).click();
+    await expect.poll(() => plucks(page)).toBeGreaterThanOrEqual(plucked + 3);
+    await expect(page).toHaveURL(/forma=0-3-2-x-1-x/);
+
     // Al recargar, la forma sigue ahí.
     await page.reload();
     await expect(page.getByTestId('mi-forma')).toContainText('0 3 2 × 1 ×');

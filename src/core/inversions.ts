@@ -234,19 +234,19 @@ const insideOf = (inner: Voicing, outer: Voicing) =>
 
 /**
  * Las figuras de un acorde en una afinación, en grupos por la nota que va en el bajo. Llega hasta el
- * traste 12: de ahí para arriba se repite el mástil. Las justas van por dónde caen en el mástil; las
- * llenas que son una justa con más cuerdas se quedan y las que son otra llena recortada se descartan.
+ * último traste del diapasón: del 12 para arriba el mástil se repite, pero una figura que se ve en el
+ * mástil tiene que estar en la lista (×××2-1-1 y ×××14-13-13 son la misma, una octava arriba, y las
+ * dos se buscan). Las justas van por dónde caen en el mástil; las llenas que son una justa con más
+ * cuerdas se quedan y las que son otra llena recortada se descartan.
  */
 export function inversionsOf(
   notes: readonly number[],
   root: number,
   suffix: Suffix,
-  { maxPosition = 12 }: { maxPosition?: number } = {},
+  { lastFret = 15 }: { lastFret?: number } = {},
 ): InversionGroup[] {
   const steps = CHORD_STEPS[suffix]!;
-  const all = voicingsOf(notes, root, steps, { maxFret: maxPosition + 3 }).filter(
-    (voicing) => voicing.position <= maxPosition,
-  );
+  const all = voicingsOf(notes, root, steps, { maxFret: lastFret });
   const ordered = [...new Set(steps.map(mod12))].sort((a, b) => stackRank(a, steps) - stackRank(b, steps));
   return ordered.map((bass, inversion) => {
     const mine = all.filter((voicing) => voicing.bass === bass);
