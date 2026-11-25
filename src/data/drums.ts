@@ -111,12 +111,14 @@ export const DRUM_PRESETS: DrumPreset[] = [
     }),
   },
   {
+    // Cada paso es una corchea y el pulso es el del pulgar (dos por compás): a 66 suena como la bossa
+    // de los discos. A 132 con semicorcheas iba al doble y no había cómo tocar encima.
     id: 'bossa',
     name: 'Bossa',
-    config: drumConfig(132, {
-      bombo: 'X..xx..xx..xx..x',
+    config: drumConfig(66, {
+      bombo: 'X..xX..xX..xX..x',
       aro: 'x..x..x...x..x..',
-      hihat: 'x.x.x.x.x.x.x.x.',
+      hihat: 'XxxxXxxxXxxxXxxx',
     }),
   },
   {

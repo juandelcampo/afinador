@@ -71,10 +71,11 @@ const PRESETS: ReadonlyArray<{ label: string; meter: Meter }> = [
 ];
 
 /** Ritmos euclidianos con nombre: por ahí conviene empezar a escuchar figuras. */
-const EUCLID_PRESETS: ReadonlyArray<{ label: string; pulses: number; steps: number }> = [
+const EUCLID_PRESETS: ReadonlyArray<{ label: string; pulses: number; steps: number; rotation?: number }> = [
   { label: 'Tresillo', pulses: 3, steps: 8 },
   { label: 'Cinquillo', pulses: 5, steps: 8 },
-  { label: 'Bossa', pulses: 5, steps: 16 },
+  // Corrido diez pasos, el 5 en 16 es la clave de la bossa tal cual: 1, 4, 7, 11 y 14.
+  { label: 'Bossa', pulses: 5, steps: 16, rotation: 10 },
   { label: 'Campana africana', pulses: 7, steps: 12 },
   { label: 'Khafif', pulses: 2, steps: 5 },
   { label: 'Cuatro parejos', pulses: 4, steps: 16 },
@@ -293,9 +294,16 @@ function Editor({
               <Button
                 key={preset.label}
                 variant="mini"
-                ariaPressed={preset.pulses === pulses && preset.steps === steps && rotation === 0}
+                ariaPressed={
+                  preset.pulses === pulses && preset.steps === steps && rotation === (preset.rotation ?? 0)
+                }
                 onClick={() =>
-                  onChange({ ...config, pulses: preset.pulses, steps: preset.steps, rotation: 0 })
+                  onChange({
+                    ...config,
+                    pulses: preset.pulses,
+                    steps: preset.steps,
+                    rotation: preset.rotation ?? 0,
+                  })
                 }
               >
                 {preset.label}
