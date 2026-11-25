@@ -139,6 +139,18 @@ test.describe('escuchador', () => {
     await expect(page.locator('[data-step][data-active]')).toHaveCount(0, { timeout: 6000 });
   });
 
+  test('Más acordes abre Inversiones con la afinación y el acorde puesto', async ({ page }) => {
+    await goto(page, '/afinador/dadgad');
+    await tocar(page);
+    await page
+      .getByTestId('chord-shapes')
+      .getByRole('button', { name: /: Em7$/ })
+      .click();
+    await page.getByRole('link', { name: 'Más acordes' }).click();
+    await expect(page).toHaveURL(/\/inversiones\?afinacion=dadgad&acorde=Em7$/);
+    await expect(page.locator('#tipo')).toHaveAttribute('data-value', 'm7');
+  });
+
   test('con capo los acordes se nombran por lo que suena', async ({ page }) => {
     await goto(page, '/afinador/dadgad');
     await tocar(page);

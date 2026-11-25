@@ -100,6 +100,18 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+/* El nombre y el orden en corto, solo con cinco inversiones en el celular. */
+.short {
+  display: none;
+}
+@media (max-width: 959px) {
+  .inversions[data-many] .long {
+    display: none;
+  }
+  .inversions[data-many] .short {
+    display: inline;
+  }
+}
 .why {
   margin-top: 12px;
   font-size: 14px;

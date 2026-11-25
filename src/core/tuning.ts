@@ -113,6 +113,10 @@ export interface ChordShape {
   frets: number[];
   chord: string;
   label: string;
+  /** El acorde, para abrirlo en otra herramienta: la raíz como clase de altura (0 = Do) y el sufijo,
+   *  o null si las cuerdas al aire no forman uno. */
+  root: number | null;
+  suffix: string | null;
   /** Para filtrar: con tercera mayor, con tercera menor, o ni una ni otra (sus, quintas, dim, aum). */
   kind: ChordKind;
 }
@@ -246,6 +250,8 @@ export function chordShapes(
       frets: open.map(() => 0),
       chord: openName,
       label: 'Al aire',
+      root: home && !home.single ? open[home.root]! % 12 : null,
+      suffix: home && !home.single ? home.suffix : null,
       kind: home && !home.single ? chordKind(home.suffix) : 'otro',
     },
   ];
@@ -259,6 +265,8 @@ export function chordShapes(
         frets: shape.frets,
         chord: shape.chord,
         label: shapeLabel(shape.frets),
+        root: shape.root % 12,
+        suffix: shape.suffix,
         kind: chordKind(shape.suffix),
       }),
     );

@@ -9,7 +9,10 @@ import {
   stringIntervals,
   tensionWarning,
   type ChordKind,
+  type ChordShape,
 } from '~/core/tuning';
+import { chordToken } from '~/core/harmony';
+import { INVERSION_CHORDS } from '~/core/inversions';
 import { normalize, searchTunings } from '~/core/search';
 import { GROUPS, TUNINGS, type Tuning } from '~/data/tunings';
 import { TEMPO_RANGE, useFavorites, useSettings } from '~/shared/settings';
@@ -467,6 +470,19 @@ function Neighbors({ tuning, onPick }: { tuning: Tuning; onPick: (id: string) =>
   );
 }
 
+/** Cómo se llama en Inversiones cada sufijo de las figuras: sin la quinta es el mismo acorde. */
+const inversionSuffix = (suffix: string) => (suffix === '6/9' ? '69' : suffix.replace('(no5)', ''));
+
+/** El link a Inversiones con esta afinación y, si hay una figura puesta que se abre allá, su acorde. */
+function inversionsHref(tuning: Tuning, shape: ChordShape | undefined): string {
+  const params = new URLSearchParams(tuning.id === DEFAULT_ID ? {} : { afinacion: tuning.id });
+  const suffix = shape?.suffix == null ? null : inversionSuffix(shape.suffix);
+  if (shape?.root != null && suffix !== null && INVERSION_CHORDS.some((item) => item.suffix === suffix))
+    params.set('acorde', chordToken({ root: shape.root, suffix }));
+  const query = params.toString();
+  return query ? `/inversiones?${query}` : '/inversiones';
+}
+
 const KIND_FILTERS: ReadonlyArray<{ value: ChordKind | 'todos'; label: string }> = [
   { value: 'todos', label: 'Todos' },
   { value: 'mayor', label: 'Mayores' },
@@ -548,6 +564,18 @@ function TuningPage({
   );
   const chipsRef = useChipColumns(shapes.length);
   const isOn = (frets: number[]) => frets.every((fret, index) => fret === listener.frets[index]);
+  // Más acordes en esta afinación: Inversiones abre con el acorde de la figura puesta, si hay una.
+  const moreChords = (
+    <Link
+      className={ui.bridge}
+      to={inversionsHref(
+        tuning,
+        shapes.find((shape) => isOn(shape.frets)),
+      )}
+    >
+      Más acordes <Icon name="right" />
+    </Link>
+  );
   // La misma aclaración en Acordes y en Figuras; la de Acordes es la que miran las pruebas.
   const capoNote = (testId?: string) =>
     listener.capo > 0 && (
@@ -611,8 +639,8 @@ function TuningPage({
         >
           <Slab className={styles.play}>
             {/* En pantalla ancha la pestaña ya dice Acordes: el título solo va en el celular. */}
-            <div data-narrow>
-              <SlabHead title="Acordes" />
+            <div data-narrow className={styles.acordesHead}>
+              <SlabHead title="Acordes">{moreChords}</SlabHead>
             </div>
 
             <div
@@ -657,9 +685,12 @@ function TuningPage({
               onPluck={(stringIndex, velocity) => listener.playString(stringIndex, undefined, velocity)}
               onToggleFret={listener.toggleFret}
             />
-            <p className={ui.hint}>
-              Tocá un traste para pisarlo; pasá el dedo por la zona gris para rasguear.
-            </p>
+            <div className={styles.hintRow}>
+              <p className={ui.hint}>
+                Tocá un traste para pisarlo; pasá el dedo por la zona gris para rasguear.
+              </p>
+              <span data-wide>{moreChords}</span>
+            </div>
 
             <div className={styles.playRow}>
               <Button
@@ -779,6 +810,7 @@ function TuningPage({
                   </button>
                 ))}
             </div>
+            {moreChords}
             <p className={ui.hint}>
               Figuras para la mano, de la 6.ª cuerda a la 1.ª; × es cuerda apagada. Tocá una para escucharla
               con el patrón de Acordes: queda pisada en el mástil.

@@ -42,6 +42,9 @@ export const CHORD_STEPS: Record<string, readonly number[]> = {
   m11: [0, 3, 7, 10, 14, 17],
   '69': [0, 4, 7, 9, 14],
   '7b5': [0, 4, 6, 10],
+  // Los extendidos con color de Inversiones: el "Hendrix" (la ♯9 contra la 3 mayor) y el maj7 lidio.
+  '7#9': [0, 4, 7, 10, 15],
+  'maj7#11': [0, 4, 7, 11, 18],
 };
 
 export type Suffix = keyof typeof CHORD_STEPS;
@@ -86,6 +89,8 @@ const DEGREE_SUFFIX: Record<string, string> = {
   m11: 'm11',
   '69': '6/9',
   '7b5': '7♭5',
+  '7#9': '7♯9',
+  'maj7#11': 'maj7♯11',
 };
 
 /** Cómo se escribe el sufijo en el nombre del acorde. */

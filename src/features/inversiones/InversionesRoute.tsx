@@ -7,6 +7,7 @@ import {
   describeShape,
   encodeFrets,
   INVERSION_CHORDS,
+  INVERSION_GROUPS,
   inversionsOf,
   parseFrets,
   tabOf,
@@ -262,7 +263,14 @@ export default function InversionesRoute() {
             id="tipo"
             label="Tipo"
             value={chord.suffix}
-            options={INVERSION_CHORDS.map((item) => ({ value: item.suffix, label: item.label }))}
+            groups={INVERSION_GROUPS.map((group) => ({
+              id: group.id,
+              name: group.name,
+              options: INVERSION_CHORDS.filter((item) => item.group === group.id).map((item) => ({
+                value: item.suffix,
+                label: item.label,
+              })),
+            }))}
             onChange={(value) => setChord({ suffix: value })}
           />
           <TuneLink tuning={tuning} />
@@ -285,17 +293,41 @@ export default function InversionesRoute() {
               </button>
             ))}
           </div>
-          <div className={styles.inversions} role="group" aria-label="Qué va en el bajo">
+          {/* Los acordes de cinco notas tienen cinco inversiones: en el celular el nombre va sin el tipo
+              (que ya está arriba) y el orden en corto, así entran en la misma fila sin estirarla. */}
+          <div
+            className={styles.inversions}
+            role="group"
+            aria-label="Qué va en el bajo"
+            data-many={groups.length > 4 || undefined}
+          >
             {groups.map((item) => (
               <button
                 key={item.bass}
                 type="button"
+                aria-label={`${nameWithBass(item)}: ${ORDINALS[item.inversion]}`}
                 aria-pressed={item.inversion === shownGroup.inversion && (!editing || custom !== null)}
                 disabled={item.bare.length + item.full.length === 0}
                 onClick={() => show(item.inversion, easiest(item))}
               >
-                <strong>{nameWithBass(item)}</strong>
-                <small>{ORDINALS[item.inversion]}</small>
+                <strong>
+                  {rootName(chord.root)}
+                  <span className={styles.long}>{suffixLabel(chord.suffix)}</span>
+                  {item.inversion > 0 && `/${rootName(chord.root + item.bass)}`}
+                </strong>
+                <small>
+                  {item.inversion === 0 ? (
+                    <>
+                      Fund<span className={styles.long}>amental</span>
+                      <span className={styles.short}>.</span>
+                    </>
+                  ) : (
+                    <>
+                      {item.inversion}.ª<span className={styles.long}> inversión</span>
+                      <span className={styles.short}> inv.</span>
+                    </>
+                  )}
+                </small>
               </button>
             ))}
           </div>

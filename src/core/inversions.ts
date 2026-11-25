@@ -133,30 +133,57 @@ export function voicingsOf(
 }
 
 /** Los acordes que se pueden abrir: el nombre en la lista y cómo se escribe al lado de la nota. */
-export const INVERSION_CHORDS: ReadonlyArray<{ suffix: Suffix; label: string; symbol: string }> = [
-  { suffix: '', label: 'Mayor', symbol: '' },
-  { suffix: 'm', label: 'Menor', symbol: 'm' },
-  { suffix: '7', label: '7', symbol: '7' },
-  { suffix: 'maj7', label: 'maj7', symbol: 'maj7' },
-  { suffix: 'm7', label: 'm7', symbol: 'm7' },
-  { suffix: 'm7b5', label: 'm7♭5', symbol: 'm7♭5' },
-  { suffix: 'dim', label: 'dim', symbol: 'dim' },
-  { suffix: 'dim7', label: 'dim7', symbol: 'dim7' },
-  { suffix: 'aug', label: 'aug', symbol: 'aug' },
-  { suffix: 'sus2', label: 'sus2', symbol: 'sus2' },
-  { suffix: 'sus4', label: 'sus4', symbol: 'sus4' },
-  { suffix: '7sus4', label: '7sus4', symbol: '7sus4' },
-  { suffix: '6', label: '6', symbol: '6' },
-  { suffix: 'm6', label: 'm6', symbol: 'm6' },
-  { suffix: 'add9', label: 'add9', symbol: 'add9' },
+export type InversionChordGroup = 'triadas' | 'septimas' | 'sextas' | 'extendidos';
+
+export const INVERSION_CHORDS: ReadonlyArray<{
+  suffix: Suffix;
+  label: string;
+  symbol: string;
+  group: InversionChordGroup;
+}> = [
+  { suffix: '', label: 'Mayor', symbol: '', group: 'triadas' },
+  { suffix: 'm', label: 'Menor', symbol: 'm', group: 'triadas' },
+  { suffix: 'dim', label: 'dim', symbol: 'dim', group: 'triadas' },
+  { suffix: 'aug', label: 'aug', symbol: 'aug', group: 'triadas' },
+  { suffix: 'sus2', label: 'sus2', symbol: 'sus2', group: 'triadas' },
+  { suffix: 'sus4', label: 'sus4', symbol: 'sus4', group: 'triadas' },
+  { suffix: '7', label: '7', symbol: '7', group: 'septimas' },
+  { suffix: 'maj7', label: 'maj7', symbol: 'maj7', group: 'septimas' },
+  { suffix: 'm7', label: 'm7', symbol: 'm7', group: 'septimas' },
+  { suffix: 'm7b5', label: 'm7♭5', symbol: 'm7♭5', group: 'septimas' },
+  { suffix: 'dim7', label: 'dim7', symbol: 'dim7', group: 'septimas' },
+  { suffix: '7sus4', label: '7sus4', symbol: '7sus4', group: 'septimas' },
+  { suffix: '6', label: '6', symbol: '6', group: 'sextas' },
+  { suffix: 'm6', label: 'm6', symbol: 'm6', group: 'sextas' },
+  { suffix: 'add9', label: 'add9', symbol: 'add9', group: 'sextas' },
+  { suffix: '69', label: '6/9', symbol: '6/9', group: 'sextas' },
+  { suffix: '9', label: '9', symbol: '9', group: 'extendidos' },
+  { suffix: 'maj9', label: 'maj9', symbol: 'maj9', group: 'extendidos' },
+  { suffix: 'm9', label: 'm9', symbol: 'm9', group: 'extendidos' },
+  { suffix: '7b9', label: '7♭9', symbol: '7♭9', group: 'extendidos' },
+  { suffix: '7#9', label: '7♯9', symbol: '7♯9', group: 'extendidos' },
+  { suffix: 'maj7#11', label: 'maj7♯11', symbol: 'maj7♯11', group: 'extendidos' },
+];
+
+/** Los grupos de la lista de tipos, en orden. */
+export const INVERSION_GROUPS: ReadonlyArray<{ id: InversionChordGroup; name: string }> = [
+  { id: 'triadas', name: 'Tríadas' },
+  { id: 'septimas', name: 'Con séptima' },
+  { id: 'sextas', name: 'Sextas y add9' },
+  { id: 'extendidos', name: 'Extendidos' },
 ];
 
 /** Si el acorde tiene tercera: entonces el 2 es una novena agregada y no reemplaza a la tercera. */
 const hasThird = (steps: readonly number[]) => steps.includes(3) || steps.includes(4);
 
+/** La ♯9 suena igual que la ♭3 y la ♯11 igual que la ♭5: son color si el acorde las pide arriba. */
+const isSharpColor = (step: number, steps: readonly number[]) =>
+  (step === 3 && steps.includes(15)) || (step === 6 && steps.includes(18));
+
 /** El lugar de cada nota apilando terceras: raíz, tercera (o la que la reemplaza), quinta, séptima, novena. */
 function stackRank(step: number, steps: readonly number[]): number {
   if (step === 0) return 0;
+  if (isSharpColor(step, steps)) return 4;
   // La novena (también la ♭9) y la oncena son color encima de la tríada, no la tercera.
   if (step === 1 || ((step === 2 || step === 5) && hasThird(steps))) return 4;
   if (step <= 5) return 1;
@@ -181,6 +208,8 @@ const TONE_NAMES: Record<number, string> = {
 
 /** Cómo se llama una nota dentro del acorde: R, 3, ♭7. En el dim7, la sexta hace de séptima. */
 export function toneName(step: number, suffix: Suffix): string {
+  if (step === 3 && CHORD_STEPS[suffix]!.includes(15)) return '♯9';
+  if (step === 6 && CHORD_STEPS[suffix]!.includes(18)) return '♯11';
   if (step === 2 && hasThird(CHORD_STEPS[suffix]!)) return '9';
   if (step === 5 && hasThird(CHORD_STEPS[suffix]!)) return '11';
   if (step === 9 && suffix === 'dim7') return '𝄫7';

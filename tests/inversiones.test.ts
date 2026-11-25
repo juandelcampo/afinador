@@ -21,8 +21,9 @@ const tabs = (list: { frets: number[] }[]) => list.map((voicing) => tabOf(voicin
 describe('voicingsOf', () => {
   it('cada figura suena solo notas del acorde, en cuerdas de corrido, y la mano llega', () => {
     for (const { suffix } of INVERSION_CHORDS) {
-      const steps = CHORD_STEPS[suffix]!;
-      for (const voicing of voicingsOf(standard, 2, steps)) {
+      // En notas, sin octava: la 9 (14) suena como la 2.
+      const steps = [...new Set(CHORD_STEPS[suffix]!.map((step) => step % 12))];
+      for (const voicing of voicingsOf(standard, 2, CHORD_STEPS[suffix]!)) {
         const sounding = voicing.frets.flatMap((fret, index) => (fret === MUTED ? [] : [index]));
         expect(sounding.at(-1)! - sounding[0]!).toBe(sounding.length - 1);
         for (const step of voicing.steps) if (step !== null) expect(steps).toContain(step);
@@ -46,6 +47,21 @@ describe('voicingsOf', () => {
 });
 
 describe('inversionsOf', () => {
+  it('los extendidos tienen cinco notas en el bajo, con la ♯9 y la ♯11 nombradas como color', () => {
+    expect(inversionsOf(standard, 4, '7#9').map((group) => group.tone)).toEqual(['R', '3', '5', '♭7', '♯9']);
+    expect(inversionsOf(standard, 0, 'maj7#11').map((group) => group.tone)).toEqual([
+      'R',
+      '3',
+      '5',
+      '7',
+      '♯11',
+    ]);
+    expect(inversionsOf(standard, 0, 'maj9').map((group) => group.tone)).toEqual(['R', '3', '5', '7', '9']);
+    // El "Hendrix" de siempre: ×7678×.
+    const tabs = inversionsOf(standard, 4, '7#9')[0]!.bare.map((voicing) => tabOf(voicing.frets));
+    expect(tabs).toContain('× 7 6 7 8 ×');
+  });
+
   it('Do mayor en estándar: la de siempre, Do/Mi con la 6.ª al aire y Do/Sol con la 6.ª en el 3', () => {
     const [root, third, fifth] = inversionsOf(standard, 0, '');
     expect(root!.tone).toBe('R');

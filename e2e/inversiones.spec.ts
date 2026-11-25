@@ -61,6 +61,33 @@ test.describe('inversiones', () => {
     expect(errors).toEqual([]);
   });
 
+  test('los extendidos: el tipo se elige por grupo y tienen cinco notas en el bajo', async ({ page }) => {
+    const errors = watchErrors(page);
+    await goto(page, '/inversiones?acorde=E');
+    await pick(page, 'tipo', '7#9');
+    await expect(page).toHaveURL(/acorde=E7%239/);
+    const bass = page.getByRole('group', { name: 'Qué va en el bajo' }).getByRole('button');
+    await expect(bass).toHaveCount(5);
+    await expect(bass.last()).toHaveAccessibleName('E7♯9/G: 4.ª inversión');
+    await bass.last().click();
+    await expect(page.getByText('La ♯9 en el bajo.')).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+
+  test('en el celular las cinco inversiones entran en una fila', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await goto(page, '/inversiones?acorde=Ebmaj7%2311');
+    const group = page.getByRole('group', { name: 'Qué va en el bajo' });
+    await expect(group.getByRole('button').nth(1)).toHaveText(/^E♭maj7♯11\/G1\.ª inversión/);
+    await expect(group.getByRole('button').nth(1)).toHaveAccessibleName('E♭maj7♯11/G: 1.ª inversión');
+    for (const button of await group.getByRole('button').all()) {
+      const fits = await button.evaluate((element) =>
+        [...element.children].every((child) => child.scrollWidth <= child.clientWidth),
+      );
+      expect(fits).toBe(true);
+    }
+  });
+
   test('arma una forma propia tocando el diapasón y queda en la URL', async ({ page }) => {
     const errors = watchErrors(page);
     await goto(page, '/inversiones?acorde=C');

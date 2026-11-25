@@ -1175,6 +1175,21 @@
 }
 
 /* Acordes en Tocar: dos filas y un botón con el resto. */
+/* La ayuda del mástil y, en pantallas anchas, el link a Inversiones en el mismo renglón: no suma alto. */
+.hintRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+/* En el título de Acordes del celular el link se puede tocar entero pero no estira el renglón. */
+.acordesHead a {
+  margin-block: calc((18px - var(--touch)) / 2);
+}
+.hintRow a {
+  min-height: 0;
+  margin-top: 8px;
+}
 .chips {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));

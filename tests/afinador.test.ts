@@ -334,6 +334,12 @@ describe('filtros de acordes', () => {
     expect(chordShapes(notesOf('opend'))[0]).toMatchObject({ chord: 'D', kind: 'mayor' });
     expect(shapes.find((shape) => shape.chord === 'Em')?.kind).toBe('menor');
   });
+
+  it('cada figura sabe qué acorde es, para abrirlo en Inversiones', () => {
+    const shapes = chordShapes(notesOf('dadgad'));
+    expect(shapes[0]).toMatchObject({ root: 2, suffix: 'sus4' });
+    expect(shapes.find((shape) => shape.chord === 'Em')).toMatchObject({ root: 4, suffix: 'm' });
+  });
 });
 
 describe('afinaciones a una cuerda de distancia', () => {
