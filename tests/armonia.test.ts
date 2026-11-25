@@ -34,11 +34,12 @@ const key = (tonic: number, scale: string): Key => ({ tonic, scale: findScale(sc
 const names = (k: Key) => scaleDegrees(k).map((item) => chordName(item.chord, k, 'letters'));
 
 describe('escalas y grados', () => {
-  it('arma los grados de la tabla de De María, con séptima donde él la pone', () => {
+  it('arma los grados de la tabla de De María, con séptima donde él la pone; en menor la armonía es la de la natural', () => {
     expect(names(key(0, 'mayor'))).toEqual(['C', 'Dm', 'Em', 'F', 'G7', 'Am', 'Bm7♭5']);
     expect(names(key(9, 'natural'))).toEqual(['Am', 'Bdim', 'C', 'Dm', 'Em', 'F', 'G']);
-    expect(names(key(9, 'armonica'))).toEqual(['Am', 'Bdim', 'Caug', 'Dm', 'E7', 'F', 'G#dim7']);
-    expect(names(key(9, 'bachiana'))).toEqual(['Am', 'Bm', 'Caug', 'D', 'E7', 'F#m7♭5', 'G#m7♭5']);
+    // La armónica y la melódica no dan un III aumentado: solo aportan el V7, el VII7dim y el IV mayor.
+    expect(names(key(9, 'armonica'))).toEqual(['Am', 'Bdim', 'C', 'Dm', 'E7', 'F', 'G#dim7']);
+    expect(names(key(9, 'bachiana'))).toEqual(['Am', 'Bdim', 'C', 'D', 'E7', 'F', 'G']);
   });
 
   it('escribe cada grado con su letra: Fa# en Re mayor, Sib en Fa mayor', () => {
@@ -52,7 +53,7 @@ describe('escalas y grados', () => {
     expect(scaleDegrees(k).map((item) => degreeLabel(item.chord, k))).toEqual([
       'Im',
       'IIdim',
-      'III5+',
+      'III',
       'IVm',
       'V7',
       'VI',
@@ -118,7 +119,8 @@ describe('color', () => {
     const k = key(9, 'natural');
     const mezcla = colorGroups(k, null).find((group) => group.id === 'mezcla')!.chords;
     const tokens = mezcla.map((item) => chordToken(item.chord));
-    expect(tokens).toEqual(expect.arrayContaining(['E7', 'Caug', 'D', 'Bm']));
+    expect(tokens).toEqual(expect.arrayContaining(['E7', 'Abdim7', 'D']));
+    expect(tokens).not.toContain('Caug');
     expect(new Set(tokens).size).toBe(tokens.length);
     for (const item of scaleDegrees(k)) expect(tokens).not.toContain(chordToken(item.chord));
   });

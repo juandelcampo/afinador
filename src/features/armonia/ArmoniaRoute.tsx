@@ -443,6 +443,12 @@ function ChordCard({ name, label, feeling, words, fingering, mark, bar, onListen
   );
 }
 
+/**
+ * En los papeles las pentatónicas arman sus propios acordes, pero las funciones son las de la escala de
+ * siete notas de donde salen: la mayor o la menor natural.
+ */
+const PENTATONIC_HARMONY: Record<string, string> = { pentaMayor: 'mayor', pentaMenor: 'natural' };
+
 export default function ArmoniaRoute() {
   const hydrated = useHydrated();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -461,7 +467,9 @@ export default function ArmoniaRoute() {
     params.has('tono') && Number.isInteger(tonicParam) && tonicParam >= 0 && tonicParam < 12
       ? tonicParam
       : home.tonic;
-  const key: Key = { tonic, scale };
+  // Las pentatónicas son melodía: la armonía que va abajo es la de la mayor o la menor de siempre.
+  const harmonyOf = findScale(PENTATONIC_HARMONY[scale.id]);
+  const key: Key = { tonic, scale: harmonyOf ?? scale };
   const vueltaParam = params.get('v') ?? '';
   const vuelta = useMemo(() => readVuelta(vueltaParam), [vueltaParam]);
 
@@ -899,6 +907,12 @@ export default function ArmoniaRoute() {
                   </span>
                 </p>
                 <p>{scale.character}</p>
+                {harmonyOf && (
+                  <p className={ui.hint} data-keep data-testid="armonia-prestada">
+                    Sus acordes son los de la {harmonyOf.name.toLowerCase()}: la pentatónica es la melodía que
+                    va encima.
+                  </p>
+                )}
                 {!!scale.characteristic?.length && (
                   <p className={ui.hint}>
                     Para que {scale.family === 'modo' ? 'el modo' : 'la escala'} se sienta, usá los acordes

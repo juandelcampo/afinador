@@ -396,4 +396,21 @@ test.describe('armonía', () => {
     expect((await plucks(page)) + (await clicks(page))).toBe(after);
     expect(errors).toEqual([]);
   });
+
+  test('en menor la armonía es la de la natural: la armónica aporta el V7, y la pentatónica toma los de su escala', async ({
+    page,
+  }) => {
+    const errors = watchErrors(page);
+    await goto(page, '/armonia?escala=armonica&tono=9');
+    const degrees = page.getByTestId('degrees');
+    await expect(degrees.getByRole('button', { name: 'Escuchar C', exact: true })).toBeVisible();
+    await expect(degrees.getByRole('button', { name: 'Escuchar E7' })).toBeVisible();
+    await expect(degrees.getByRole('button', { name: /Escuchar Caug/ })).toHaveCount(0);
+
+    await goto(page, '/armonia?escala=pentaMayor&tono=0');
+    await expect(page.getByTestId('armonia-prestada')).toContainText('los de la mayor');
+    await expect(degrees.getByRole('listitem')).toHaveCount(7);
+    await expect(degrees.getByRole('button', { name: 'Escuchar F', exact: true })).toBeVisible();
+    expect(errors).toEqual([]);
+  });
 });

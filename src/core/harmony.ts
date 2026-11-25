@@ -208,6 +208,12 @@ export interface Scale {
   characteristic?: readonly number[];
   /** El acorde disminuido que tira hacia otra tónica: conviene usarlo poco o nada. */
   risky?: number;
+  /**
+   * De qué escala salen los acordes que no son suyos. En menor la armonía es la de la menor natural: la
+   * armónica y la melódica son la melodía que suena encima y solo aportan su V7 (y la armónica su
+   * VII7dim, la melódica su IV mayor). El III5+ que dan en los papeles no se usa como grado.
+   */
+  chordsFrom?: { scale: string; own: readonly number[] };
   /** Si la tónica se escribe como en las tonalidades menores (C#, G#) o mayores (Db, Ab). */
   minorSpelling: boolean;
   /**
@@ -224,6 +230,16 @@ const f = (feeling: Feeling, amount: number, ...words: string[]): DegreeFeeling 
 });
 
 const MINOR_I = f('triste', 1, 'Introspectivo', 'Íntimo', 'Melancólico', 'Nostálgico');
+/** Lo que dice cada grado de la menor natural: también vale para los acordes que le prestan las otras. */
+const NATURAL_FEELINGS = [
+  MINOR_I,
+  f('raro', 5, 'Nervioso', 'Inquieto', 'Descolocado', 'Desencajado'),
+  f('alegre', 1, 'Reposo', 'Calma', 'Quietud', 'Paz'),
+  f('triste', 2, 'Profundo', 'Mucha fuerza', 'Cierto optimismo'),
+  f('triste', 3, 'Soledad', 'Cabizbajo', 'Angustiado', 'Muy triste'),
+  f('alegre', 2, 'Fantasía', '¡Muy optimista!', 'Positivo'),
+  f('alegre', 1, 'Optimista', 'Paz'),
+] as const;
 
 export const SCALES: readonly Scale[] = [
   {
@@ -255,15 +271,7 @@ export const SCALES: readonly Scale[] = [
     character: 'Femenino, dulce, suave, sin punta: nostálgico, melancólico.',
     steps: [0, 2, 3, 5, 7, 8, 10],
     sevenths: [],
-    feelings: [
-      MINOR_I,
-      f('raro', 5, 'Nervioso', 'Inquieto', 'Descolocado', 'Desencajado'),
-      f('alegre', 1, 'Reposo', 'Calma', 'Quietud', 'Paz'),
-      f('triste', 2, 'Profundo', 'Mucha fuerza', 'Cierto optimismo'),
-      f('triste', 3, 'Soledad', 'Cabizbajo', 'Angustiado', 'Muy triste'),
-      f('alegre', 2, 'Fantasía', '¡Muy optimista!', 'Positivo'),
-      f('alegre', 1, 'Optimista', 'Paz'),
-    ],
+    feelings: NATURAL_FEELINGS,
     minorSpelling: true,
   },
   {
@@ -274,13 +282,14 @@ export const SCALES: readonly Scale[] = [
     character: 'Masculino, agresivo, con punta: la sensible pide volver a la tónica.',
     steps: [0, 2, 3, 5, 7, 8, 11],
     sevenths: [4, 6],
+    // En el libro el III es aumentado ("Morboso, muy tenso"), pero no funciona como grado: los acordes
+    // son los de la natural, salvo el V7 y el VII7dim, que llevan la sensible.
+    chordsFrom: { scale: 'natural', own: [4, 6] },
+    characteristic: [4, 6],
     feelings: [
-      MINOR_I,
-      f('raro', 3, 'Nervioso', 'Inquieto', 'Descolocado', 'Desencajado'),
-      f('raro', 3, 'Morboso', 'Muy tenso'),
-      f('triste', 2, 'Profundo', 'Mucha fuerza', 'Cierto optimismo'),
+      ...NATURAL_FEELINGS.slice(0, 4),
       f('alegre', 2, 'Avanzar', 'Masculino', 'Activo', 'Decidido'),
-      f('alegre', 2, 'Fantasía', '¡Muy optimista!', 'Positivo'),
+      NATURAL_FEELINGS[5],
       f('raro', 3, 'Amenazante', 'Maligno', 'Desencajado'),
     ],
     minorSpelling: true,
@@ -291,17 +300,19 @@ export const SCALES: readonly Scale[] = [
     alias: 'Melódica',
     family: 'tonal',
     point: 'color',
-    character: 'Un mundo de color: acordes de emociones más extremas, exóticas.',
+    character:
+      'Un mundo de color: la melodía sube luminosa a la tónica, y la armonía se ilumina con el IV mayor.',
     steps: [0, 2, 3, 5, 7, 9, 11],
-    sevenths: [4, 5, 6],
+    sevenths: [4],
+    // En los papeles da IIm, III5+ y dos semidisminuidos, pero la armonía sigue siendo la de la natural:
+    // lo propio es el IV mayor (la 6 subida) y el V7 (la sensible).
+    chordsFrom: { scale: 'natural', own: [3, 4] },
+    characteristic: [3, 4],
     feelings: [
-      MINOR_I,
-      f('triste', 4, 'Muy deprimido', 'Impotencia', 'Amargura', 'Sin optimismo'),
-      f('raro', 4, 'Morboso', 'Muy tenso'),
+      ...NATURAL_FEELINGS.slice(0, 3),
       f('alegre', 3, '¡¡Muy optimista!!', 'Luz total', 'Creación', 'Milagroso', 'Victorioso'),
       f('alegre', 2, 'Avanzar', 'Masculino', 'Activo', 'Decidido'),
-      f('raro', 4, 'Descolocado', 'Desencajado', 'Femenino', 'Pasivo', 'Reflexivo'),
-      f('raro', 3, 'Amenazante', 'Maligno', 'Desencajado', 'Activo', 'Inquieto'),
+      ...NATURAL_FEELINGS.slice(5),
     ],
     minorSpelling: true,
   },
@@ -536,6 +547,11 @@ export function degreeChord(
 ): Chord {
   if (!heptatonic(key.scale)) {
     return fittingChord(key, degree) ?? { root: mod12(key.tonic + key.scale.steps[degree]!), suffix: '5' };
+  }
+  // Lo que no es propio sale de la escala que le presta la armonía.
+  const from = key.scale.chordsFrom;
+  if (from && !from.own.includes(degree)) {
+    return degreeChord({ tonic: key.tonic, scale: findScale(from.scale)! }, degree, withSeventh);
   }
   const steps = key.scale.steps;
   const at = (offset: number) => mod12(steps[(degree + offset) % 7]! - steps[degree]!);
