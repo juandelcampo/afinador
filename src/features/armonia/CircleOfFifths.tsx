@@ -4,12 +4,15 @@ import {
   circlePlace,
   fifthHue,
   fifthMoves,
+  keySignature,
   notesOutside,
+  placeScale,
   TONIC_HUE,
   vueltaMarks,
   type Ring,
 } from '~/core/circle';
-import { chordColor, degreeLabel, type Chord, type Key } from '~/core/harmony';
+import { chordColor, degreeLabel, pitchName, type Chord, type Key } from '~/core/harmony';
+import type { Notation } from '~/core/notes';
 import { Button } from '~/shared/ui/ui';
 import ui from '~/shared/ui/ui.module.css';
 import styles from './armonia.module.css';
@@ -56,6 +59,18 @@ interface CircleProps {
   /** El acorde del I del mundo: se pinta entero. */
   worldTonic: Chord;
   picked: Chord | null;
+  notation: Notation;
+}
+
+/** Una nota escrita con el bemol de verdad: en mayúsculas "Db" se leería como dos letras. */
+const noteText = (note: string, notation: Notation) => pitchName(note, notation).replace(/b$/, '♭');
+
+/** La armadura en corto: "2♯", "3♭" o "sin ♯ ni ♭". */
+function signatureLabel(chord: Chord): string {
+  const place = circlePlace(chord);
+  if (!place) return '';
+  const { sign, notes } = keySignature(place);
+  return sign ? `${notes.length}${sign === '#' ? '♯' : '♭'}` : 'sin ♯ ni ♭';
 }
 
 /** La rueda sola: tocar una casilla suena y la marca; el + del medio la suma a la vuelta. */
@@ -134,7 +149,9 @@ export function CircleWheel({
           <>
             <strong>{name(picked)}</strong>
             <span className={styles.wheelDegree}>
-              {outside === 0 ? degreeLabel(picked, keyOf) : `${outside} de afuera`}
+              {outside === 0
+                ? `${degreeLabel(picked, keyOf)} · ${signatureLabel(picked)}`
+                : signatureLabel(picked)}
             </span>
             <button
               type="button"
@@ -160,6 +177,7 @@ export function CircleNotes({
   name,
   worldTonic,
   picked,
+  notation,
   onMoveWorld,
 }: CircleProps & {
   /** Lleva el mundo a la casilla: mayor afuera, menor natural adentro. */
@@ -167,6 +185,9 @@ export function CircleNotes({
 }) {
   const moves = fifthMoves(vuelta);
   const outside = picked ? notesOutside(picked, keyOf) : 0;
+  const pickedPlace = picked && circlePlace(picked);
+  const signature = pickedPlace && keySignature(pickedPlace);
+  const scale = pickedPlace && placeScale(pickedPlace);
   return (
     <div className={styles.circleNotes}>
       <p className={ui.hint}>
@@ -196,6 +217,30 @@ export function CircleNotes({
                 ? `${name(picked)} tiene una nota de afuera: color prestado, sin irte del mundo.`
                 : `${name(picked)} tiene ${outside} notas de afuera: ya suena a otro tono.`}
           </p>
+          {signature && scale && (
+            <>
+              <p className={styles.signature} data-testid="circulo-armadura">
+                {signature.sign
+                  ? `${name(picked)} ${chordColor(picked.suffix) === 'minor' ? 'menor' : 'mayor'} lleva ${signature.notes.map((note) => noteText(note, notation)).join(' ')}`
+                  : `${name(picked)} ${chordColor(picked.suffix) === 'minor' ? 'menor' : 'mayor'} no lleva ♯ ni ♭`}
+              </p>
+              <ol
+                className={styles.structure}
+                aria-label="Las notas de su escala y lo que hay entre una y otra"
+              >
+                {scale.map((item, index) => (
+                  <li key={index}>
+                    <span>{noteText(item.note, notation)}</span>
+                    <small data-step={item.next}>{item.next}</small>
+                  </li>
+                ))}
+                <li>
+                  <span>{noteText(scale[0]!.note, notation)}</span>
+                </li>
+              </ol>
+              <p className={ui.hint}>T es un tono (dos trastes) y S un semitono (uno).</p>
+            </>
+          )}
           {!sameColorChord(picked, worldTonic) && (
             <Button variant="mini" onClick={() => onMoveWorld(picked)}>
               Llevar el mundo a {name(picked)} {chordColor(picked.suffix) === 'minor' ? 'menor' : 'mayor'}

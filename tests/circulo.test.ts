@@ -6,7 +6,9 @@ import {
   circlePlace,
   fifthHue,
   fifthMoves,
+  keySignature,
   notesOutside,
+  placeScale,
   TONIC_HUE,
   vueltaMarks,
 } from '~/core/circle';
@@ -55,5 +57,25 @@ describe('círculo de quintas', () => {
     expect(fifthHue(circlePlace(chord(9, 'm'))!, c)).toBe(TONIC_HUE);
     const cm = circlePlace(chord(0, 'm'))!;
     expect(fifthHue(circlePlace(chord(3))!, cm)).toBe(TONIC_HUE);
+  });
+
+  it('cada casilla dice su armadura: sostenidos a la derecha, bemoles a la izquierda', () => {
+    expect(keySignature({ index: 0, ring: 'outer' })).toEqual({ sign: null, notes: [] });
+    expect(keySignature({ index: 2, ring: 'outer' })).toEqual({ sign: '#', notes: ['F#', 'C#'] });
+    // Em, adentro de G: la misma armadura que su relativo.
+    expect(keySignature({ index: 1, ring: 'inner' }).notes).toEqual(['F#']);
+    expect(keySignature({ index: 10, ring: 'outer' })).toEqual({ sign: 'b', notes: ['Bb', 'Eb'] });
+  });
+
+  it('despliega la escala de la casilla con sus tonos y semitonos', () => {
+    const d = placeScale({ index: 2, ring: 'outer' });
+    expect(d.map((item) => item.note)).toEqual(['D', 'E', 'F#', 'G', 'A', 'B', 'C#']);
+    expect(d.map((item) => item.next).join('')).toBe('TTSTTTS');
+    // Am natural: T S T T S T T.
+    expect(
+      placeScale({ index: 0, ring: 'inner' })
+        .map((item) => item.next)
+        .join(''),
+    ).toBe('TSTTSTT');
   });
 });

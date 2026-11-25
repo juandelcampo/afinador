@@ -664,6 +664,7 @@ export default function ArmoniaRoute() {
   };
   const circleProps = {
     keyOf: key,
+    notation,
     vuelta,
     // En la rueda, cada casilla se escribe en su propio tono: C#m y no D♭m, como el relativo de E.
     name: (chord: Chord) =>

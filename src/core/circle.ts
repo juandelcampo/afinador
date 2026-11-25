@@ -1,6 +1,6 @@
 // El círculo de quintas: los doce mayores en la rueda de afuera, cada uno con su relativo menor adentro.
 // Dar un paso es caer (o subir) una quinta; los vecinos comparten todas las notas menos una.
-import { chordClasses, chordColor, type Chord, type Key } from './harmony';
+import { chordClasses, chordColor, findScale, spellIn, type Chord, type Key } from './harmony';
 
 const mod12 = (value: number) => ((value % 12) + 12) % 12;
 
@@ -69,3 +69,32 @@ export const TONIC_HUE = 18;
  */
 export const fifthHue = (place: CirclePlace, tonic: CirclePlace) =>
   (TONIC_HUE + 30 * mod12(place.index - tonic.index)) % 360;
+
+const SHARP_ORDER = ['F#', 'C#', 'G#', 'D#', 'A#', 'E#', 'B#'];
+const FLAT_ORDER = ['Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb', 'Fb'];
+
+/** La escala de una casilla: mayor afuera, menor natural adentro. */
+export function placeKey(place: CirclePlace): Key {
+  const chord = circleChord(place);
+  return { tonic: chord.root, scale: findScale(place.ring === 'outer' ? 'mayor' : 'natural')! };
+}
+
+/**
+ * La armadura de una casilla: desde C, cada quinta para la derecha suma un sostenido y cada una para la
+ * izquierda, un bemol. F# es la de seis sostenidos y D♭ la de cinco bemoles, como se escriben en la rueda.
+ */
+export function keySignature({ index }: CirclePlace): { sign: '#' | 'b' | null; notes: string[] } {
+  if (index === 0) return { sign: null, notes: [] };
+  if (index <= 6) return { sign: '#', notes: SHARP_ORDER.slice(0, index) };
+  return { sign: 'b', notes: FLAT_ORDER.slice(0, 12 - index) };
+}
+
+/** Las notas de la escala de una casilla, escritas en su tono, y el paso que hay de cada una a la siguiente. */
+export function placeScale(place: CirclePlace): Array<{ note: string; next: 'T' | 'S' }> {
+  const key = placeKey(place);
+  const steps = key.scale.steps;
+  return steps.map((step, degree) => ({
+    note: spellIn(mod12(key.tonic + step), key),
+    next: mod12((steps[degree + 1] ?? 12) - step) === 1 ? 'S' : 'T',
+  }));
+}

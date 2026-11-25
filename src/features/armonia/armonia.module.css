@@ -1272,3 +1272,44 @@
 .chips .tab {
   letter-spacing: 0.06em;
 }
+
+/* La armadura del acorde tocado en la rueda y su escala, con lo que hay de una nota a la otra. */
+.signature {
+  margin: 0;
+  font: 700 14px/1.3 var(--mono);
+}
+.structure {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: var(--rule);
+}
+.structure li {
+  display: flex;
+  align-items: stretch;
+}
+.structure li + li {
+  border-left: var(--split);
+}
+.structure span {
+  display: grid;
+  place-items: center;
+  min-width: 34px;
+  padding: 6px 4px;
+  font: 700 15px/1 var(--mono);
+}
+.structure small {
+  display: grid;
+  place-items: center;
+  min-width: 22px;
+  border-left: var(--split);
+  font: 700 11px/1 var(--mono);
+  color: var(--muted);
+}
+/* El semitono es lo que da la forma: se marca en tinta. */
+.structure small[data-step='S'] {
+  background: var(--ink);
+  color: var(--paper);
+}

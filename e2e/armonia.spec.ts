@@ -231,6 +231,9 @@ test.describe('armonía', () => {
     await circle.getByRole('button', { name: 'Escuchar D', exact: true }).click();
     await expect.poll(() => plucks(page)).toBeGreaterThan(before);
     await expect(page.getByTestId('circulo-info')).toContainText('una nota de afuera');
+    // En vez de contar notas de afuera, la rueda dice su armadura y debajo va su escala con los pasos.
+    await expect(circle.getByText('2♯')).toBeVisible();
+    await expect(page.getByTestId('circulo-armadura')).toHaveText('D mayor lleva F# C#');
     await circle.getByRole('button', { name: 'Sumar D a la vuelta' }).click();
     await expect(page).toHaveURL(/v=Am_Dm_G_C_D/);
 
