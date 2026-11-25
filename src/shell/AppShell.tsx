@@ -164,13 +164,14 @@ export default function AppShell() {
           </div>
           <button
             type="button"
-            className={ui.mini}
+            className={`${ui.mini} ${styles.theme}`}
             data-select
             aria-label={`Tema: ${theme === 'dark' ? 'Oscuro' : 'Claro'}`}
             title={theme === 'dark' ? 'Cambiar a Claro' : 'Cambiar a Oscuro'}
             onClick={() => chooseTheme(theme === 'dark' ? 'light' : 'dark')}
           >
-            <span className={styles.themeMark} aria-hidden="true" />
+            {/* Muestra el tema que está puesto, como el resto de las elecciones de dos opciones. */}
+            <Icon name={theme === 'dark' ? 'moon' : 'sun'} />
           </button>
           {/* Un solo volumen para toda la app: el mismo en todas las herramientas, siempre en este lugar. */}
           <Fader />

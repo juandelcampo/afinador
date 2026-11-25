@@ -241,19 +241,18 @@
   }
 }
 
-/* El tema: un círculo mitad tinta, mitad papel. */
-.themeMark {
-  width: 20px;
-  height: 20px;
-  border: 3px solid currentColor;
-  border-radius: 50%;
-  background: linear-gradient(90deg, currentColor 50%, transparent 50%);
-}
-/* La de referencia: solo el número, con flechas angostas. */
+/* La de referencia: solo el número, con flechas angostas. Que no ocupe más que dos cuadrados, y que mida
+   lo mismo de alto que los de al lado: el borde va por fuera de los botones. */
 .pitch > * > button {
-  width: 32px;
+  width: 24px;
+  min-height: calc(var(--touch) - 2 * var(--rule-width));
+  font-size: 17px;
 }
 .pitch output {
-  min-width: 40px;
-  padding: 0 2px;
+  min-width: 30px;
+  padding: 0;
+}
+/* El sol y la luna, un poco más grandes que los íconos de los botones: los rayos tienen que leerse. */
+.theme {
+  --icon-size: 22px;
 }
