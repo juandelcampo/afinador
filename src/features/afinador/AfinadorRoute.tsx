@@ -252,8 +252,8 @@ function TuningList({
   );
 }
 
-/** La ficha de la afinación. El nombre es el botón para cambiarla; en el celular los datos se abren
- *  con ⓘ, en pantallas anchas están siempre a la vista. */
+/** La ficha de la afinación. En el celular es un renglón chico: el nombre abre la lista y los datos se
+ *  abren con ⓘ. En pantallas anchas los datos están siempre a la vista. */
 function Hero({ tuning, onChange }: { tuning: Tuning; onChange: () => void }) {
   const notation = useSettings((s) => s.notation);
   const toggleFavorite = useSettings((s) => s.toggleFavorite);
@@ -266,6 +266,12 @@ function Hero({ tuning, onChange }: { tuning: Tuning; onChange: () => void }) {
     <Slab className={styles.hero}>
       <div className={styles.heroHead}>
         <PageTitle eyebrow={group?.name} title={tuning.name} />
+        {/* En el celular la ficha es un renglón: el nombre de la afinación es el botón que abre la lista,
+            que no tiene columna y tapa la pantalla. */}
+        <button type="button" className={styles.catalogToggle} data-narrow onClick={onChange}>
+          <span className="sr-only">Elegir entre {TUNINGS.length} afinaciones</span>
+          <Icon name="down" />
+        </button>
         <div className={styles.heroTools}>
           <button
             type="button"
@@ -319,11 +325,6 @@ function Hero({ tuning, onChange }: { tuning: Tuning; onChange: () => void }) {
         </dl>
         {warning && <p className={styles.warning}>{warning}</p>}
       </div>
-      {/* En el celular la lista no tiene columna: se abre desde acá y tapa la pantalla. */}
-      <button type="button" className={styles.catalogToggle} data-narrow onClick={onChange}>
-        <span>Elegir entre {TUNINGS.length} afinaciones</span>
-        <Icon name="down" />
-      </button>
     </Slab>
   );
 }

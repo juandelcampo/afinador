@@ -1030,37 +1030,53 @@
   }
 }
 
-/* La ficha: el nombre es el botón para cambiar de afinación. */
+/* La ficha. En el celular es un renglón chico que solo dice qué afinación está puesta: el nombre, en
+   un recuadro, es el botón que abre la lista, y la ⓘ abre los datos. Lo grande es el afinador. */
+.hero {
+  padding-block: 8px;
+}
 .heroHead {
+  position: relative;
   display: flex;
   align-items: stretch;
-  gap: 8px;
+  border: var(--rule);
 }
 .heroHead > header {
-  flex: 1;
-}
-/* En el celular la lista se abre desde la ficha. */
-.catalogToggle {
+  position: relative;
+  z-index: 1;
   display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  width: 100%;
+  flex: 1;
+  align-items: center;
   min-height: var(--touch);
-  margin-top: 12px;
-  padding: 8px 12px;
+  padding: 0 44px 0 12px;
+  /* El toque lo recibe el botón de abajo, que cubre el renglón. */
+  pointer-events: none;
+}
+.heroHead > header > p:first-child {
+  display: none;
+}
+.heroHead > header > h1 {
+  margin: 0;
+  font: 900 expanded 18px/1.1 var(--heavy);
+  letter-spacing: -0.01em;
+}
+.catalogToggle {
+  position: absolute;
+  inset: 0 var(--touch) 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 12px;
   border: 0;
-  background: var(--ink);
-  color: var(--paper);
-  font: 900 semi-expanded 14px/1.2 var(--heavy);
-  text-align: left;
-  text-transform: uppercase;
+  background: var(--paper);
+  color: var(--ink);
+}
+.catalogToggle:hover {
+  background: var(--soft);
 }
 .heroTools {
   display: flex;
   flex: none;
-  flex-direction: column;
-  gap: 6px;
-  align-self: flex-end;
 }
 .heroStar,
 .infoToggle {
@@ -1083,6 +1099,18 @@
   background: var(--ink);
   color: var(--paper);
 }
+/* En el renglón la estrella no va (está en la lista) y la ⓘ es una casilla más del recuadro. */
+.heroTools .heroStar {
+  display: none;
+}
+.heroTools .infoToggle {
+  width: var(--touch);
+  height: auto;
+  min-height: var(--touch);
+  border: 0;
+  border-left: var(--rule);
+  font-size: 18px;
+}
 .heroInfo {
   display: none;
 }
@@ -1095,8 +1123,32 @@
   line-height: 1.5;
 }
 @container main (min-width: 900px) {
+  .hero {
+    padding-block: 14px 16px;
+  }
+  .heroHead {
+    gap: 8px;
+    border: 0;
+  }
+  .heroHead > header {
+    display: block;
+    padding: 0;
+    pointer-events: auto;
+  }
+  .heroHead > header > p:first-child {
+    display: inline-block;
+  }
+  .heroHead > header > h1 {
+    margin: 2px 0 8px;
+    font: 900 expanded clamp(34px, 6.5cqi, 60px)/0.95 var(--heavy);
+    letter-spacing: -0.03em;
+  }
   .heroTools {
-    flex-direction: row;
+    gap: 6px;
+    align-self: flex-end;
+  }
+  .heroTools .heroStar {
+    display: block;
   }
   .heroTools .infoToggle {
     display: none;
@@ -1489,17 +1541,92 @@
   }
 }
 
-/* En pantalla ancha la pestaña ya dice Afinar: el título queda solo para el lector de pantalla. */
-@container main (min-width: 900px) {
-  .tunerHead h2 {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
+/* La pestaña ya dice Afinar: el título queda solo para el lector de pantalla. */
+.tunerHead h2 {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.tunerHead > div {
+  justify-content: flex-end;
+}
+
+/* En el celular el afinador llena lo que dejan la barra, el renglón de la afinación y las pestañas: las
+   cuerdas arriba, la nota grande en el medio y el micrófono abajo, siempre a la vista. */
+@container main (max-width: 899px) {
+  .page[data-view='afinar'] .center {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100dvh - var(--bar) - var(--tabbar) - env(safe-area-inset-bottom));
+  }
+  .page[data-view='afinar'] [data-panel='afinar'] {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+  }
+  .tuner {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    padding-block: 10px 12px;
+    border-bottom: 0;
   }
   .tunerHead > div {
-    justify-content: flex-end;
+    margin-bottom: 10px;
+  }
+  .tunerTools {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pill {
+    padding-block: 8px 6px;
+  }
+  .pillNote {
+    font-size: clamp(22px, 8cqi, 40px);
+  }
+  .meter {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: space-evenly;
+    gap: 6px;
+    margin-top: 6px;
+  }
+  /* La nota sola en su fila, grande; la frecuencia y los cents debajo, en una línea. */
+  .meterReadout {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+  }
+  .meterReadout::before {
+    display: none;
+  }
+  .meterNote {
+    font-size: clamp(44px, 10dvh, 120px);
+  }
+  .meterLight {
+    width: 52px;
+    height: 52px;
+  }
+  .meterActions {
+    justify-self: center;
+  }
+  .meterCents {
+    grid-auto-flow: column;
+    gap: 16px;
+    min-width: 0;
+  }
+  .meterScale {
+    height: clamp(46px, 8dvh, 90px);
+  }
+  /* Lugar para tres renglones: el texto que cambia no corre el botón. */
+  .meterStatus {
+    min-height: 60px;
+    text-align: center;
+  }
+  #mic-toggle {
+    margin-top: 0;
   }
 }

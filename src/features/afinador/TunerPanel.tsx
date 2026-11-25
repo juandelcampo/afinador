@@ -52,8 +52,9 @@ export function TunerPanel({ notes, onPlayOpen }: TunerPanelProps) {
   };
 
   return (
-    <Slab>
-      {/* En pantalla ancha la pestaña ya dice Afinar: el título queda solo para el lector de pantalla. */}
+    <Slab className={styles.tuner}>
+      {/* La pestaña ya dice Afinar (abajo en el celular, arriba en pantalla ancha): el título queda solo
+          para el lector de pantalla. */}
       <div className={styles.tunerHead}>
         <SlabHead title="Afinar">
           <div className={styles.tunerTools}>

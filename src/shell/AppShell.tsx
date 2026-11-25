@@ -57,6 +57,7 @@ export default function AppShell() {
   const bar = useRef<HTMLElement>(null);
   useRememberPlace();
   const currentTool = toolOf(pathname);
+  const currentLabel = TOOLS.find((tool) => tool.key === currentTool)?.label ?? 'Inicio';
 
   useEffect(() => {
     document.documentElement.dataset.ready = 'true';
@@ -97,6 +98,24 @@ export default function AppShell() {
             data-select
             aria-current={pathname === '/' ? 'page' : undefined}
           />
+          {/* Solo en el celular y la tableta: las herramientas y los ajustes van plegados detrás de este botón,
+              que dice dónde estás. Así la barra ocupa una fila y la herramienta, el resto de la pantalla. */}
+          <button
+            type="button"
+            className={styles.menuToggle}
+            aria-expanded={settingsOpen}
+            aria-controls="ajustes"
+            onClick={() => setSettingsOpen((open) => !open)}
+          >
+            <span>
+              <span className="sr-only">Menú: herramientas y ajustes. Estás en </span>
+              {currentLabel}
+            </span>
+            <span className={styles.menuWord} aria-hidden="true">
+              Menú
+              <Icon name={settingsOpen ? 'up' : 'down'} />
+            </span>
+          </button>
           {TOOLS.map((tool) => (
             <ToolLink
               key={tool.key}
@@ -107,8 +126,8 @@ export default function AppShell() {
             />
           ))}
         </nav>
-        {/* Solo se ve en pantallas chicas: los ajustes se tocan poco (el volumen también está en los botones del
-            teléfono) y no tienen por qué ocupar lugar. */}
+        {/* Entre 960 y 1680 px: los ajustes se tocan poco y no tienen por qué ocupar lugar. Más angosto, los
+            abre el botón Menú junto con las herramientas. */}
         <button
           type="button"
           className={styles.settingsToggle}

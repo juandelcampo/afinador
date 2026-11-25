@@ -320,6 +320,10 @@ test.describe('celular', () => {
     const secciones = page.getByRole('navigation', { name: 'Secciones del afinador' });
     await expect(page.locator('#mic-toggle')).toBeVisible();
     await expect(page.getByTestId('strum-zone')).toBeHidden();
+    // El afinador llena la pantalla: el micrófono se ve sin bajar y no hay nada debajo.
+    const mic = (await page.locator('#mic-toggle').boundingBox())!;
+    expect(mic.y + mic.height).toBeLessThanOrEqual(844 - 60);
+    expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(844);
     // Los datos de la afinación se abren con ⓘ.
     await expect(page.getByTestId('fact-chord')).toBeHidden();
     await page.getByRole('button', { name: 'Cómo es DADGAD' }).click();

@@ -105,57 +105,86 @@
   gap: 8px;
 }
 
-/* En el celular y la tableta la marca y el botón de ajustes comparten la fila: los dos un poco más chicos.
-   Las seis herramientas en una fila miden unos 850 px: debajo de 960 no entran. */
+.menuToggle {
+  display: none;
+}
+
+/* En el celular y la tableta la barra es una sola fila: la marca y el botón Menú, que dice en qué
+   herramienta estás. Abierto, debajo aparecen las herramientas de a dos y los ajustes. Las seis
+   herramientas en una fila miden unos 850 px: debajo de 960 no entran. */
 @media (max-width: 959px) {
-  /* Cuatro herramientas no entran en una fila de 390 px: van de a dos, al lado de la marca, y con la
-     letra normal en lugar de la ancha. */
+  /* Cerrada mide justo --bar (60 px): el afinador cuenta con eso para llenar la pantalla. */
+  .topBar {
+    padding-block: max(4px, env(safe-area-inset-top)) 3px;
+  }
+  /* Cuatro columnas: marca y botón arriba; abiertas, las herramientas de a dos con el mismo ancho. Las
+     rayas de adentro son el fondo que asoma entre las casillas. */
   .tools {
     display: grid;
-    flex: 1 1 0;
-    grid-template-columns: var(--touch) repeat(2, minmax(0, 1fr));
+    flex: 1 0 100%;
+    grid-template-columns: var(--touch) minmax(0, 1fr) var(--touch) minmax(0, 1fr);
+    gap: var(--rule-width);
     min-width: 0;
+    background: var(--ink);
   }
-  /* La marca ocupa las dos filas, con el dibujo en el medio. */
   .home {
-    grid-row: span 2;
-    min-height: 0;
-    background-position:
-      24px calc(50% - 5px),
-      center;
-    background-size:
-      9px 10px,
-      100% 44px;
+    border-right: 0;
+  }
+  .menuToggle {
+    display: flex;
+    grid-column: 2 / -1;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+    min-height: var(--touch);
+    padding: 4px 12px;
+    border: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 900 expanded 16px/1 var(--heavy);
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    text-align: left;
+  }
+  .menuToggle:hover {
+    background: var(--soft);
+  }
+  .menuWord {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 6px;
+    font: 700 semi-expanded 12px/1 var(--ui);
+    letter-spacing: 0.08em;
+  }
+  .menuToggle[aria-expanded='true'] {
+    background: var(--ink);
+    color: var(--paper);
   }
   .tool {
-    padding-inline: 7px;
-    font-size: 13px;
+    display: none;
+    grid-column: span 2;
+    padding-inline: 12px;
+    background: var(--paper);
+    font-size: 14px;
     font-stretch: 100%;
     white-space: nowrap;
   }
-  /* La abierta ya va en tinta: sin la marca, los nombres largos entran en una línea. */
+  .topBar[data-open='true'] .tool {
+    display: inline-flex;
+  }
+  .tool + .tool {
+    border-left: 0;
+  }
   .tool[aria-current='page']::before {
     display: none;
   }
-  .tool:nth-child(n + 4) {
-    border-top: var(--rule);
-  }
-  .tool:nth-child(4) {
-    border-left: 0;
-  }
-  /* Con cinco herramientas hay una tercera fila: la marca la acompaña y la última ocupa la fila entera. */
-  .tools:has(> .tool:nth-child(6)) .home {
-    grid-row: span 3;
-  }
-  .tool:last-child:nth-child(even) {
-    grid-column: span 2;
-  }
-  .tool:nth-child(even) {
-    border-left: 0;
-  }
   .settingsToggle {
-    padding-inline: 8px;
-    font-size: 16px;
+    display: none;
+  }
+  .settings {
+    padding-block: 4px;
   }
 }
 

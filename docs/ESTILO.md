@@ -135,6 +135,7 @@ Si una herramienta necesita algo que no está en la tabla y le puede servir a ot
 ## 8. Espacio
 
 - Primero en el celular (390 px), después en pantalla ancha. A ningún ancho tiene que aparecer barra horizontal.
+- **En el celular la barra de arriba es una sola fila:** la marca y el botón Menú, que dice en qué herramienta estás y abre las herramientas y los ajustes. Cerrada mide `--bar`; una herramienta puede contar con eso para llenar el alto (como el Afinador, que en el celular ocupa toda la pantalla con lo que se usa: la afinación elegida es un renglón chico arriba).
 - **En escritorio no se scrollea.** Desde una ventana de 1280 × 800, la herramienta entra entera, en cada una de sus pestañas. Para que entre: columnas en lo ancho, rótulos al costado, figuras que se achican con el alto de la ventana (`100dvh`) y lo secundario plegado. En el celular sí se baja.
 - **La disposición no salta.** Al pasar de una pestaña a otra de la misma herramienta, lo que tienen en común queda en el mismo lugar y con la misma forma; lo que cambia va al final.
 - Todo lo que se toca mide al menos 44 × 44 px (`--touch`).

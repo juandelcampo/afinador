@@ -34,7 +34,8 @@ test('el tema sigue al sistema hasta que se elige uno, y queda elegido al volver
   const fondo = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
   expect(await fondo()).toBe('rgb(0, 0, 0)');
 
-  await page.getByRole('button', { name: /^Ajustes/ }).click();
+  // En el celular los ajustes están detrás de Menú, junto con las herramientas.
+  await page.getByRole('button', { name: /^Menú/ }).click();
   await page.getByRole('button', { name: 'Tema: Oscuro' }).click();
   await expect(page.getByRole('button', { name: 'Tema: Claro' })).toBeVisible();
   expect(await fondo()).toBe('rgb(255, 255, 255)');
@@ -43,5 +44,22 @@ test('el tema sigue al sistema hasta que se elige uno, y queda elegido al volver
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   expect(await fondo()).toBe('rgb(255, 255, 255)');
+  expect(errors).toEqual([]);
+});
+
+test('en el celular la barra es una fila: las herramientas se abren con Menú', async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await goto(page, '/afinador');
+  const tools = page.getByRole('navigation', { name: 'Herramientas' });
+  const menu = page.getByRole('button', { name: /^Menú/ });
+  await expect(menu).toContainText('Afinador');
+  await expect(tools.getByRole('link', { name: 'Ritmo' })).toBeHidden();
+  await menu.click();
+  await tools.getByRole('link', { name: 'Ritmo' }).click();
+  await expect(page).toHaveURL(/\/ritmo/);
+  // Al elegir se cierra, y el botón dice dónde estás.
+  await expect(tools.getByRole('link', { name: 'Armonía' })).toBeHidden();
+  await expect(menu).toContainText('Ritmo');
   expect(errors).toEqual([]);
 });
