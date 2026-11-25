@@ -383,12 +383,13 @@ test.describe('armonía', () => {
     await expect(page).toHaveURL(/ritmo=m%3Ddrum%26bpm%3D95/);
     await expect(toggle).toHaveAttribute('aria-label', 'Parar la vuelta');
 
-    // Al irse de la página, para todo.
+    // Al irse de la página, para todo: también el ritmo, aunque se vaya a Ritmo (allá arranca parado).
     await page
       .getByRole('navigation', { name: 'Herramientas' })
-      .getByRole('link', { name: 'Escalas' })
+      .getByRole('link', { name: 'Ritmo', exact: true })
       .click();
-    await expect(page).toHaveURL(/\/escalas/);
+    await expect(page).toHaveURL(/\/ritmo/);
+    await expect(page.locator('#metro-toggle')).toHaveAttribute('aria-label', 'Tocar');
     // Lo que ya estaba programado (lo que entra en el próximo instante) puede llegar a sonar; después, nada.
     await page.waitForTimeout(300);
     const after = (await plucks(page)) + (await clicks(page));
