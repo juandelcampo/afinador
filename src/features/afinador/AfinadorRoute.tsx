@@ -20,7 +20,7 @@ import { Icon, PlayIcon } from '~/shared/ui/Icon';
 import { Button, PageTitle, Rail, Segmented, Slab, SlabHead, Stepper, Toggle } from '~/shared/ui/ui';
 import ui from '~/shared/ui/ui.module.css';
 import styles from './afinador.module.css';
-import { ChordDiagram } from './ChordDiagram';
+import { ChordDiagram } from '~/shared/ChordDiagram';
 import { Neck, type NeckHandle } from './Neck';
 import { markStep, PatternStrip } from './PatternStrip';
 import { TunerPanel } from './TunerPanel';

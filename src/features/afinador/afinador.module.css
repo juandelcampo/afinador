@@ -1405,53 +1405,6 @@
   background: var(--accent);
   color: var(--on-accent);
 }
-.diagram {
-  position: relative;
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  grid-template-rows: 14px repeat(4, 18px);
-  padding: 6px 10px 10px 20px;
-}
-.diagramTop {
-  border-bottom: 2px solid var(--ink);
-  font: 700 11px/12px var(--mono);
-  text-align: center;
-}
-.diagram[data-nut='true'] .diagramTop {
-  border-bottom-width: 4px;
-}
-.diagramCell {
-  position: relative;
-  border-bottom: 2px solid var(--ink);
-}
-.diagramCell::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  width: 2px;
-  margin-left: -1px;
-  background: var(--ink);
-}
-.diagramCell[data-dot='true']::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--ink);
-  transform: translate(-50%, -50%);
-}
-.diagramStart {
-  position: absolute;
-  top: 22px;
-  left: 2px;
-  font: 600 10px/1 var(--mono);
-}
-
 /* Temas y afinaciones cercanas: en el celular su pestaña, en pantalla ancha la columna derecha. */
 .heard,
 .near {

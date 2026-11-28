@@ -63,7 +63,8 @@ import {
   vueltaSteps,
   type Placed,
 } from '~/core/vuelta';
-import { Fader } from '~/shared/Fader';
+import { ChordDiagram } from '~/shared/ChordDiagram';
+import { Mezcla } from '~/shared/Fader';
 import { fondoFromParam, fondoToParam, RitmoDeFondo } from '~/shared/RitmoDeFondo';
 import { useAcompanamiento } from '~/shared/useAcompanamiento';
 import type { Feel } from '~/shared/useVuelta';
@@ -1075,7 +1076,7 @@ export default function ArmoniaRoute() {
                   <Button variant="primary" full onClick={() => setSheet('arrancar')}>
                     Arrancar con una vuelta
                   </Button>
-                  <Fader />
+                  <Mezcla canales={['guitarra', 'ritmo']} />
                 </div>
               ) : (
                 <ol className={styles.chips} data-testid="vuelta" data-wide={wide || undefined}>
@@ -1107,8 +1108,11 @@ export default function ArmoniaRoute() {
                             <small>{degreeLabel(chord, key)}</small>
                             <strong style={fitName(name(chord))}>{name(chord)}</strong>
                             {feeling && <Feeling feeling={feeling} />}
-                            {wide && feeling && (
-                              <span className={styles.words}>{feeling.words.join('. ')}.</span>
+                            {/* Agrandada, cada acorde lleva su figura dibujada, como en un cancionero. */}
+                            {wide && fingering && (
+                              <span className={styles.chipDiagram} data-testid="vuelta-diagram">
+                                <ChordDiagram frets={fingering.frets} />
+                              </span>
                             )}
                             {/* Cómo se arma, siempre a la vista: se toca leyendo la vuelta. */}
                             <span className={styles.tab} data-missing={!fingering}>
@@ -1234,7 +1238,7 @@ export default function ArmoniaRoute() {
                         onChange={(value) => setBeatsAt(null, Number(value))}
                       />
                     </div>
-                    <Fader />
+                    <Mezcla canales={['guitarra', 'ritmo']} />
                   </div>
                   <div className={styles.pills}>
                     <button type="button" aria-haspopup="dialog" onClick={() => setSheet('cerrar')}>

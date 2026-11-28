@@ -185,9 +185,11 @@ test.describe('armonía', () => {
     await vuelta.getByRole('button', { name: 'Sacar Am' }).click();
     await expect(page).toHaveURL(/v=G_F_C/);
 
-    // Agrandada muestra la figura de cada acorde.
+    // Agrandada muestra la figura de cada acorde, dibujada como en un cancionero.
+    await expect(vuelta.getByTestId('vuelta-diagram')).toHaveCount(0);
     await page.getByRole('button', { name: 'Agrandar la vuelta' }).click();
     await expect(vuelta).toContainText('3 2 0 0 0 3');
+    await expect(vuelta.getByTestId('vuelta-diagram')).toHaveCount(3);
     expect(errors).toEqual([]);
   });
 

@@ -1,0 +1,47 @@
+/* La figura de un acorde como en un cancionero. Dibuja con el color de la letra, así sirve sobre papel,
+   sobre tinta y sobre naranja. */
+.diagram {
+  position: relative;
+  display: grid;
+  grid-template-rows: 14px repeat(4, 18px);
+  padding: 6px 10px 10px 20px;
+}
+.diagramTop {
+  border-bottom: 2px solid currentColor;
+  font: 700 11px/12px var(--mono);
+  text-align: center;
+}
+.diagram[data-nut='true'] .diagramTop {
+  border-bottom-width: 4px;
+}
+.diagramCell {
+  position: relative;
+  border-bottom: 2px solid currentColor;
+}
+.diagramCell::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  margin-left: -1px;
+  background: currentColor;
+}
+.diagramCell[data-dot='true']::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: currentColor;
+  transform: translate(-50%, -50%);
+}
+.diagramStart {
+  position: absolute;
+  top: 22px;
+  left: 2px;
+  font: 600 10px/1 var(--mono);
+}
