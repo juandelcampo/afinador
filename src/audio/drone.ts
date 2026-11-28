@@ -1,9 +1,9 @@
 // Un drone para tocar encima de una escala. El sinte es el de Scordatura: dos osciladores apenas
-// desafinados por nota, un filtro que respira con un LFO y tres timbres. Va por el mismo bus que el ritmo
-// (un solo volumen) y entra y sale con un fundido para que no golpee.
+// desafinados por nota, un filtro que respira con un LFO y tres timbres. Va por su propio canal (tiene su
+// volumen) y entra y sale con un fundido para que no golpee.
 import type { DroneSound, TimbreId } from '~/core/drone';
 import { midiToHz } from '~/core/notes';
-import { getAudio, rhythmBus } from './engine';
+import { droneBus, getAudio } from './engine';
 
 const FADE_IN = 1;
 const FADE_OUT = 0.6;
@@ -55,7 +55,7 @@ function build(midis: readonly number[], a4: number, sound: DroneSound): Patch {
   analyser ??= ctx.createAnalyser();
   analyser.fftSize = 2048;
   filter.connect(amp).connect(analyser);
-  analyser.connect(rhythmBus());
+  analyser.connect(droneBus());
 
   const wave = sound.timbre === 'organo' ? organWave(ctx) : null;
   const pairs = midis.map((midi, index) => {

@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
-import { setVolume } from '~/audio/engine';
+import { CANALES, setVolume } from '~/audio/engine';
 import { toolOf, useRememberPlace, useToolHref } from '~/shared/memoria';
 import { useSettings, type ToolKey } from '~/shared/settings';
-import { Fader } from '~/shared/Fader';
+import { Mezcla } from '~/shared/Fader';
 import { useTheme } from '~/shared/theme';
 import { flashOnSelect } from '~/shared/ui/flash';
 import { Icon } from '~/shared/ui/Icon';
@@ -51,7 +51,7 @@ function ToolLink({
 export default function AppShell() {
   const notation = useSettings((s) => s.notation);
   const a4 = useSettings((s) => s.a4);
-  const volume = useSettings((s) => s.volume);
+  const mezcla = useSettings((s) => s.mezcla);
   const set = useSettings((s) => s.set);
   const [theme, chooseTheme] = useTheme();
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -86,7 +86,9 @@ export default function AppShell() {
   }, [settingsOpen]);
 
   // El audio no conoce las preferencias: se las pasa el marco de la app.
-  useEffect(() => setVolume(volume), [volume]);
+  useEffect(() => {
+    for (const canal of CANALES) setVolume(canal, mezcla[canal]);
+  }, [mezcla]);
 
   return (
     <div className={styles.shell}>
@@ -128,14 +130,14 @@ export default function AppShell() {
             />
           ))}
         </nav>
-        {/* Entre 960 y 1680 px: los ajustes se tocan poco y no tienen por qué ocupar lugar. Más angosto, los
+        {/* Entre 960 y 2048 px: los ajustes se tocan poco y no tienen por qué ocupar lugar. Más angosto, los
             abre el botón Menú junto con las herramientas. */}
         <button
           type="button"
           className={styles.settingsToggle}
           aria-expanded={settingsOpen}
           aria-controls="ajustes"
-          aria-label={`Ajustes: notación, La ${a4}, volumen y tema`}
+          aria-label={`Ajustes: notación, La ${a4}, tema y volúmenes`}
           title="Ajustes"
           onClick={() => setSettingsOpen((open) => !open)}
         >
@@ -174,8 +176,8 @@ export default function AppShell() {
             {/* Muestra el tema que está puesto, como el resto de las elecciones de dos opciones. */}
             <Icon name={theme === 'dark' ? 'moon' : 'sun'} />
           </button>
-          {/* Un solo volumen para toda la app: el mismo en todas las herramientas, siempre en este lugar. */}
-          <Fader />
+          {/* Los volúmenes de la guitarra, el ritmo y el drone: valen para toda la app y están siempre acá. */}
+          <Mezcla className={styles.mezcla} />
         </div>
       </header>
       <main className={styles.main}>

@@ -98,9 +98,10 @@
 .topBar[data-open='true'] .settings {
   display: flex;
 }
-/* El volumen va al lado de su nombre, no debajo: la barra queda en una sola fila. */
-.settings > label {
+/* Cada volumen va al lado de su nombre, no debajo: la barra queda en una sola fila. */
+.mezcla > label {
   grid-auto-flow: column;
+  grid-template-columns: max-content minmax(0, 1fr);
   align-items: center;
   gap: 8px;
 }
@@ -186,6 +187,18 @@
   .settings {
     padding-block: 4px;
   }
+  /* Los tres volúmenes en una fila, cada uno con su nombre arriba: al costado no entran. */
+  .mezcla {
+    flex: 1 0 100%;
+    flex-wrap: nowrap;
+  }
+  .mezcla > label {
+    flex: 1 1 0;
+    min-width: 0;
+    grid-auto-flow: row;
+    grid-template-columns: none;
+    gap: 0;
+  }
 }
 
 /* En pantallas anchas la barra queda fija arriba, en una sola fila. */
@@ -215,9 +228,9 @@
     font-size: 12px;
   }
 }
-/* Hasta 1680 los ajustes (notación, La, tema y volumen) no entran al lado de las herramientas: se abren debajo del botón, encima de la
-   página, sin correrla. */
-@media (min-width: 960px) and (max-width: 1679px) {
+/* Hasta 2048 los ajustes (notación, La, tema y los tres volúmenes) no entran al lado de las herramientas: se
+   abren debajo del botón, encima de la página, sin correrla. */
+@media (min-width: 960px) and (max-width: 2047px) {
   .settings {
     position: absolute;
     top: calc(100% + var(--rule-width));
@@ -232,8 +245,8 @@
     box-shadow: 8px 8px 0 var(--ink);
   }
 }
-/* Desde 1680 entra todo en la fila: el botón de ajustes sobra. */
-@media (min-width: 1680px) {
+/* Desde 2048 entra todo en la fila: el botón de ajustes sobra. */
+@media (min-width: 2048px) {
   .settingsToggle {
     display: none;
   }

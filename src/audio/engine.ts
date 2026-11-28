@@ -1,28 +1,40 @@
-// Un solo AudioContext para toda la app, con un solo volumen para el instrumento y el ritmo.
+// Un solo AudioContext para toda la app, con tres volúmenes: la guitarra, el ritmo (batería y metrónomo) y
+// el drone. Los tres van a la misma salida, con un limitador al final.
 // Se crea con el primer gesto de la persona, nunca durante el render ni al generar las páginas estáticas.
 
-let volume = 0.68;
+export const CANALES = ['guitarra', 'ritmo', 'drone'] as const;
+export type Canal = (typeof CANALES)[number];
+
+/** De entrada el ritmo va más bajo: las tomas de batería pican unos 10 dB más fuerte que la guitarra. */
+export const DEFAULT_MEZCLA: Record<Canal, number> = { guitarra: 0.8, ritmo: 0.5, drone: 0.8 };
+
+const mezcla: Record<Canal, number> = { ...DEFAULT_MEZCLA };
 
 let context: AudioContext | null = null;
-let output: GainNode | null = null;
+let channels: Record<Canal, GainNode> | null = null;
 let instrumentInput: GainNode | null = null;
 let sampleInput: GainNode | null = null;
-let rhythmInput: GainNode | null = null;
 
 /** El oído percibe el volumen de forma logarítmica: el cuadrado da un fader más parejo. */
 const toGain = (value: number) => value * value;
 
 export function getAudio(): { ctx: AudioContext; bus: GainNode; sampleBus: GainNode } {
-  if (!context || !output || !instrumentInput || !sampleInput) {
+  if (!context || !channels || !instrumentInput || !sampleInput) {
     context = new AudioContext({ latencyHint: 'interactive' });
-    const limiter = context.createDynamicsCompressor();
+    const ctx = context;
+    const limiter = ctx.createDynamicsCompressor();
     limiter.threshold.value = -6;
     limiter.ratio.value = 8;
-    limiter.connect(context.destination);
+    limiter.connect(ctx.destination);
 
-    output = context.createGain();
-    output.gain.value = toGain(volume);
-    output.connect(limiter);
+    const channel = (canal: Canal) => {
+      const gain = ctx.createGain();
+      gain.gain.value = toGain(mezcla[canal]);
+      gain.connect(limiter);
+      return gain;
+    };
+    channels = { guitarra: channel('guitarra'), ritmo: channel('ritmo'), drone: channel('drone') };
+    const output = channels.guitarra;
 
     // El cuerpo y el brillo le dan carácter al instrumento.
     const body = context.createBiquadFilter();
@@ -50,9 +62,7 @@ export function getAudio(): { ctx: AudioContext; bus: GainNode; sampleBus: GainN
     sampleInput = context.createGain();
     sampleInput.connect(mud).connect(shine).connect(output);
 
-    // La batería y el metrónomo van derecho a la salida: los filtros de guitarra los empastarían.
-    rhythmInput = context.createGain();
-    rhythmInput.connect(output);
+    // La batería, el metrónomo y el drone van derecho a su canal: los filtros de guitarra los empastarían.
   }
   if (context.state === 'suspended') void context.resume();
   return { ctx: context, bus: instrumentInput, sampleBus: sampleInput };
@@ -61,11 +71,18 @@ export function getAudio(): { ctx: AudioContext; bus: GainNode; sampleBus: GainN
 /** La entrada del ritmo: metrónomo y batería. */
 export function rhythmBus(): GainNode {
   getAudio();
-  return rhythmInput!;
+  return channels!.ritmo;
+}
+
+/** La entrada del drone. */
+export function droneBus(): GainNode {
+  getAudio();
+  return channels!.drone;
 }
 
 /** Se puede llamar antes de que exista el audio: el valor se aplica al crearlo. */
-export function setVolume(value: number): void {
-  volume = Math.min(1, Math.max(0, value));
-  if (context && output) output.gain.setTargetAtTime(toGain(volume), context.currentTime, 0.02);
+export function setVolume(canal: Canal, value: number): void {
+  mezcla[canal] = Math.min(1, Math.max(0, value));
+  if (context && channels)
+    channels[canal].gain.setTargetAtTime(toGain(mezcla[canal]), context.currentTime, 0.02);
 }

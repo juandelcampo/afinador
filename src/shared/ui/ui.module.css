@@ -368,9 +368,17 @@ button:disabled {
   cursor: not-allowed;
 }
 
-/* El volumen: el mismo en todas las herramientas, con su rótulo arriba y en naranja, como todo lo que suena. */
+/* Los volúmenes: los mismos en todas las herramientas, uno por canal, con su rótulo arriba y en naranja,
+   como todo lo que suena. */
+.mezcla {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  min-width: 0;
+}
 .fader {
-  min-width: 130px;
+  flex: 1 1 110px;
+  min-width: 110px;
 }
 .fader input {
   width: 100%;

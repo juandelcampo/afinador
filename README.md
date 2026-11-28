@@ -105,7 +105,7 @@ La caja de ritmos tiene ocho sonidos (bombo, caja, aro, hi-hat, hi-hat abierto, 
 
 El motor (`core/rhythm.ts`) reduce todo a un ciclo de golpes entre 0 y 1; `audio/metronome.ts` los programa con anticipación desde un Worker (`ticker.ts`), `audio/kit.ts` toca la batería elegida y `audio/drums.ts` sintetiza la sintética, que también suena mientras las grabadas no terminaron de bajar. El ritmo entero va en la URL (`/ritmo?m=meter&bpm=150&g=2+2+3&d=8`), menos las filas calladas. Los links de la batería de antes, con seis filas, siguen abriendo.
 
-La barra de arriba tiene los nombres de las notas (E A D o Mi La Re) y la referencia del La. El volumen es uno solo para todo lo que suena; está en Escuchar y en Ritmo.
+La barra de arriba tiene los nombres de las notas (E A D o Mi La Re) y la referencia del La. Al lado van tres volúmenes, uno para la guitarra, otro para el ritmo (batería y metrónomo) y otro para el drone, y valen para toda la app. De entrada el ritmo va más bajo, porque las tomas de batería pegan más fuerte que la guitarra.
 
 ## Comandos
 

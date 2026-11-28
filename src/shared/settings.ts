@@ -6,6 +6,7 @@ import type { Notation } from '~/core/notes';
 import { TUNINGS } from '~/data/tunings';
 import type { FigureKind } from '~/core/figure';
 import { DEFAULT_DRONE, sanitizeDrone, type DroneSound } from '~/core/drone';
+import { CANALES, DEFAULT_MEZCLA, type Canal } from '~/audio/engine';
 
 export type TunerMode = 'guided' | 'auto';
 export type PlayStyle = 'arp' | 'strum';
@@ -55,7 +56,8 @@ export const NAME_LIMIT = 40;
 interface Settings {
   notation: Notation;
   a4: number;
-  volume: number;
+  /** El volumen de cada canal: guitarra, ritmo y drone. */
+  mezcla: Record<Canal, number>;
   tunerMode: TunerMode;
   listen: ListenPrefs;
   /** Cómo suena un acorde suelto: rasgueado o arpegiado, nota por nota. */
@@ -84,11 +86,26 @@ interface Settings {
 
 type Actions = 'set' | 'toggleFavorite' | 'remember' | 'save' | 'unsave';
 
-const DEFAULT_VOLUME = 0.68;
-
 const DEFAULT_LISTEN: ListenPrefs = { style: 'arp', patterns: { arp: 'up', strum: 'single' }, tempo: 84 };
 
 const isVolume = (value: unknown): value is number => typeof value === 'number' && value >= 0 && value <= 1;
+
+/** Con un solo volumen guardado (como era antes), la guitarra queda igual y los otros guardan la proporción. */
+const mezclaDesde = (volume: number): Record<Canal, number> => ({
+  guitarra: volume,
+  ritmo: (volume * DEFAULT_MEZCLA.ritmo) / DEFAULT_MEZCLA.guitarra,
+  drone: (volume * DEFAULT_MEZCLA.drone) / DEFAULT_MEZCLA.guitarra,
+});
+
+export function sanitizeMezcla(saved: unknown): Record<Canal, number> {
+  const clean = { ...DEFAULT_MEZCLA };
+  if (!saved || typeof saved !== 'object') return clean;
+  for (const canal of CANALES) {
+    const value = (saved as Record<string, unknown>)[canal];
+    if (isVolume(value)) clean[canal] = value;
+  }
+  return clean;
+}
 
 const emptySaved = (): Record<SaveTool, SavedItem[]> => ({ armonia: [], acorde: [], ritmo: [] });
 
@@ -138,17 +155,19 @@ const memoryStorage = { getItem: () => null, setItem: () => undefined, removeIte
 
 /** Lo guardado puede venir de otra versión o estar corrupto: lo que no sirve se descarta. */
 export function sanitize(
-  saved: Partial<Settings> & { volumes?: Record<string, unknown> },
+  saved: Partial<Settings> & { volume?: unknown; volumes?: Record<string, unknown> },
 ): Partial<Settings> {
   const clean: Partial<Settings> = {};
   if (saved.notation === 'letters' || saved.notation === 'solfege') clean.notation = saved.notation;
   if (typeof saved.a4 === 'number' && saved.a4 >= 415 && saved.a4 <= 466) clean.a4 = saved.a4;
-  if (isVolume(saved.volume)) {
-    clean.volume = saved.volume;
+  if (saved.mezcla !== undefined) {
+    clean.mezcla = sanitizeMezcla(saved.mezcla);
+  } else if (isVolume(saved.volume)) {
+    clean.mezcla = mezclaDesde(saved.volume);
   } else if (saved.volumes && typeof saved.volumes === 'object') {
-    // Antes había un volumen general encima del instrumento: se juntan sin que cambie cuánto suena.
+    // Antes del volumen único había uno general encima del instrumento: se juntan sin que cambie cuánto suena.
     const { master, instrumento } = saved.volumes;
-    if (isVolume(master) && isVolume(instrumento)) clean.volume = master * instrumento;
+    if (isVolume(master) && isVolume(instrumento)) clean.mezcla = mezclaDesde(master * instrumento);
   }
   if (saved.tunerMode === 'guided' || saved.tunerMode === 'auto') clean.tunerMode = saved.tunerMode;
   if (saved.listen && typeof saved.listen === 'object') {
@@ -190,7 +209,7 @@ export const useSettings = create<Settings>()(
     (set) => ({
       notation: 'letters',
       a4: 440,
-      volume: DEFAULT_VOLUME,
+      mezcla: { ...DEFAULT_MEZCLA },
       tunerMode: 'auto',
       listen: { ...DEFAULT_LISTEN, patterns: { ...DEFAULT_LISTEN.patterns } },
       chordStyle: 'strum',

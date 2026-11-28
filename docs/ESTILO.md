@@ -133,7 +133,7 @@ Si una herramienta necesita algo que no está en la tabla y le puede servir a ot
 
 - **Un solo botón principal por panel**, y es el que hace sonar: `▶ Escuchar` (o `▶ Tocar`). Mientras suena dice `■ Parar` y lleva `on`.
 - Todos los botones de una fila miden lo mismo. El principal se distingue por el naranja y la sombra, no por el tamaño.
-- **El volumen no va en las herramientas.** Hay uno solo, en la barra de arriba (`Fader`, montado en `AppShell`). Nunca pongas otro.
+- **El volumen no va en las herramientas.** Hay tres, uno por canal (Guitarra, Ritmo y Drone), en la barra de arriba (`Mezcla`, montada en `AppShell`), y valen para toda la app. Lo que suena tiene que ir por su canal: la guitarra por `getAudio().bus` o `sampleBus`, la batería y el metrónomo por `rhythmBus()`, el drone por `droneBus()`. Nunca pongas otro volumen.
 - Lo que se toca en el diapasón suena al tocarlo, sin pasar por Escuchar.
 
 ## 8. Espacio
@@ -150,7 +150,7 @@ Si una herramienta necesita algo que no está en la tabla y le puede servir a ot
 
 - **Lo que define lo que se ve** (afinación, acorde, escala, forma) va en la URL, con `useSearchParams`. Así un link abre exactamente lo mismo, y las herramientas se pasan cosas con un link (`TuneLink`, "Sus acordes en Armonía →"). En la URL no van los valores por defecto: `?afinacion=` se omite si es la estándar.
 - Hasta hidratar, la página no conoce la URL: usá `useHydrated()` y los valores por defecto, como hace ¿Qué acorde?.
-- **Las preferencias** (`src/shared/settings.ts`, guardadas en `localStorage` bajo `afinador`) son solo para lo que vale en varias herramientas o se elige una vez: notación, La de referencia, volumen, rasgueo o arpegio. Todo lo que se agregue ahí pasa por `sanitize`.
+- **Las preferencias** (`src/shared/settings.ts`, guardadas en `localStorage` bajo `afinador`) son solo para lo que vale en varias herramientas o se elige una vez: notación, La de referencia, los volúmenes, rasgueo o arpegio. Todo lo que se agregue ahí pasa por `sanitize`.
 - **Donde la dejaste** (`src/shared/memoria.ts`): cada herramienta anota su última URL. La barra y la portada llevan ahí, y abrir una herramienta sin nada después del `?` la restaura antes de hidratar (en el Afinador, `/afinador` vuelve a la última afinación). No es estado compartido: cada una se acuerda solo de lo suyo, y un link con algo en la URL manda. Para que ande, la herramienta tiene que poder abrirse con cualquier URL en cualquier momento, también estando ya adentro (Ritmo carga lo que llega por la URL aunque no lo haya escrito él).
 - **Lo guardado con nombre** (`Guardados`, en `src/shared/Guardados.tsx`): un botón "Mis …" que abre un modal para guardar lo de ahora y abrir lo guardado. Cada cosa guardada es el link, así que abrirla es lo mismo que abrir un link compartido. Hasta diez por herramienta, para que el modal entre sin bajar. Va en la fila de arriba (`ui.setup`) o, si no hay, junto al título; nunca suma una fila.
 - Ningún estado compartido entre herramientas fuera de estas vías.
@@ -166,21 +166,21 @@ Si una herramienta necesita algo que no está en la tabla y le puede servir a ot
 
 - No hagas CSS propio para botones, rótulos o campos: usá las piezas de `src/shared/ui/`.
 - No uses colores fuera de los tokens, esquinas redondeadas ni sombras fuera del botón principal y el modal.
-- No pongas un segundo volumen, ni dos botones principales en un mismo panel.
+- No pongas otro volumen aparte de los de la barra, ni dos botones principales en un mismo panel.
 - No apiles modales.
 - No pongas botones de tamaños distintos en una misma fila.
 
 ## 12. Antes de dar por terminado
 
 1. `npm run check`. Si hay otras sesiones en paralelo, los e2e van en otros puertos (`E2E_PORT=… E2E_DEV_PORT=…`).
-2. Capturas en celular (390 px) y en escritorio (1280 px y 1680 px, donde cambia la barra de arriba). En escritorio, a 1280 × 800, ninguna pestaña scrollea.
+2. Capturas en celular (390 px) y en escritorio (1280 px y 2048 px, donde cambia la barra de arriba). En escritorio, a 1280 × 800, ninguna pestaña scrollea.
 3. Un inventario rápido: `grep` del CSS de la herramienta buscando `button`, `font:` y colores escritos a mano. Lo que aparezca es candidato a pieza compartida.
 
 ## Pendientes conocidos (2026-11-22)
 
 Cosas que todavía no siguen esta guía. Si tocás alguna, de paso arreglala:
 
-- **Armonía** todavía muestra su propio volumen (dos veces), y la figura Cuadrado o Triángulo debería ser un `Toggle`.
+- **Armonía** todavía repite los volúmenes de la guitarra y el ritmo (dos veces), y la figura Cuadrado o Triángulo debería ser un `Toggle`.
 - **El tempo** se elige con tres controles distintos (Afinador, Armonía y Ritmo). Falta una pieza compartida.
 - **Escuchar / Parar** se arma a mano en cada herramienta. Falta una pieza compartida.
 - **Los colapsables** (`<details>`) tienen estilo propio en Armonía. Falta una pieza compartida.

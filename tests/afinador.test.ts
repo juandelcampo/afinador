@@ -383,10 +383,23 @@ describe('preferencias guardadas', () => {
     expect(sanitize({ theme: 'sepia' as never }).theme).toBeUndefined();
   });
 
-  it('junta el volumen general y el del instrumento de antes sin cambiar cuánto suena', () => {
-    expect(sanitize({ volumes: { master: 0.5, instrumento: 0.8 } }).volume).toBeCloseTo(0.4);
-    expect(sanitize({ volume: 0.3, volumes: { master: 1, instrumento: 1 } }).volume).toBe(0.3);
-    expect(sanitize({ volumes: { master: 'mucho', instrumento: 0.8 } }).volume).toBeUndefined();
+  it('pasa los volúmenes de antes a la mezcla sin cambiar cuánto suena la guitarra', () => {
+    expect(sanitize({ volumes: { master: 0.5, instrumento: 0.8 } }).mezcla?.guitarra).toBeCloseTo(0.4);
+    const deUno = sanitize({ volume: 0.4, volumes: { master: 1, instrumento: 1 } }).mezcla;
+    expect(deUno?.guitarra).toBe(0.4);
+    // El ritmo y el drone guardan la proporción de la mezcla de entrada.
+    expect(deUno?.ritmo).toBeCloseTo(0.25);
+    expect(deUno?.drone).toBeCloseTo(0.4);
+    expect(sanitize({ volumes: { master: 'mucho', instrumento: 0.8 } }).mezcla).toBeUndefined();
+  });
+
+  it('cada canal de la mezcla se valida solo: el que no sirve vuelve al de entrada', () => {
+    expect(sanitize({ mezcla: { guitarra: 0.3, ritmo: 7, drone: 'fuerte' } } as never).mezcla).toEqual({
+      guitarra: 0.3,
+      ritmo: 0.5,
+      drone: 0.8,
+    });
+    expect(sanitize({ mezcla: { ritmo: 0 }, volume: 0.2 } as never).mezcla?.ritmo).toBe(0);
   });
 
   it('descarta un tempo fuera del rango y un estilo que no existe', () => {
